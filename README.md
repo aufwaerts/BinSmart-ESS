@@ -12,7 +12,6 @@ However, back in 2023 there was nothing available on the market that met my foll
 - indoor solution only, no additional wiring to outdoor PV installation
 - silent operation (no fans)
 - self-consumption of the entire system: less than 5 W
-- total cost: less than €700
 - total efficiency (end-to-end): greater than 80%
 The last five criteria seemed impossible to find in one system. Affordable "AC coupled" ESS solutions were typically
 inefficient, noisy and/or consumed a significant amount of energy themselves. One dealer offered me a
