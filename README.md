@@ -7,7 +7,7 @@ energy was consumed by our household, two thirds were fed into the grid (with no
 the idea of retrofitting an ESS solution, which should at least double the amount consumed by our household.
 However, back in 2023 there was nothing available on the market that met my following criteria:
 - storage capacity: at least 2 kWh
-- total cost: less than €700
+- total cost: less than €600
 - charging/discharging power: at least 300 W
 - indoor solution only, no additional wiring to outdoor PV installation
 - silent operation (no fans)
