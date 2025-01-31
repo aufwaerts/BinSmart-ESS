@@ -49,9 +49,7 @@ and upload (via OTA) to the ESP32 after every change. A config file would of cou
 Final note: I learned programming in the days of BASIC and Pascal, back in the 1980s. Microcontrollers like Intel's 8051
 were programmed in assembler to achieve acceptable performance. When object-oriented programming came along with
 Internet & Java I moved to project management and didn't do any coding for almost 30 years.
-My code is procedural and might look awkward to the trained eye of  young OOP programmer. However it works beautifully
-and should only be seen as a collection of algorithms. If anybody is willing to take my code and port it to
-proper C++, please go ahead.
+My code is procedural and uses a lot of global variables, it might look awkward to the trained eye of  young OOP programmer. However it works beautifully and should only be seen as a collection of algorithms. If anybody is willing to take my code and port it to proper C++, please go ahead.
 
 
 
