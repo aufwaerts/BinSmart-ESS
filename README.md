@@ -28,6 +28,7 @@ My self-made solution has been up and running for about 12 months now, it over-a
 of my criteria. I called it "BinSmart ESS" (my surname is Binder :-).
 
 The solution looks like this:
+[BinSmart.pdf](https://github.com/user-attachments/files/18624236/BinSmart.pdf)
 
 I assume that nobody out there wants to re-build exactly the same system, after all prices for PV installations keep coming
 down and a "Balkonkraftwerk" now typically produces 800 Wp. A storage capacity of 2 kWh and 300 W charging/discharging power are probably not sufficent.
