@@ -28,10 +28,11 @@ My self-made solution has been up and running for about 12 months now, it over-a
 of my criteria. I called it "BinSmart ESS" (my surname is Binder :-).
 
 The solution looks like this:
-[BinSmart.pdf](https://github.com/user-attachments/files/18624236/BinSmart.pdf)
+[BinSmart_overview.pdf](https://github.com/user-attachments/files/18624450/BinSmart_overview.pdf)
 
 I assume that nobody out there wants to re-build exactly the same system, after all prices for PV installations keep coming
-down and a "Balkonkraftwerk" now typically produces 800 Wp. A storage capacity of 2 kWh and 300 W charging/discharging power are probably not sufficent.
+down and a "Balkonkraftwerk" now typically produces 800 Wp. A storage capacity of 2 kWh and 300 W charging/discharging power
+are probably not sufficent.
 
 However, feel free to use any parts of my code and my drawings as an inspiration to start or optimize your own project.
 I spent such an amount of time and effort on this project that it wouldn't feel right not to share the details and
@@ -43,5 +44,11 @@ along with Internet & Java I moved to project management and didn't do any codin
 My code is procedural and might look awkward to the trained eye of an OOP programmer. However it works beautifully
 and should only be seen as a collection of useful algorithms. If anybody is willing to take my code and port it to
 proper C++, please go ahead.
+
+The ESP32 code was written with Arduino IDE. I have restrained from developing GUIs for Windows, iOS or Android. The frontend
+functionality is very simple, popular telnet clients like Putty or Termius are sufficient to visualize ESP32 output and
+handle user commands. If the font "Cascadia Code" is chosen, all special characters are displayed correctly - see screenshots.
+
+
 
 
