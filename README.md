@@ -2,7 +2,7 @@
 
 This project is about an energy storage solution (ESS) for small photovoltaic installations (German: "Balkonkraftwerke").
 
-Having used such a "Balkonkraftwerk" with a modest output of 435 Wp for about a year, it showed that only a third of the energy was consumed by our household, two thirds were fed into the grid (with no compensation whatsoever). I came up with the idea of retrofitting an ESS solution, which should at least double the amount consumed by our household.
+Having used a "Balkonkraftwerk" with a modest output of 435 Wp for a year, it showed that only a third of the energy was consumed by our household, two thirds were fed into the grid (with no compensation whatsoever). I came up with the idea of retrofitting an ESS solution, which should at least double the amount consumed by our household.
 However, back in 2023 there was nothing available on the market that met my following criteria:
 - storage capacity: at least 2 kWh
 - total cost: less than €600
