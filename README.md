@@ -3,7 +3,7 @@
 This project is about an energy storage solution (ESS) for small photovoltaic installations (German: "Balkonkraftwerke").
 
 Having used a "Balkonkraftwerk" with a modest output of 435 Wp for a year, it showed that only a third of the energy was consumed by our household, two thirds were fed into the grid (with no compensation whatsoever). I came up with the idea of retrofitting an ESS solution, which should at least double the proportion consumed by our household.
-However, back in 2023 there was nothing available on the market that met my following criteria:
+However, in 2023 there was nothing available on the market that met my following criteria:
 - storage capacity: at least 2 kWh
 - total cost: less than €600
 - charging/discharging power: at least 300 W
@@ -14,7 +14,7 @@ However, back in 2023 there was nothing available on the market that met my foll
 - total efficiency (AC-to-AC): above 80%
 
 
-Especially the last three criteria seemed impossible to meet with one solution. Affordable "AC coupled" ESS solutions were typically inefficient, noisy and/or consumed a significant amount of energy themselves. One dealer offered me a system with a self-consumption of 20 W, which corresponds to 175 kWh p.a. (more than a third of the entire PV output).
+Especially the last three criteria appeared impossible to meet. Affordable "AC coupled" ESS solutions were typically inefficient, noisy and consumed a significant amount of energy themselves. One dealer offered me a system with a self-consumption of 20 W, which corresponds to 175 kWh p.a. (more than a third of our entire PV output).
 
 OpenDTU-OnBattery, an excellent and flexible "zero export" solution based on Thomas Basler's fabulous OpenDTU project, has been around since 2023, but in the beginning there was (or still is?) no support for Meanwell chargers, and using a Victron charger would have violated my cost criteria. I must however give credits to Thomas Basler and everyone who supported him with his OpenDTU endeavour, without his and their work I would have never been able to get the radio communication with my Hoymiles inverter working.
 
