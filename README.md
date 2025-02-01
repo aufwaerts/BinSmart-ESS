@@ -12,7 +12,7 @@ However, back in 2023 there was nothing available on the market that met my foll
 - self-consumption of the entire system: less than 5 W
 - total efficiency (AC-to-AC): larger than 80%
 
-Especially the last five criteria seemed impossible to meet with one solution. Affordable "AC coupled" ESS solutions were typically inefficient, noisy and/or consumed a significant amount of energy themselves. One dealer offered me a system with a self-consumption of 20 W, which corresponds to 175 kWh p.a. (more than a third of the entire PV output).
+Especially the last three criteria seemed impossible to meet with one solution. Affordable "AC coupled" ESS solutions were typically inefficient, noisy and/or consumed a significant amount of energy themselves. One dealer offered me a system with a self-consumption of 20 W, which corresponds to 175 kWh p.a. (more than a third of the entire PV output).
 
 OpenDTU-OnBattery, an excellent and flexible "zero export" solution based on Thomas Basler's fabulous OpenDTU project, has been around since 2023, but in the beginning there was (or still is?) no support for Meanwell chargers, and using a Victron charger would have violated my cost criteria. I must however give credits to Thomas Basler and everyone who supported him with his OpenDTU endeavour, without his and their work I would have never been able to get the radio communication with my Hoymiles inverter working.
 
