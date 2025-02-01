@@ -25,7 +25,7 @@ Feel free to use any parts of my code and my drawings as an inspiration to start
 
 The ESP32 code was written with Arduino IDE. I have restrained from developing a frontend app for Windows, iOS or Android. The frontend functionality is very simple, popular telnet clients like Putty or Termius are sufficient to visualize BinSmart's status and handle user commands. If the font "Cascadia Code" is chosen, all special characters are displayed correctly - see screenshots.
 
-Some BinSmart parameters can be modified via telnet client, however the static part of the software config (e.g. IP addresses) needs to be changed in the file "BinSmart_cfg.h", which requires re-compilation and upload (via OTA) to the ESP32 after every change. Using a LittleFS filesystem for the config would have been slicker.
+Some BinSmart parameters can be modified via telnet client, however the static part of the software config (e.g. IP addresses) needs to be changed in the file "BinSmart_cfg.h", which requires re-compilation and upload (via OTA) to the ESP32 after every change.
 
 Final note: I learned programming in the days of BASIC and Pascal, back in the 1980s. Microcontrollers like Intel's 8051 were programmed in assembler to achieve acceptable performance. When Internet, Java and object-oriented programming came along I moved to project management and didn't do any coding for almost 30 years.
 
