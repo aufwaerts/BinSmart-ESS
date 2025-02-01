@@ -1,7 +1,7 @@
 const String SW_VERSION = "v1.06";
 
 #include <WiFi.h>  // standard Arduino/ESP32
-#include <HTTPClient.h>  // standard Arduino/ESP32
+#include <HTTPClient.h>  // standard Arduino/ESP32 (method connect() must be made public)
 #include <ESPAsyncWebServer.h>  // https://github.com/lacamera/ESPAsyncWebServer
 #include <ElegantOTA.h>  // https://github.com/ayushsharma82/ElegantOTA
 #include <RF24.h>  // https://nrf24.github.io/RF24/
