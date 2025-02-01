@@ -8,9 +8,11 @@ However, back in 2023 there was nothing available on the market that met my foll
 - total cost: less than €600
 - charging/discharging power: at least 300 W
 - indoor "AC coupled" solution, no additional wiring to outdoor PV installation
+- neglectable energy loss to grid,  less than 1% when battery not fully charged
 - silent operation (no fans)
 - self-consumption of the entire system: less than 5 W
 - total efficiency (AC-to-AC): larger than 80%
+
 
 Especially the last three criteria seemed impossible to meet with one solution. Affordable "AC coupled" ESS solutions were typically inefficient, noisy and/or consumed a significant amount of energy themselves. One dealer offered me a system with a self-consumption of 20 W, which corresponds to 175 kWh p.a. (more than a third of the entire PV output).
 
