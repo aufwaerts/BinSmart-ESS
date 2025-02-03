@@ -14,7 +14,7 @@ Having used a "Balkonkraftwerk" with a modest output of 435 Wp for a year, it sh
 
 Available "AC coupled" ESS solutions were either expensive, inefficient, noisy or consumed a significant amount of energy themselves. I concluded that I had to build a solution myself.
 
-OpenDTU-OnBattery, a "zero export" solution based on OpenDTU, looked like a good starting point, but back in 2023 there was (or still is?) no support for Meanwell chargers, and buying a Victron would have violated my cost criteria. I must however give Thomas Basler (and everybody supporting him) credit for their OpenDTU project, without their achievements I would never have managed to get the Hoymiles radio communication working.
+OpenDTU-OnBattery, a "zero export" solution based on OpenDTU, looked like a good starting point, but in 2023 there was (or still is?) no support for Meanwell chargers, and buying a Victron would have violated my cost criteria. I must however give Thomas Basler (and everybody supporting him) credit for their OpenDTU project, without their achievements I would never have managed to get the Hoymiles radio communication working.
 
 My solution has been up and running for 12 months now, it over-achieves my initial goal and over-fulfils all of my criteria. I called it "BinSmart ESS" (my surname is Binder :-).
 
