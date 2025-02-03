@@ -15,7 +15,7 @@ Having used a small 435 Wp "Balkonkraftwerk" for a year, it showed that only a t
 Available AC-coupled solutions were either expensive, inefficient, noisy or consumed a lot of energy themselves. I concluded that I had to build a solution myself.
 
 There were some "home-made" solutions around, but they had their drawbacks, too:
-- OpenDTU-OnBattery, a zero export solution based on OpenDTU, didn't support Meanwell chargers, and buying a Victron would have violated my cost criteria.
+- OpenDTU-OnBattery, a zero export solution based on [OpenDTU](https://github.com/tbnobody/OpenDTU), didn't support Meanwell chargers, and buying a Victron would have violated my cost criteria.
 - The "Trucki Stick" (https://trucki.de/) would have been able to control Meanwell chargers, but on the inverter side, only Sun or Lumentree were supported by Trucki. With those inverters I wouldn't have fulfilled my efficiency & silence criteria.
 - Other solutions found on various YouTube channels were not AC-coupled or didn't include controllable chargers and inverters, which would have violated my "zero export" criteria.
 
