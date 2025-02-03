@@ -10,7 +10,7 @@ Having used a "Balkonkraftwerk" with a modest output of 435 Wp for a year, it sh
 - "zero" energy export to grid (less than 1% when battery not fully charged)
 - silent operation (no fans)
 - self-consumption of the entire system: less than 5 W
-- total efficiency (AC-to-AC): above 80%
+- total efficiency (AC-to-AC): higher than 80%
 
 Affordable "AC coupled" ESS solutions were inefficient, noisy and/or consumed a significant amount of energy themselves. One dealer offered me a system with a self-consumption of 20 W, which corresponds to 175 kWh p.a. (more than a third of our entire PV output). I concluded that I had to build a solution myself.
 
