@@ -24,7 +24,7 @@ I must however give Thomas Basler (and everybody who supported him) credit for t
 My solution has been up and running for 12 months now, it over-achieves my initial goal and over-fulfils all of my criteria. I called it "BinSmart ESS" (my surname is Binder :-).
 
 The solution looks like this:
-https://github.com/aufwaerts/BinSmart-ESS/blob/main/BinSmart_overview.pdf
+/BinSmart_overview.pdf
 
 The ESP32 code was written with Arduino IDE. I have restrained from developing a frontend app for Windows, iOS or Android. The frontend functionality is very simple, popular telnet clients like Putty or Termius are sufficient to visualize BinSmart's status and handle user commands. If the font "Cascadia Code" is chosen, all special characters are displayed correctly - see screenshots.
 
