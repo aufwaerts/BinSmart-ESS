@@ -28,7 +28,7 @@ The solution looks like this:
 
 The ESP32 code was written with Arduino IDE. I have restrained from developing a frontend app for Windows, iOS or Android. The frontend functionality is very simple, popular telnet clients like Putty or Termius are sufficient to visualize BinSmart's status and handle user commands. If the font "Cascadia Code" is chosen, all special characters are displayed correctly - see screenshots.
 
-Some parameters can be modified on the fly, via telnet client. The software config (e.g. IP addresses) needs to be changed in the file "BinSmart_cfg.h", which requires re-compilation and upload (via OTA) to the ESP32 after every change.
+Some parameters can be modified on the fly, via telnet client. The software config (e.g. IP addresses) needs to be changed in the file "BinSmart_cfg.h", which requires re-compilation and upload (via OTA) after every change.
 
 Feel free to use any parts of my code for your own project. For larger installations with, say, 800 Wp (today's limit for a "Balkonkraftwerk") you would probably use a larger battery, BMS, charger and inverter, but the software config could be adapted accordingly.
 
