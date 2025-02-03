@@ -12,7 +12,7 @@ Having used a small 435 Wp "Balkonkraftwerk" for a year, it showed that only a t
 - self-consumption of the entire system: less than 5 W
 - total efficiency (AC-to-AC): higher than 80%
 
-Available AC-coupled solutions were either expensive, inefficient, noisy or consumed a significant amount of energy themselves. I concluded that I had to build a solution myself.
+Available AC-coupled solutions were either expensive, inefficient, noisy or consumed a lot of energy themselves. I concluded that I had to build a solution myself.
 
 There were some "home-made" solutions around, but they had their drawbacks, too:
 - OpenDTU-OnBattery, a zero export solution based on OpenDTU, didn't support Meanwell chargers, and buying a Victron would have violated my cost criteria.
