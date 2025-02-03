@@ -12,7 +12,7 @@ Having used a "Balkonkraftwerk" with a modest output of 435 Wp for a year, it sh
 - self-consumption of the entire system: less than 5 W
 - total efficiency (AC-to-AC): higher than 80%
 
-Affordable "AC coupled" ESS solutions were inefficient, noisy and/or consumed a significant amount of energy themselves. One dealer offered me a system with a self-consumption of 20 W, which corresponds to 175 kWh p.a. (more than a third of our entire PV output). I concluded that I had to build a solution myself.
+Affordable "AC coupled" ESS solutions were expensive, inefficient, noisy and/or consumed a significant amount of energy themselves. I concluded that I had to build a solution myself.
 
 OpenDTU-OnBattery, a "zero export" solution based on OpenDTU, looked like a good starting point, but back in 2023 there was (or still is?) no support for Meanwell chargers, and buying a Victron would have violated my cost criteria. I must however give Thomas Basler (and everybody supporting him) credit for their OpenDTU project, without their achievements I would never have managed to get the Hoymiles radio communication working.
 
