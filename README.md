@@ -18,6 +18,7 @@ There were some "home-made" solutions around, but they had their drawbacks, too:
 - OpenDTU-OnBattery, a zero export solution based on OpenDTU, didn't support Meanwell chargers, and buying a Victron would have violated my cost criteria.
 - The "Trucki Stick" (https://trucki.de/) would have been able to control Meanwell chargers, but on the inverter side, only Sun or Lumentree were supported by Trucki. With those inverters I wouldn't have fulfilled my efficiency & silence criteria.
 - Other solutions found on various YouTube channels were not AC-coupled or didn't include controllable chargers and inverters, which would have violated my "zero export" criteria.
+
 I must however give Thomas Basler (and everybody who supported him) credit for their OpenDTU project, without their achievements I would never have managed to get the Hoymiles radio communication working. A big "thank you" also goes to Christian Waller, who demonstrated on his excellent YouTube channel "Der Kanal" how Meanwell LED drivers can be used as controllable battery chargers.
 
 My solution has been up and running for 12 months now, it over-achieves my initial goal and over-fulfils all of my criteria. I called it "BinSmart ESS" (my surname is Binder :-).
