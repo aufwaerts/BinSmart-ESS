@@ -23,7 +23,7 @@ My solution has been up and running for about 12 months now, it over-achieves my
 The solution looks like this:
 [BinSmart_overview.pdf](https://github.com/user-attachments/files/18629652/BinSmart_overview.pdf)
 
-Feel free to use any parts of my code and my drawings as an inspiration to start or optimize your own project. For larger installations with, say, 800 Wp (today's limit for a "Balkonkraftwerk") you would probably need a larger battery, BMS, charger and inverter, but the software config could be adapted easily.
+Feel free to use any parts of my code and my drawing as an inspiration to start or optimize your own project. For larger installations with, say, 800 Wp (today's limit for a "Balkonkraftwerk") you would probably need a larger battery, BMS, charger and inverter, but the software config could be adapted easily.
 
 The ESP32 code was written with Arduino IDE. I have restrained from developing a frontend app for Windows, iOS or Android. The frontend functionality is very simple, popular telnet clients like Putty or Termius are sufficient to visualize BinSmart's status and handle user commands. If the font "Cascadia Code" is chosen, all special characters are displayed correctly - see screenshots.
 
