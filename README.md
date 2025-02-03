@@ -16,7 +16,7 @@ Affordable "AC coupled" ESS solutions were inefficient, noisy and/or consumed a 
 
 OpenDTU-OnBattery, a "zero export" solution based on OpenDTU, looked like a good starting point, but back in 2023 there was (or still is?) no support for Meanwell chargers, and buying a Victron would have violated my cost criteria. I must however give Thomas Basler (and everybody supporting him) credit for their OpenDTU project, without their achievements I would never have managed to get the Hoymiles radio communication working.
 
-My solution has been up and running for about 12 months now, it over-achieves my initial goal and over-fulfils all of my criteria. I called it "BinSmart ESS" (my surname is Binder :-).
+My solution has been up and running for 12 months now, it over-achieves my initial goal and over-fulfils all of my criteria. I called it "BinSmart ESS" (my surname is Binder :-).
 
 The solution looks like this:
 [BinSmart_overview.pdf](https://github.com/user-attachments/files/18629652/BinSmart_overview.pdf)
