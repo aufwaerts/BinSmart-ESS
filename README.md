@@ -21,9 +21,7 @@ There were some "home-made" solutions around, but they had their drawbacks, too:
 
 I must however give Thomas Basler (and everybody who supported him) credit for their OpenDTU project, without their achievements I would never have managed to get the Hoymiles radio communication working. A big "thank you" also goes to Christian Waller, who demonstrated on his excellent YouTube channel [Der Kanal](https://www.youtube.com/@DerKanal) how Meanwell LED drivers can be used as controllable battery chargers.
 
-My solution has been up and running for 12 months now, it over-achieves my initial goal and over-fulfils all of my criteria. I called it "BinSmart ESS" (my surname is Binder :-).
-
-The solution looks like [this](https://github.com/aufwaerts/BinSmart-ESS/blob/main/BinSmart_overview.pdf)
+My solution has been up and running for 12 months now, it over-achieves my initial goal and over-fulfils all of my criteria. I called it "BinSmart ESS" (my surname is Binder :-). BinSmart ESS looks like [this](https://github.com/aufwaerts/BinSmart-ESS/blob/main/BinSmart_overview.pdf).
 
 The ESP32 code was written with Arduino IDE. I have restrained from developing a frontend app for Windows, iOS or Android. The frontend functionality is very simple, popular telnet clients like Putty or Termius are sufficient to visualize BinSmart's status and handle user commands. If the font "Cascadia Code" is chosen, all special characters are displayed correctly - see screenshots.
 
