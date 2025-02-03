@@ -104,9 +104,9 @@ const float POWER_LIMIT_RAMPDOWN = 0.667;  // Power rampdown rate when CELL_OVP 
 // BMS/batt voltages
 const int CELL_OVP = 3560;  // battery full voltage [mV] (must be lower than BMS setting)
 const int CELL_OVPR = 3450;  // recovery voltage after battery full [mV] (should be higher than BMS setting)
-const int CELL_UVP = 3200;  // battery low voltage [mV] (must be higher than BMS setting)
+const int CELL_UVP = 3200;  // battery low voltage [mV] (must be higher than UUVP)
 const int CELL_UVPR = 3250;  // recovery voltage after battery low [mV] (should be lower than BMS setting)
-const int CELL_UUVP = 3000;  // automatic battery recharge trigger voltage (prevents BMS turnoff) [mV] (independent from BMS settings)
+const int CELL_UUVP = 3000;  // automatic battery recharge trigger voltage (prevents BMS turnoff) [mV] (must be higher than UVP setting in BMS)
 const int BALANCER_THRESHOLD = 3450;  // BMS balancer starts working when at least one cell is above this threshold [mV] (equals BMS setting)
 const int BALANCER_CELL_DIFF = 3;  // BMS balancer starts working when difference between cell voltages is larger than this value [mV] (equals BMS setting)
 
