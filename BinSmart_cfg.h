@@ -36,25 +36,26 @@ const int PV_MAX_POWER = 350;  // Max PV inverter output
 // Hoymiles params
 const int HM_MIN_POWER = -10;  // Hoymiles turned off above min_power
 const int HM_MAX_POWER = -300;  // Hoymiles discharging power limit (HM-300)
-// tests have shown that Hoymiles power output is non-linear, the following formula corrects it
-// the formula needs adapting for different inverters and/or different battery voltages
+// tests have shown that Hoymiles power output is only linear in medium range
+// the formulas below need adapting for different inverters and/or different battery voltages
 // this is an excellent site for determining the formula parameters: https://www.arndt-bruenner.de/mathe/scripts/regrnl.htm
 // formulas include conversion to positive power values in deciwatts
 #define HM_POWER_FORMULA -10*power
-const int HM_LOW_POWER_THRESHOLD = -70;  // tests have shown that Hoymiles power below this threshold needs a different formula
+const int HM_LOW_POWER_THRESHOLD = -70;  // tests have shown that Hoymiles power output above this threshold is non-linear
 #define HM_LOW_POWER_FORMULA -0.001308*power*power*power-0.1891*power*power-17.1*power-19
-const int HM_HIGH_POWER_THRESHOLD = -180;  // tests have also shown that Hoymiles power above this threshold needs a different formula
+const int HM_HIGH_POWER_THRESHOLD = -180;  // tests have shown that Hoymiles power output below this threshold is non-linear
 #define HM_HIGH_POWER_FORMULA -0.0186*power*power-12.88*power+85
 
 // Meanwell params
 const int MW_MIN_POWER = 10;  // Meanwell turned off below min_power
 const int MW_RECHARGE_POWER = 200;  // Meanwell power setting for automatic recharging (to prevent BMS turnoff): MW operates at highest efficiency
 // the following formulas are the result of Meanwell power output tests, they need adapting for different chargers
-// translating MW charging power to PWM value: higher PWM value means less power, imagine the PWM signal applying a brake
-#define MW_PWM_FORMULA PWM_DUTY_CYCLE_MAX*(0.959-power*76.646/vbat)  // PWM signal limits Meanwell charging current; for correct charging power, vbat needs to be included in PWM formula
-#define MW_POWER_LIMIT_FORMULA vbat/76.646*(0.959-1.0/PWM_DUTY_CYCLE_MAX)  // MW max charging power also depends on vbat
+// translating MW charging power to PWM value: higher PWM value means less power
+// PWM signal limits Meanwell charging current; for correct charging power, vbat needs to be included in PWM formula
+#define MW_PWM_FORMULA PWM_DUTY_CYCLE_MAX*(0.959-power*76.646/vbat)
 const int MW_LOW_POWER_THRESHOLD = 20;  // tests have shown that Meanwell power below this threshold needs a correction
 #define MW_LOW_POWER_FORMULA PWM_DUTY_CYCLE_MAX*(0.959-(2*power-MW_LOW_POWER_THRESHOLD)*76.646/vbat)
+#define MW_POWER_LIMIT_FORMULA vbat/76.646*(0.959-1.0/PWM_DUTY_CYCLE_MAX)  // charging power limit also depends on vbat
 
 // Hoymiles/RF24 comms
 const byte HM_SERIAL[] = {***, ***, ***, ***, ***, ***};  // serial number of Hoymiles inverter
