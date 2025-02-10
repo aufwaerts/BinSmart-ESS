@@ -154,3 +154,5 @@ const String CHARGING_SYMBOL = " ⚡";
 const String GOOD_WIFI_SYMBOL = "  📶";
 const String BAD_WIFI_SYMBOL = "  ⚠ ";
 const String ERROR_SYMBOL = "❌";
+const String REPEAT_SYMBOL = "🔁\r\n";
+
