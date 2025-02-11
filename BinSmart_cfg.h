@@ -23,12 +23,6 @@ const String PM_ADDR = "***.***.***.***";  // Shelly Plus 1PM
 const String MWPLUG_ADDR = "***.***.***.***";  // Shelly Plus Plug, connecting Meanwell charger to AC
 const String HMPLUG_ADDR = "***.***.***.***";  // Shelly Plus Plug, connecting Hoymiles inverter to AC
 
-// astro params
-const int ESS_TIMEZONE = +1;  // timezone (UTC...) of ESS location (timezone is always the same, also during DST)
-const float ESS_LATITUDE = ***;  // geo coordinates of ESS location
-const float ESS_LONGITUDE = ***;
-const String GET_ASTRO_TIME = "03:30";  // time at which astro times (sunrise/sunset) will be calculated (after a possible DST change, before sunrise)
-
 // PV module/inverter params
 const int PV_SUN_THRESHOLD = 50;  // Everthing above this value is considered (partly) sunshine
 const int PV_MAX_POWER = 350;  // Max PV inverter output
@@ -68,7 +62,7 @@ const int RF24_MIN_DELAY = 20;  // Minimum time gap (in ms) between two consecut
 const byte BMS_READ_VOLTAGES[] = {0x4E, 0x57, 0x00, 0x13, 0x00, 0x00, 0x00, 0x00, 0x03, 0x03, 0x00, 0x79, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0x9F};
 #define BMS_RESPONSE_SIZE 46
 
-// Timer settings
+// Time/timer settings
 const int PROCESSING_DELAY = 2000;  // minimum delay (in msecs) for power changes to take effect
 const int UVP_SLEEP_DELAY = 20000;  // cycle duration (in msecs) during UVP sleep mode
 const int UVP_WAKEUP_RESET = 1700;  // number of cycles in UVP mode (hm_power_limit == 0) before UVP sleep mode is activated (must be an even number)
@@ -79,6 +73,7 @@ const int DDNS_UPDATE_INTERVAL = 60;  // DDNS IP address check interval (in secs
 const int EM_RESET_INTERVAL = 600;  // EM internal data reset interval (in secs)
 const int READCOMMAND_TIMEOUT = 4;  // max waiting time (in secs) for terminal input
 const int HTTP_TIMEOUT = 7;  //  max waiting time (in secs) for http response
+const String GET_ASTRO_TIME = "03:30";  // time at which astro times (sunrise/sunset) will be calculated (after a possible DST change, before sunrise)
 
 // URLs
 const String EM_STATUS = "http://" + EM_ADDR + "/status";
