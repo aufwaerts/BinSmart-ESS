@@ -948,7 +948,6 @@ void SetMWPower() {
     // // make sure PWM limits are not exceeded (PWM = 0 would lead to excessive power output)
     if (duty_cycle < 1) duty_cycle = 1;
     if (duty_cycle > PWM_DUTY_CYCLE_MAX) duty_cycle = PWM_DUTY_CYCLE_MAX;
-    // Compensate non-linearity of Meanwell power output in lower power region
     ledcWrite(PWM_CHANNEL, duty_cycle);
     
 }
