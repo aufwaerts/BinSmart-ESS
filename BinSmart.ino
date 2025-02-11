@@ -605,7 +605,7 @@ bool ReadUserCommand() {
     return ReadCommand(true);
 }
 
-bool ReadCommand(bool keyboard) {w
+bool ReadCommand(bool keyboard) {
 
     char command;
     String input;
