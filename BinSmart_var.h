@@ -51,4 +51,5 @@ float from_grid = 0, grid_to_ess = 0, pv_to_grid = 0, ess_to_grid = 0;  // energ
 bool manual_mode = false, auto_recharge = false, pm_eco_mode = true, rampdown = false;
 char buf[30];  // buffer for formatting output with sprintf()
 String cycle_msg, ota_msg, cmd_resp, filter_symbol = POWERFILTER_SYMBOL[0];
-char repeat_command = ' ';
+char repeat_command = 0;  // saves user commands that are to be repeated
+
