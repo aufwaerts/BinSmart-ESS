@@ -60,7 +60,13 @@ const int RF24_MIN_DELAY = 20;  // Minimum time gap (in ms) between two consecut
 
 // BMS comms
 const byte BMS_READ_VOLTAGES[] = {0x4E, 0x57, 0x00, 0x13, 0x00, 0x00, 0x00, 0x00, 0x03, 0x03, 0x00, 0x79, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0x9F};
-#define BMS_RESPONSE_SIZE 46
+const byte BMS_READ_SETTINGS[] = {0x4E, 0x57, 0x00, 0x13, 0x00, 0x00, 0x00, 0x00, 0x06, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0x29};
+const byte BMS_VCELLS = 0x79;
+const byte BMS_WARNINGS = 0x8B;
+const byte BMS_OVP = 0x90;
+const byte BMS_UVP = 0x93;
+const byte BMS_BAL_START = 0x9B;
+const byte BMS_BAL_TRIGGER = 0x9C;
 
 // Time/timer settings
 const int PROCESSING_DELAY = 2000;  // minimum delay (in msecs) for power changes to take effect
@@ -107,8 +113,6 @@ const int CELL_OVPR = 3450;  // recovery voltage after battery full [mV] (should
 const int CELL_UVP = 3200;  // battery low voltage [mV] (must be higher than CELL_UUVP)
 const int CELL_UVPR = 3250;  // recovery voltage after battery low [mV] (should be lower than BMS setting)
 const int CELL_UUVP = 3000;  // automatic battery recharge trigger voltage (prevents BMS turnoff) [mV] (must be higher than UVP setting in BMS)
-const int BALANCER_THRESHOLD = 3450;  // BMS balancer starts working when at least one cell is above this threshold [mV] (must equal setting in BMS)
-const int BALANCER_CELL_DIFF = 3;  // BMS balancer starts working when difference between cell voltages is larger than this value [mV] (must equal setting in BMS)
 
 // PWM params for Meanwell power control
 #define PWM_CHANNEL 0
