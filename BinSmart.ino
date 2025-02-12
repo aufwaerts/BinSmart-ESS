@@ -76,7 +76,7 @@ void setup() {
 
     // Init RS485 communication with BMS
     Serial2.begin(115200, SERIAL_8N1, UART_RX_PIN, UART_TX_PIN);
-    if (BMSCommand(BMS_read_settings, sizeof(BMS_read_settings))) telnet.print("RS485 communication with JKBMS OK\r\n");
+    if (BMSCommand(BMS_SETTINGS, sizeof(BMS_SETTINGS))) telnet.print("RS485 communication with JKBMS OK\r\n");
     
     // Init RF24 radio communication with Hoymiles
     memcpy(&hm_radio_ID[1], &HM_SERIAL[2], 4);
@@ -157,7 +157,7 @@ void setup() {
 void loop() {
 
     ShellyCommand(EM_STATUS);  // Read current time, unixtime and grid power
-    BMSCommand(BMS_read_voltages, sizeof(BMS_read_voltages));  // Read cell voltages from BMS
+    BMSCommand(BMS_VOLTAGES, sizeof(BMS_VOLTAGES));  // Read cell voltages from BMS
     SetNewPower();  // Set power limits, calculate and apply new charging/discharging power
     ReadCommand(false);  // Repeat command from previous cycle (if command was to be repeated)
     FinishCycle();  // Update energy counters, print cycle info, keep Shelly plugs alive, update DDNS
@@ -207,7 +207,7 @@ bool BMSCommand(byte command[], int size) {
                     return true;
                 }
 
-                if (command[11] == BMS_SETTINGS) {
+                if (command[11] == BMS_ALLDATA) {
                     // Check for BMS warning
                     while (BMS_resp[index] != BMS_WARNINGS) index++;
                     if (BMS_resp[index+1] || BMS_resp[index+2]) {
