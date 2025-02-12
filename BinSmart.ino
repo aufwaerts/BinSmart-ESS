@@ -697,19 +697,19 @@ bool UserCommand(bool read_input) {
             cmd_resp += " W\r\n\n";
             break;
         case 'b':
-            cmd_resp = "Batt voltage  : ";
+            cmd_resp = "Batt voltage   : ";
             cmd_resp += String(vbat/1000.0,2);
             cmd_resp += " V\r\n";
-            cmd_resp += "Cell voltages : ";
+            cmd_resp += "Cell voltages  : ";
             cmd_resp += vcell_min;
             cmd_resp += " - ";
             cmd_resp += vcell_max;
-            cmd_resp += " mV\r\nMax cell diff : ";
+            cmd_resp += " mV\r\nMax cell diff  : ";
             cmd_resp += vcell_max-vcell_min;
-            cmd_resp += " mV\r\nBMS balancer  : ";
+            cmd_resp += " mV\r\nBMS balancer   : ";
             if ((vcell_max >= BMS_start_balancer) && (vcell_max-vcell_min >= BMS_trigger_balancer)) cmd_resp += "ON";
             else cmd_resp += "OFF";
-            cmd_resp += "\r\nMW power limit: ";
+            cmd_resp += "\r\nMW power limit : ";
             cmd_resp += mw_max_power;
             cmd_resp += " W";
             if (hm_power_limit > HM_MAX_POWER) {
