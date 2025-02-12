@@ -127,8 +127,7 @@ const int ERROR_LIMIT = 20;  // number of consecutive erroneous cycles before sy
 
 // Symbols for a nice telnet frontend
 const String FLOW_SYMBOL[] = {"───","╴◀╶","╴▶╶","╴◀◀","╴▶▶","┇◀╶","╴▶┇","┃◁╶","╴▷┃"};
-const String DOWN_SYMBOL = "▼";
-const String UP_SYMBOL = "▲";
+const String DIFF_SYMBOL[] = {" ▼"," ▲"};
 const String BATT_LEVEL_SYMBOL[] = {"⡀ ","⣀ ","⣄ ","⣤ ","⣦ ","⣶ ","⣷ ","⣿ "};
 const int BATT_LEVELS = sizeof(BATT_LEVEL_SYMBOL)/sizeof(BATT_LEVEL_SYMBOL[0]);
 const String PV_SYMBOL[] = {" 🌜▦╶"," ☁­▦╶"," ⛅▦╶"," 🌤­▦╶"," ☀­▦╶"};
@@ -144,13 +143,13 @@ const String ESS_CABLE_SYMBOL = "└─";
 const String ESS_SYMBOL = "─🔋";
 const String NORMAL_OPS_SYMBOL = " 🏃";
 const String UVP_SLEEP_SYMBOL = " 💤🛌";
-const String POWERFILTER_SYMBOL[] = {" 🕛0"," 🕐1"," 🕑2"," 🕒3"," 🕓4"," 🕔5"," 🕕6"," 🕖7"," 🕗8"," 🕘9"," 🕙10"," 🕚11"};
+const String POWERFILTER_SYMBOL[] = {" 🪜"," 🕐1"," 🕑2"," 🕒3"," 🕓4"," 🕔5"," 🕕6"," 🕖7"," 🕗8"," 🕘9"," 🕙10"," 🕚11"," 🕛12"};
 const String OVP_LIMIT_SYMBOL = "     ▁▁▁";
 const String UVP_LIMIT_SYMBOL = "                    ▔▔▔";
-const String RAMPDOWN_SYMBOL = " 🪜";
 const String CHARGING_SYMBOL = " ⚡";
 const String GOOD_WIFI_SYMBOL = "  📶";
 const String BAD_WIFI_SYMBOL = "  ⚠ ";
 const String ERROR_SYMBOL = "❌";
 const String REPEAT_SYMBOL = "🔁 ";
+
 
