@@ -74,7 +74,7 @@ void setup() {
     cycle_msg += "\r\n";
     telnet.print(cycle_msg);
 
-    // Init RS485 communication with BMS
+    // Init RS485 communication with BMS, read OVP/UVP/balancer settings
     Serial2.begin(115200, SERIAL_8N1, UART_RX_PIN, UART_TX_PIN);
     if (BMSCommand(BMS_SETTINGS, sizeof(BMS_SETTINGS))) telnet.print("RS485 communication with JKBMS OK\r\n");
     
