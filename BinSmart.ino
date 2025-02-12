@@ -189,7 +189,7 @@ bool BMSCommand(const byte command[], int size) {
           len++;
     }
     // Check validity of BMS response
-    if (BMS_resp[0]<<8|BMS_resp[1] == 0x4E57) {  // start frame signature
+    if (BMS_resp[0]<<8|BMS_resp[1] == BMS_START_FRAME) {  // start frame signature
         if (BMS_resp[2]<<8|BMS_resp[3] == len-2) {  // response length
             if (BMS_resp[len-2]<<8|BMS_resp[len-1] == sum) {  // response checksum
 
