@@ -341,14 +341,14 @@ void SetNewPower() {
     // Filter out power spikes and slowly increase discharging power (reduces battery power loss to grid when consumer is suddenly turned  off)
     rampdown = false;
     filter_symbol = "";
-    if (!manual_mode && (power_old - power_new > POWER_RAMPDOWN_RATE)) {
+    if (!manual_mode && (power_new - power_old < POWER_RAMPDOWN_RATE)) {
         if (power_old > 0) {
-            power_new = max(power_old - POWER_RAMPDOWN_RATE, 0);  // MW was charging: ramp down to zero without delay
+            power_new = max(power_old + POWER_RAMPDOWN_RATE, 0);  // MW was charging: ramp down to zero without delay
             rampdown = true;
         }
         else {  // power was off or HM was discharging: ramp down only after filtering out power spikes
             if (!filter_cycles) {
-                power_new = power_old - POWER_RAMPDOWN_RATE;
+                power_new = power_old + POWER_RAMPDOWN_RATE;
                 rampdown = true;
             }
             else {
