@@ -159,14 +159,14 @@ void loop() {
     ShellyCommand(EM_STATUS);  // Read current time, unixtime and grid power
     BMSCommand(BMS_VOLTAGES, sizeof(BMS_VOLTAGES));  // Read cell voltages from BMS
     SetNewPower();  // Set power limits, calculate and apply new charging/discharging power
-    ReadCommand(false);  // Repeat command from previous cycle (if command was to be repeated)
+    UserCommand(REPEAT);  // Update command response from previous cycle (if command was to be repeated)
     FinishCycle();  // Update energy counters, print cycle info, keep Shelly plugs alive, update DDNS
     CheckErrors();  // Check errors, halt system if an error is persistent, or show completed cycle and error status by flashing LED
-
+    
     // Read user command while waiting for power changes to take effect (UVP sleep mode: extend waiting time)
     telnet.print("\033[?25h");  // show cursor
     while (millis()-ts_power < max(PROCESSING_DELAY-NO_COMMAND_TIMER, (!uvp_countdown)*UVP_SLEEP_DELAY))
-        if (ReadCommand(true)) break;  // read user command (maximum of one command per cycle)
+        if (UserCommand(READ)) break;  // read user command (maximum of one command per cycle)
     telnet.print("\033[?25l");  // hide cursor
     http.begin(EM_STATUS); http.connect();  // initiate "long polling" for http EM_STATUS request in next cycle
     while (millis()-ts_power < PROCESSING_DELAY);  // wait for end of processing delay
@@ -622,11 +622,11 @@ void CheckErrors() {
         UpdateDDNS();  // keep updating DDNS in order to be reachable via Internet
         FlashLED(false);
         ts_cycle = millis();
-        while (millis()-ts_cycle < UVP_SLEEP_DELAY) ReadCommand(true);
+        while (millis()-ts_cycle < UVP_SLEEP_DELAY) UserCommand(READ);
     }
 }
 
-bool ReadCommand(bool keyboard) {
+bool UserCommand(bool read_input) {
 
     char command;
     String input;
@@ -638,7 +638,7 @@ bool ReadCommand(bool keyboard) {
         else return false;  // continue checking for new connection
     }
 
-    if (keyboard) {
+    if (read_input) {
         // check if keyboard input available
         if (!telnet.available()) return false;
         else command = telnet.readString()[0];
