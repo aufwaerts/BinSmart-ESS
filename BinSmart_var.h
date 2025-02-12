@@ -9,7 +9,9 @@ String http_resp;
 String public_IP = "000.000.000.000", DDNS_address = "000.000.000.000";
 
 // BMS
-byte BMS_response[BMS_RESPONSE_SIZE];
+byte BMS_resp[300];
+int BMS_start_balancer;  // BMS balancer cell voltage threshold [mV] (read from BMS)
+int BMS_trigger_balancer;  // BMS balancer cell diff threshold [mV] (read from BMS)
 
 // Errors
 int error_counter[ERROR_TYPES];
@@ -42,14 +44,14 @@ unsigned long ts_cycle = 0, ts_power = 0, ts_HM_ON = 0, ts_MW_ON = 0, ts_pubip =
 int power_grid = 0, power_grid_min = 10000, power_pv = 0, power_new = 0, power_old = 0, power_manual = 0;
 int power_target = POWER_TARGET_DEFAULT;
 int filter_cycles = POWER_FILTER_CYCLES;  // for filtering out power spikes
-int vcell_min = 0, vcell_max = 10000, vbat = 28000;  // Cell min/max voltages and batt voltage in millivolts; assumption: batt is full
+int vcell_min, vcell_max;  // Cell min/max voltages (in millivolts)
+long vbat;  // Total batt voltage (in millivolts)
 int mw_max_power;  // MW max charging power depends on vbat, will be calculated after first read of vbat from BMS
 int hm_power_limit = HM_MAX_POWER, mw_power_limit = mw_max_power;
 int uvp_countdown = UVP_WAKEUP_RESET;  // countdown before ESS falls asleep
 float from_pv, from_ess, to_ess;  // energy counters (will be read from Shelly 1PM and Shelly Plugs)
 float from_grid = 0, grid_to_ess = 0, pv_to_grid = 0, ess_to_grid = 0;  // energy counters (will be calculated)
-bool manual_mode = false, auto_recharge = false, pm_eco_mode = true, rampdown = false;
+bool manual_mode = false, auto_recharge = false, pm_eco_mode = true;
 char buf[30];  // buffer for formatting output with sprintf()
-String cycle_msg, ota_msg, cmd_resp, filter_symbol = POWERFILTER_SYMBOL[0];
+String cycle_msg, ota_msg, cmd_resp;
 char repeat_command = 0;  // saves user commands that are to be repeated
-
