@@ -172,7 +172,7 @@ void loop() {
     while (millis()-ts_power < PROCESSING_DELAY);  // wait for end of processing delay
 }
 
-bool BMSCommand(byte command[], int size) {
+bool BMSCommand(const byte command[], int size) {
     
     // Send command to BMS via RS485
     Serial2.write(command, size);
