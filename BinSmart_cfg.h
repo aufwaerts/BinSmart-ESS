@@ -8,6 +8,10 @@
 #define UART_RX_PIN 16
 #define UART_TX_PIN 17
 
+// Definitions for UserCommand()
+#define REPEAT false
+#define READ true
+
 // Networking
 const String WIFI_SSID = "***";
 const String WIFI_PWD = "***";
