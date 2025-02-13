@@ -592,8 +592,8 @@ void CheckErrors() {
             errortime[i] = unixtime;
         }
     error_flag = true;
-    errors_consecutive++;
     FlashLED(false);
+    if (error_msg.indexOf(ERROR_TYPE[0]) == -1) errors_consecutive++;  // if error was WIFI related: allow unlimited erroneous cycles
     if (errors_consecutive < ERROR_LIMIT) {
         error_msg = "";
         return;
