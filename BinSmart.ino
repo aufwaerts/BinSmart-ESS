@@ -709,6 +709,8 @@ bool UserCommand(bool read_input) {
             cmd_resp += " W\r\n\n";
             break;
         case 'b':
+            repeat_command = 'b';  // repeat command response
+            if (read_input) break;  // ... starting next cycle
             cmd_resp = "Batt voltage   : ";
             cmd_resp += String(vbat/1000.0,2);
             cmd_resp += " V\r\n";
@@ -735,9 +737,10 @@ bool UserCommand(bool read_input) {
                 cmd_resp += " W";
             }
             cmd_resp += "\r\n\n";
-            repeat_command = 'b';
             break;
         case 'd':
+            repeat_command = 'd';  // repeat command response
+            if (read_input) break;  // ... starting next cycle
             cmd_resp = "ESS public IP address: ";
             cmd_resp += public_IP;
             cmd_resp += "\r\nLast address check   : ";
@@ -746,15 +749,17 @@ bool UserCommand(bool read_input) {
             cmd_resp += "Last DDNS update     : ";
             sprintf(buf,"%02d/%02d/%04d %02d:%02d\r\n\n",day(DDNS_time),month(DDNS_time),year(DDNS_time),hour(DDNS_time),minute(DDNS_time));
             cmd_resp += buf;
-            repeat_command = 'd';
             break;
         case 'w':
+            repeat_command = 'w';  // repeat command response
+            if (read_input) break;  // ... starting next cycle
             cmd_resp = "WiFi RSSI: ";
             cmd_resp += WiFi.RSSI();
             cmd_resp += " dBm\r\n\n";
-            repeat_command = 'w';
             break;
         case 't':
+            repeat_command = 't';  // repeat command response
+            if (read_input) break;  // ... starting next cycle
             cmd_resp = "Current time : ";
             sprintf(buf,"%02d/%02d/%04d %02d:%02d:%02d\r\n",day(unixtime),month(unixtime),year(unixtime),hour(unixtime),minute(unixtime),second(unixtime));
             cmd_resp += buf;
@@ -772,9 +777,10 @@ bool UserCommand(bool read_input) {
             cmd_resp += "\r\nSunset today : ";
             cmd_resp += sunset;
             cmd_resp += "\r\n\n";
-            repeat_command = 't';
             break;
         case 'l':
+            repeat_command = 'l';  // repeat command response
+            if (read_input) break;  // ... starting next cycle
             cmd_resp = "Lowest consumption since ";
             sprintf(buf,"%02d/%02d/%04d %02d:%02d\r\n",day(starttime),month(starttime),year(starttime),hour(starttime),minute(starttime));
             cmd_resp += buf;
@@ -785,7 +791,6 @@ bool UserCommand(bool read_input) {
                 sprintf(buf,"%02d/%02d/%04d %02d:%02d)\r\n\n",day(minpower_time),month(minpower_time),year(minpower_time),hour(minpower_time),minute(minpower_time));
                 cmd_resp += buf;
             }
-            repeat_command = 'l';
             break;
         case 'n':
             telnet.print("\r\nReading Shelly energy counters ...");
