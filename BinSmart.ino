@@ -765,7 +765,9 @@ bool UserCommand(bool read_input) {
             cmd_resp += buf;
             cmd_resp += "Timezone     : ";
             cmd_resp += tz_identifier;
-            if (dst) cmd_resp += " (DST)";
+            cmd_resp += "\r\nDST          : ";
+            if (dst) cmd_resp += "ON";
+            else cmd_resp += "OFF";
             cmd_resp += "\r\nESS started  : ";
             sprintf(buf,"%02d/%02d/%04d %02d:%02d:%02d",day(starttime),month(starttime),year(starttime),hour(starttime),minute(starttime),second(starttime));
             cmd_resp += buf;
