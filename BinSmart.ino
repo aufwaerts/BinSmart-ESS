@@ -174,14 +174,15 @@ void loop() {
 
 bool BMSCommand(const byte command[], int size) {
     
-    // Send command to BMS via RS485
+   // Send command to BMS via RS485
     Serial2.write(command, size);
     Serial2.flush();
     // Wait for response
     for (int i=0; i<1000; i++) if (Serial2.available()) break;
+    if (command[BMS_COMMAND_POS] == BMS_READ_ALL) delay(20);  // allow BMS some more time to fetch all data
     
-    BMS_resp[0] = 0x00;  // if no response was received, this assignment will lead to a failed validity check
-    int len = 0, sum = 0, index = 0;
+    BMS_resp[0] = 0x00;  // if no response received, this assignment will lead to a failed validity check
+    int len = 0, sum = 0;
     // Fill response buffer with BMS response
     while (Serial2.available()) {
           BMS_resp[len] = Serial2.read();
@@ -189,17 +190,15 @@ bool BMSCommand(const byte command[], int size) {
           len++;
     }
     // Check validity of BMS response
-    if (BMS_resp[0]<<8|BMS_resp[1] == BMS_START_FRAME) {  // start frame signature
-        if (BMS_resp[2]<<8|BMS_resp[3] == len-2) {  // response length
-            if (BMS_resp[len-2]<<8|BMS_resp[len-1] == sum) {  // response checksum
+    if ((BMS_resp[0] == BMS_STX_1) && (BMS_resp[1] == BMS_STX_2)) {  // start of response frame
+         if ((BMS_resp[2]<<8|BMS_resp[3]) == len-2) {  // response length
+             if ((BMS_resp[len-2]<<8|BMS_resp[len-1]) == sum-BMS_resp[len-2]-BMS_resp[len-1]) {  // response checksum
 
-                if (command[11] == BMS_VCELLS) {
+                if (command[BMS_DATA_ID_POS] == BMS_VCELLS_ID) {
                     // Read voltages of batt cells, determine min and max voltages
-                    while (BMS_resp[index] != BMS_VCELLS) index++;
-                    int cells = BMS_resp[index+1]/3;
                     vbat = vcell_max = 0; vcell_min = 4000;
-                    for (int cell=1; cell<=cells; cell++) {
-                        int vcell = BMS_resp[index+3*cell]<<8|BMS_resp[index+3*cell+1];
+                    for (int vcell_pos = BMS_DATA_ID_POS+3; vcell_pos <= BMS_DATA_ID_POS+BMS_resp[BMS_DATA_ID_POS+1]; vcell_pos+=3) {
+                        int vcell = BMS_resp[vcell_pos]<<8|BMS_resp[vcell_pos+1];
                         if (vcell < vcell_min) vcell_min = vcell;
                         if (vcell > vcell_max) vcell_max = vcell;
                         vbat += vcell;
@@ -207,47 +206,60 @@ bool BMSCommand(const byte command[], int size) {
                     return true;
                 }
 
-                if (command[11] == BMS_ALLDATA) {
-                    // Check for BMS warning
-                    while (BMS_resp[index] != BMS_WARNINGS) index++;
-                    if (BMS_resp[index+1] || BMS_resp[index+2]) {
-                        error_msg = "BMS reports warning 0x";
-                        if (BMS_resp[index+1] < 0x10) error_msg += "0";
-                        error_msg += String(BMS_resp[index+1],HEX);
-                        if (BMS_resp[index+2] < 0x10) error_msg += "0";
-                        error_msg += String(BMS_resp[index+2],HEX);
+                if (command[BMS_COMMAND_POS] == BMS_READ_ALL) {
+                    // Check for BMS warnings
+                    if (BMS_resp[BMS_WARNINGS_POS] != BMS_WARNINGS_ID) {
+                        error_msg = "Could not read BMS warnings";
+                        return false;
+                    }
+                    if (BMS_resp[BMS_WARNINGS_POS+1] || BMS_resp[BMS_WARNINGS_POS+2]) {
+                        error_msg = "BMS has warnings 0x";
+                        if (BMS_resp[BMS_WARNINGS_POS+1] < 0x10) error_msg += "0";
+                        error_msg += String(BMS_resp[BMS_WARNINGS_POS+1],HEX);
+                        if (BMS_resp[BMS_WARNINGS_POS+2] < 0x10) error_msg += "0";
+                        error_msg += String(BMS_resp[BMS_WARNINGS_POS+2],HEX);
                         return false;
                     }
                     // Check OVP and UVP setting
-                    while (BMS_resp[index] != BMS_OVP) index++;
-                    if ((BMS_resp[index+1]<<8|BMS_resp[index+2]) <= CELL_OVP) {
+                    if (BMS_resp[BMS_OVP_POS] != BMS_OVP_ID) {
+                        error_msg = "Could not read BMS Cell OVP";
+                        return false;
+                    }
+                    if ((BMS_resp[BMS_OVP_POS+1]<<8|BMS_resp[BMS_OVP_POS+2]) <= CELL_OVP) {
                         error_msg = "CELL_OVP must be lower than BMS Cell OVP (";
-                        error_msg += (BMS_resp[index+1]<<8|BMS_resp[index+2]);
+                        error_msg += (BMS_resp[BMS_OVP_POS+1]<<8|BMS_resp[BMS_OVP_POS+2]);
                         error_msg += " mV)";
                         return false;
                     }
-                    while (BMS_resp[index] != BMS_UVP) index++;
-                    if (((BMS_resp[index+1]<<8|BMS_resp[index+2]) >= CELL_UVP) || ((BMS_resp[index+1]<<8|BMS_resp[index+2]) >= CELL_UUVP)) {
+                    if (BMS_resp[BMS_UVP_POS] != BMS_UVP_ID) {
+                        error_msg = "Could not read BMS Cell UVP";
+                        return false;
+                    }
+                    if (((BMS_resp[BMS_UVP_POS+1]<<8|BMS_resp[BMS_UVP_POS+2]) >= CELL_UVP) || ((BMS_resp[BMS_UVP_POS+1]<<8|BMS_resp[BMS_UVP_POS+2]) >= CELL_UUVP)) {
                         error_msg = "CELL_UVP and CELL_UUVP must be higher than BMS Cell UVP (";
-                        error_msg += (BMS_resp[index+1]<<8|BMS_resp[index+2]);
+                        error_msg += (BMS_resp[BMS_UVP_POS+1]<<8|BMS_resp[BMS_UVP_POS+2]);
                         error_msg += " mV)";
                         return false;
                     }
                     // Read balancer settings
-                    while (BMS_resp[index] != BMS_BAL_START) index++;
-                    BMS_start_balancer = BMS_resp[index+1]<<8|BMS_resp[index+2];
-                    while (BMS_resp[index] != BMS_BAL_TRIGGER) index++;
-                    BMS_trigger_balancer = BMS_resp[index+1]<<8|BMS_resp[index+2];
-
+                    if (BMS_resp[BMS_SBAL_POS] != BMS_SBAL_ID) {
+                        error_msg = "Could not read BMS Balancer Start Voltage";
+                        return false;
+                    }
+                    BMS_balancer_start = BMS_resp[BMS_SBAL_POS+1]<<8|BMS_resp[BMS_SBAL_POS+2];
+                    if (BMS_resp[BMS_TBAL_POS] != BMS_TBAL_ID) {
+                        error_msg = "Could not read BMS Balancer Trigger Voltage";
+                        return false;
+                    }
+                    BMS_balancer_trigger = BMS_resp[BMS_TBAL_POS+1]<<8|BMS_resp[BMS_TBAL_POS+2];
                     return true;
                 }
             }
         } 
     }
     // BMS communication failed
-    error_msg = "BMS command 0x";
-    if (command[11] < 0x10) error_msg += "0";
-    error_msg += String(command[11],HEX);
+    error_msg = "BMS command 0x0";
+    error_msg += String(command[BMS_COMMAND_POS],HEX);
     error_msg += " failed";
     return false;
 }
@@ -707,7 +719,7 @@ bool UserCommand(bool read_input) {
             cmd_resp += " mV\r\nMax cell diff  : ";
             cmd_resp += vcell_max-vcell_min;
             cmd_resp += " mV\r\nBMS balancer   : ";
-            if ((vcell_max >= BMS_start_balancer) && (vcell_max-vcell_min >= BMS_trigger_balancer)) cmd_resp += "ON";
+            if ((vcell_max >= BMS_balancer_start) && (vcell_max-vcell_min >= BMS_balancer_trigger)) cmd_resp += "ON";
             else cmd_resp += "OFF";
             cmd_resp += "\r\nMW power limit : ";
             cmd_resp += mw_max_power;
