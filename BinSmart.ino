@@ -765,6 +765,9 @@ bool UserCommand(bool read_input) {
             cmd_resp += buf;
             cmd_resp += "Timezone     : ";
             cmd_resp += tz_identifier;
+            cmd_resp += " (UTC";
+            sprintf(buf,"%+d)",ess_location._timezone + dst);
+            cmd_resp += buf;
             cmd_resp += "\r\nDST          : ";
             if (dst) cmd_resp += "ON";
             else cmd_resp += "OFF";
