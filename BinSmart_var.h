@@ -10,8 +10,8 @@ String public_IP = "000.000.000.000", DDNS_address = "000.000.000.000";
 
 // BMS
 byte BMS_resp[300];
-int BMS_start_balancer;  // BMS balancer cell voltage threshold [mV] (read from BMS)
-int BMS_trigger_balancer;  // BMS balancer cell diff threshold [mV] (read from BMS)
+int BMS_balancer_start;  // BMS balancer cell voltage threshold [mV] (read from BMS)
+int BMS_balancer_trigger;  // BMS balancer cell diff threshold [mV] (read from BMS)
 
 // Errors
 int error_counter[ERROR_TYPES];
