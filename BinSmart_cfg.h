@@ -52,7 +52,7 @@ const int MW_RECHARGE_POWER = 200;  // Meanwell power setting for automatic rech
 // PWM signal limits Meanwell charging current; for correct charging power, vbat needs to be included in PWM formula
 #define MW_PWM_FORMULA PWM_DUTY_CYCLE_MAX*(0.959-power*76.646/vbat)
 const int MW_LOW_POWER_THRESHOLD = 20;  // tests have shown that Meanwell power below this threshold needs a correction
-#define MW_LOW_POWER_FORMULA PWM_DUTY_CYCLE_MAX*(0.959-(2*power-MW_LOW_POWER_THRESHOLD)*76.646/vbat)
+#define MW_LOW_POWER_FORMULA PWM_DUTY_CYCLE_MAX*(0.959-(3*power-2*MW_LOW_POWER_THRESHOLD)*76.646/vbat)
 #define MW_POWER_LIMIT_FORMULA vbat/76.646*(0.959-1.0/PWM_DUTY_CYCLE_MAX)  // charging power limit also depends on vbat
 
 // Hoymiles/RF24 comms
@@ -165,6 +165,4 @@ const String CHARGING_SYMBOL = " ⚡";
 const String GOOD_WIFI_SYMBOL = "  📶";
 const String BAD_WIFI_SYMBOL = "  ⚠ ";
 const String ERROR_SYMBOL = "❌";
-const String REPEAT_SYMBOL = "🔁 ";
-
-
+const String REPEAT_SYMBOL = "🔄 ";
