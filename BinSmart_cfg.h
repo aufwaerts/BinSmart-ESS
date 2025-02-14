@@ -87,13 +87,11 @@ const byte BMS_VOLTAGES[] = {BMS_STX_1, BMS_STX_2, 0x00, 0x13, 0x00, 0x00, 0x00,
 const int PROCESSING_DELAY = 2000;  // minimum delay (in msecs) for power changes to take effect
 const int UVP_SLEEP_DELAY = 20000;  // cycle duration (in msecs) during UVP sleep mode
 const int UVP_WAKEUP_RESET = 1700;  // number of cycles in UVP mode (hm_power_limit == 0) before UVP sleep mode is activated (must be an even number)
-const int NO_COMMAND_TIMER = 200;  // duration (in msecs) before end of cycle, when no user command should be given
 const int MW_PLUG_TIMER = 180;  // number of secs after which Meanwell is automatically turned off (unless "keep alive" command resets timer)
 const int HM_PLUG_TIMER = 900;  // number of secs after which Hoymiles is automatically turned off (unless "keep alive" command resets timer)
 const int DDNS_UPDATE_INTERVAL = 60;  // DDNS IP address check interval (in secs)
 const int EM_RESET_INTERVAL = 600;  // EM internal data reset interval (in secs)
 const int READCOMMAND_TIMEOUT = 4;  // max waiting time (in secs) for terminal input
-const int HTTP_TIMEOUT = 7;  //  max waiting time (in secs) for http response
 const String GET_ASTRO_TIME = "03:30";  // time at which astro times (sunrise/sunset) will be calculated (after a possible DST change, before sunrise)
 
 // URLs
