@@ -39,21 +39,21 @@ const int HM_MAX_POWER = -300;  // Hoymiles discharging power limit (HM-300)
 // this is an excellent site for determining the formula parameters: https://www.arndt-bruenner.de/mathe/scripts/regrnl.htm
 // formulas include conversion to positive power values in deciwatts
 #define HM_POWER_FORMULA -10*power
-const int HM_LOW_POWER_THRESHOLD = -70;  // tests have shown that Hoymiles power output above this threshold is non-linear
+const int HM_LOW_POWER_THRESHOLD = -70;  // tests have shown that Hoymiles power below this threshold needs a different formula
 #define HM_LOW_POWER_FORMULA -0.001308*power*power*power-0.1891*power*power-17.1*power-19
-const int HM_HIGH_POWER_THRESHOLD = -180;  // tests have shown that Hoymiles power output below this threshold is non-linear
-#define HM_HIGH_POWER_FORMULA -0.0186*power*power-12.88*power+85
+const int HM_HIGH_POWER_THRESHOLD = -180;  // tests have also shown that Hoymiles power above this threshold needs a different formula
+#define HM_HIGH_POWER_FORMULA -0.01977*power*power-13.40136*power+24.2
 
 // Meanwell params
-const int MW_MIN_POWER = 10;  // Meanwell turned off below min_power
+const int MW_MIN_POWER = 12;  // Meanwell turned off below min_power
 const int MW_RECHARGE_POWER = 200;  // Meanwell power setting for automatic recharging (to prevent BMS turnoff): MW operates at highest efficiency
 // the following formulas are the result of Meanwell power output tests, they need adapting for different chargers
 // translating MW charging power to PWM value: higher PWM value means less power
-// PWM signal limits Meanwell charging current; for correct charging power, vbat needs to be included in PWM formula
-#define MW_PWM_FORMULA PWM_DUTY_CYCLE_MAX*(0.959-power*76.646/vbat)
-const int MW_LOW_POWER_THRESHOLD = 20;  // tests have shown that Meanwell power below this threshold needs a correction
-#define MW_LOW_POWER_FORMULA PWM_DUTY_CYCLE_MAX*(0.959-(3*power-2*MW_LOW_POWER_THRESHOLD)*76.646/vbat)
-#define MW_POWER_LIMIT_FORMULA vbat/76.646*(0.959-1.0/PWM_DUTY_CYCLE_MAX)  // charging power limit also depends on vbat
+#define MW_PWM_FORMULA PWM_DUTY_CYCLE_MAX*(0.9636-77.057*power/vbat)  // PWM signal controls Meanwell charging current; for correct charging power, vbat needs to be included in PWM formula
+const int MW_LOW_POWER_THRESHOLD = 25;  // Meanwell power output below this threshold is not linear
+#define MW_LOW_POWER_FORMULA PWM_DUTY_CYCLE_MAX*(129119.635*power/vbat*power/vbat-321.337*power/vbat+1.08)
+#define MW_POWER_LIMIT_FORMULA vbat/77.057*(0.9636-1.0/PWM_DUTY_CYCLE_MAX)  // MW max charging power also depends on vbat
+
 
 // Hoymiles/RF24 comms
 const byte HM_SERIAL[] = {***, ***, ***, ***, ***, ***};  // serial number of Hoymiles inverter
@@ -70,6 +70,7 @@ const int RF24_MIN_DELAY = 20;  // Minimum time gap (in ms) between two consecut
 #define BMS_READ_DATA 0x03
 #define BMS_DATA_ID_POS 11
 #define BMS_VCELLS_ID 0x79
+#define BMS_CURRENT_ID 0x84
 #define BMS_WARNINGS_POS 67
 #define BMS_WARNINGS_ID 0x8B
 #define BMS_OVP_POS 79
@@ -82,6 +83,7 @@ const int RF24_MIN_DELAY = 20;  // Minimum time gap (in ms) between two consecut
 #define BMS_TBAL_ID 0x9C
 const byte BMS_SETTINGS[] = {BMS_STX_1, BMS_STX_2, 0x00, 0x13, 0x00, 0x00, 0x00, 0x00, BMS_READ_ALL, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0x29};
 const byte BMS_VOLTAGES[] = {BMS_STX_1, BMS_STX_2, 0x00, 0x13, 0x00, 0x00, 0x00, 0x00, BMS_READ_DATA, 0x03, 0x00, BMS_VCELLS_ID, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0x9F};
+const byte BMS_CURRENT[] = {BMS_STX_1, BMS_STX_2, 0x00, 0x13, 0x00, 0x00, 0x00, 0x00, BMS_READ_DATA, 0x03, 0x00, BMS_CURRENT_ID, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0xAA};
 
 // Time/timer settings
 const int PROCESSING_DELAY = 2000;  // minimum delay (in msecs) for power changes to take effect
@@ -95,28 +97,23 @@ const int READCOMMAND_TIMEOUT = 4;  // max waiting time (in secs) for terminal i
 const String GET_ASTRO_TIME = "03:30";  // time at which astro times (sunrise/sunset) will be calculated (after a possible DST change, before sunrise)
 
 // URLs
-const String EM_STATUS = "http://" + EM_ADDR + "/status";
 const String EM_SETTINGS = "http://" + EM_ADDR + "/settings";
+const String EM_STATUS = "http://" + EM_ADDR + "/status";
 const String EM_RESET = "http://" + EM_ADDR + "/reset_data";
 const String PM_STATUS = "http://" + PM_ADDR + "/rpc/Switch.GetStatus?id=0";
-const String PM_RESET = "http://" + PM_ADDR + "/rpc/Switch.ResetCounters?id=0";
 const String PM_ECO_MODE = "http://" + PM_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":";
 const String PM_REBOOT = "http://" + PM_ADDR + "/rpc/Shelly.Reboot?delay_ms=500";
-const String MWPLUG_STATUS = "http://" + MWPLUG_ADDR + "/rpc/Switch.GetStatus?id=0";
-const String MWPLUG_RESET = "http://" + MWPLUG_ADDR + "/rpc/Switch.ResetCounters?id=0";
 const String MWPLUG_ON = "http://" + MWPLUG_ADDR + "/relay/0?turn=on&timer=" + String(MW_PLUG_TIMER);
 const String MWPLUG_OFF = "http://" + MWPLUG_ADDR + "/relay/0?turn=off";
-const String HMPLUG_STATUS = "http://" + HMPLUG_ADDR + "/rpc/Switch.GetStatus?id=0";
-const String HMPLUG_RESET = "http://" + HMPLUG_ADDR + "/rpc/Switch.ResetCounters?id=0";
 const String HMPLUG_ON = "http://" + HMPLUG_ADDR + "/relay/0?turn=on&timer=" + String(HM_PLUG_TIMER);
 const String HMPLUG_OFF = "http://" + HMPLUG_ADDR + "/relay/0?turn=off";
 const String PUBLIC_IP = "http://api.ipify.org/";  // public service for obtaining WiFi routers public IP address
-const String DDNS_UPDATE = "http://***";  // public DynDNS server
+const String DDNS_UPDATE = "http://1cn98y4:Cm9eshhBwdg3@dynupdate.no-ip.com/nic/update?hostname=binsmart.ddns.net&myip=";  // public DynDNS server
 
 // Power settings
 const int POWER_TARGET_DEFAULT = 5;  // System is aiming for this amount of watts to be drawn from grid
 const int POWER_TARGET_DEVIATION = 5;  // Max allowed deviation (+/-) from target power
-const int POWER_RAMPDOWN_RATE = -40; // Max power decrease per polling interval, MUST BE EQUAL OR LOWER THAN HM_MIN_POWER
+const int POWER_RAMPDOWN_RATE = 30; // Max power decrease per polling interval, MUST BE EQUAL OR LOWER THAN HM_MIN_POWER
 const int POWER_FILTER_CYCLES = 9;  // Number of cycles during which power spikes are filtered out
 const float POWER_LIMIT_RAMPDOWN = 0.75;  // Power rampdown rate when CELL_OVP or CELL_UVP is reached
 
@@ -163,4 +160,4 @@ const String CHARGING_SYMBOL = " ⚡";
 const String GOOD_WIFI_SYMBOL = "  📶";
 const String BAD_WIFI_SYMBOL = "  ⚠ ";
 const String ERROR_SYMBOL = "❌";
-const String REPEAT_SYMBOL = "🔄 ";
+const String BALANCER_SYMBOL = " 🔄";
