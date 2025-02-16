@@ -108,7 +108,7 @@ const String MWPLUG_OFF = "http://" + MWPLUG_ADDR + "/relay/0?turn=off";
 const String HMPLUG_ON = "http://" + HMPLUG_ADDR + "/relay/0?turn=on&timer=" + String(HM_PLUG_TIMER);
 const String HMPLUG_OFF = "http://" + HMPLUG_ADDR + "/relay/0?turn=off";
 const String PUBLIC_IP = "http://api.ipify.org/";  // public service for obtaining WiFi routers public IP address
-const String DDNS_UPDATE = "http://1cn98y4:Cm9eshhBwdg3@dynupdate.no-ip.com/nic/update?hostname=binsmart.ddns.net&myip=";  // public DynDNS server
+const String DDNS_UPDATE = "http://***  // public DynDNS server
 
 // Power settings
 const int POWER_TARGET_DEFAULT = 5;  // System is aiming for this amount of watts to be drawn from grid
