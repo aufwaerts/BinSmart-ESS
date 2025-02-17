@@ -152,7 +152,6 @@ const String GRID_CABLE_SYMBOL = "─┘";
 const String ESS_CABLE_SYMBOL = "└─";
 const String ESS_SYMBOL = "─🔋";
 const String OPS_SYMBOL[] = {" 🏃"," 🧎"," 💤🛌"};
-const String UVP_SLEEP_SYMBOL = " 💤🛌";
 const String POWERFILTER_SYMBOL = " ✋";
 const String OVP_LIMIT_SYMBOL = "     ▁▁▁";
 const String UVP_LIMIT_SYMBOL = "                    ▔▔▔";
