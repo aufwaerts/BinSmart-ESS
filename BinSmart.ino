@@ -498,7 +498,7 @@ void FinishCycle() {
         // Time, cycle time, daytime
         sprintf(buf,"%02d:%02d:%02d %+.3f",hour(unixtime),minute(unixtime),second(unixtime),secs_cycle);
         cycle_msg += buf;
-        cycle_msg += OPS_SYMBOL[!power_ess + 2*(!uvp_countdown)];
+        cycle_msg += OPS_SYMBOL[!power_ess + !uvp_countdown];
         cycle_msg += "\r\n\n";
         
         // Power flows
