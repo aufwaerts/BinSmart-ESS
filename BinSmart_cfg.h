@@ -101,12 +101,15 @@ const String EM_SETTINGS = "http://" + EM_ADDR + "/settings";
 const String EM_STATUS = "http://" + EM_ADDR + "/status";
 const String EM_RESET = "http://" + EM_ADDR + "/reset_data";
 const String PM_STATUS = "http://" + PM_ADDR + "/rpc/Switch.GetStatus?id=0";
-const String PM_ECO_MODE = "http://" + PM_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":";
+const String PM_ECO_MODE_OFF = "http://" + PM_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":false}}";
+const String PM_ECO_MODE_ON = "http://" + PM_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
 const String PM_REBOOT = "http://" + PM_ADDR + "/rpc/Shelly.Reboot?delay_ms=500";
 const String MWPLUG_ON = "http://" + MWPLUG_ADDR + "/relay/0?turn=on&timer=" + String(MW_PLUG_TIMER);
 const String MWPLUG_OFF = "http://" + MWPLUG_ADDR + "/relay/0?turn=off";
+const String MWPLUG_STATUS = "http://" + MWPLUG_ADDR + "/rpc/Switch.GetStatus?id=0";
 const String HMPLUG_ON = "http://" + HMPLUG_ADDR + "/relay/0?turn=on&timer=" + String(HM_PLUG_TIMER);
 const String HMPLUG_OFF = "http://" + HMPLUG_ADDR + "/relay/0?turn=off";
+const String HMPLUG_STATUS = "http://" + HMPLUG_ADDR + "/rpc/Switch.GetStatus?id=0";
 const String PUBLIC_IP = "http://api.ipify.org/";  // public service for obtaining WiFi routers public IP address
 const String DDNS_UPDATE = "http://***  // public DynDNS server
 
@@ -132,7 +135,7 @@ const int ESS_UVPR = 3250;  // all cells above this voltage: re-enable dischargi
 const int PWM_DUTY_CYCLE_MAX = pow(2,PWM_RESOLUTION)-1;
 
 // Errors
-const String ERROR_TYPE[] = {"WIFI", "PUBIP", "DDNS", "3EM", "1PM", "BMS", "MWPLUG", "HMPLUG", "RF24"};  // error messages correspond with these types! changes here also need changed error messages
+const String ERROR_TYPE[] = {"WIFI", "DDNS", "3EM", "1PM", "BMS", "MWPLUG", "HMPLUG", "RF24"};  // error messages correspond with these types! changes here also need changed error messages
 const int ERROR_TYPES = sizeof(ERROR_TYPE)/sizeof(ERROR_TYPE[0]);
 const int ERROR_LIMIT = 20;  // number of consecutive erroneous cycles before system is halted
 
