@@ -342,14 +342,14 @@ void SetNewPower() {
     // Update OVP max charging power, depending on vbat and max cell voltage
     if ((vcell_max <= CELL_OVPR) || mw_limit_was_max) mw_power_limit = mw_max_power;  // exit OVP mode or update Meanwell power limit
     if (vcell_max >= CELL_OVP) {
-        mw_power_limit = int(power_new*POWER_LIMIT_RAMPDOWN);  // ramp down charging power limit softly
+        mw_power_limit = int(power_new*POWER_LIMIT_RAMPDOWN+0.5);  // ramp down charging power limit softly
         if (mw_power_limit < MW_MIN_POWER) mw_power_limit = 0;  // enter OVP mode
     }
 
     // Update UVP max discharging power, depending on min cell voltage
     if (vcell_min >= CELL_UVPR) hm_power_limit = HM_MAX_POWER;  // exit UVP mode
     if (vcell_min <= CELL_UVP) {
-        hm_power_limit = int(power_new*POWER_LIMIT_RAMPDOWN);  // ramp down discharging power limit softly
+        hm_power_limit = int(power_new*POWER_LIMIT_RAMPDOWN-0.5);  // ramp down discharging power limit softly
         if (hm_power_limit > HM_MIN_POWER) hm_power_limit = 0;  // enter UVP mode
     }
 
