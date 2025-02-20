@@ -402,7 +402,7 @@ void SetNewPower() {
     // Update UVP max discharging power, depending on min cell voltage
     if (vcell_min >= ESS_UVPR) {
         hm_power_limit = HM_MAX_POWER;  // exit UVP mode
-        ShellyCommand(HMPLUG_ON);
+        if (!hm_turned_on) ShellyCommand(HMPLUG_ON);
     }
     if (vcell_min <= ESS_UVP) {
         hm_power_limit = int(power_new*POWER_LIMIT_RAMPDOWN-0.5);  // ramp down discharging power limit softly
@@ -990,7 +990,7 @@ bool UserCommand(bool read_input) {
         case 's':
             repeat_command = 's';  // repeat command response
             if (read_input) break;  // ... starting next cycle
-            cmd_resp = "Shelly plug state changes since ";
+            cmd_resp = "Shelly state changes since ";
             sprintf(buf,"%02d/%02d/%04d %02d:%02d\r\n",day(starttime),month(starttime),year(starttime),hour(starttime),minute(starttime));
             cmd_resp += buf;
             cmd_resp += "Meanwell plug: ";
