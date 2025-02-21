@@ -110,7 +110,8 @@ const String MWPLUG_STATUS = "http://" + MWPLUG_ADDR + "/rpc/Switch.GetStatus?id
 const String HMPLUG_ON = "http://" + HMPLUG_ADDR + "/relay/0?turn=on&timer=" + String(HM_PLUG_TIMER);
 const String HMPLUG_OFF = "http://" + HMPLUG_ADDR + "/relay/0?turn=off";
 const String HMPLUG_STATUS = "http://" + HMPLUG_ADDR + "/rpc/Switch.GetStatus?id=0";
-const String PUBLIC_IP = "http://api.ipify.org/";  // public service for obtaining WiFi routers public IP address
+const String PUBLIC_IP1 = "http://api.ipify.org";  // public service for obtaining WiFi routers public IP address
+const String PUBLIC_IP2 = "http://whatismyip.akamai.com";  // backup service for obtaining WiFi routers public IP address
 const String DDNS_UPDATE = "http://***  // public DynDNS server
 
 // Power settings
@@ -135,31 +136,30 @@ const int ESS_UVPR = 3250;  // all cells above this voltage: re-enable dischargi
 const int PWM_DUTY_CYCLE_MAX = pow(2,PWM_RESOLUTION)-1;
 
 // Errors
-const String ERROR_TYPE[] = {"WIFI", "DDNS", "3EM", "1PM", "BMS", "MWPLUG", "HMPLUG", "RF24"};  // error messages correspond with these types! changes here also need changed error messages
+const String ERROR_TYPE[] = {"WIFI", "PUBIP", "DDNS", "3EM", "1PM", "BMS", "MWPLUG", "HMPLUG", "RF24"};  // error messages correspond with these types! changes here also need changed error messages
 const int ERROR_TYPES = sizeof(ERROR_TYPE)/sizeof(ERROR_TYPE[0]);
 const int ERROR_LIMIT = 20;  // number of consecutive erroneous cycles before system is halted
 
 // Symbols for a nice telnet frontend
 const String FLOW_SYMBOL[] = {"───","╴◀╶","╴▶╶","╴◀◀","╴▶▶","┇◀╶","╴▶┇","┃◁╶","╴▷┃"};
 const String DIFF_SYMBOL[] = {" ▼"," ▲"};
-const String BATT_LEVEL_SYMBOL[] = {"⡀ ","⣀ ","⣄ ","⣤ ","⣦ ","⣶ ","⣷ ","⣿ "};
-const int BATT_LEVELS = sizeof(BATT_LEVEL_SYMBOL)/sizeof(BATT_LEVEL_SYMBOL[0]);
+const String ESS_LEVEL_SYMBOL[] = {"─🪫 ","─🔋⡀","─🔋⡄","─🔋⡆","─🔋⡇"};
+const int ESS_LEVELS = sizeof(ESS_LEVEL_SYMBOL)/sizeof(ESS_LEVEL_SYMBOL[0]);
 const String PV_SYMBOL[] = {" 🌜▦╶"," ☁­▦╶"," ⛅▦╶"," 🌤­▦╶"," ☀­▦╶"};
 const int PV_LEVELS = sizeof(PV_SYMBOL)/sizeof(PV_SYMBOL[0]);
 const String PV_CABLE_SYMBOL = "─┐";
-const String CONS_CABLE_SYMBOL = "┌─";
-const String CONS_SYMBOL = "─╴📺 ";
-const String CONS_SYMBOL_SHORT = "╴📺 ";
-const String HOUSE_SYMBOL = "🏠";
+const String ESS_CABLE_SYMBOL = "┌─";
+const String ESS_SYMBOL = "─🔋";
+const String HOUSE_SYMBOL = "             🏠";
 const String GRID_SYMBOL = " 🏭╶─";
 const String GRID_CABLE_SYMBOL = "─┘";
-const String ESS_CABLE_SYMBOL = "└─";
-const String ESS_SYMBOL = "─🔋";
+const String CONS_CABLE_SYMBOL = "└─";
+const String CONS_SYMBOL = "╴📺 ";
 const String OPS_SYMBOL[] = {" 🏃"," 🧎"," 💤🛌"};
 const String POWERFILTER_SYMBOL[] = {" ✋🕛"," ✋🕐"," ✋🕑"," ✋🕒"," ✋🕓"," ✋🕔"," ✋🕕"," ✋🕖"," ✋🕗"," ✋🕘"," ✋🕙"," ✋🕚"};
 const String RAMPDOWN_SYMBOL = "🪜";
-const String OVP_LIMIT_SYMBOL = "     ▁▁▁";
-const String UVP_LIMIT_SYMBOL = "                    ▔▔▔";
+const String OVP_LIMIT_SYMBOL = "                    ▁▁";
+const String UVP_LIMIT_SYMBOL = "     ▔▔";
 const String MODE_SYMBOL[] = {""," 👆"," ⚡"};
 const String WIFI_SYMBOL[] = {"  ⚠ "," 📶"};
 const String ERROR_SYMBOL = "❌";
