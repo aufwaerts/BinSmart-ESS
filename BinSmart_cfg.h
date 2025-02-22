@@ -117,7 +117,7 @@ const String DDNS_UPDATE = "http://***  // public DynDNS server
 // Power settings
 const int POWER_TARGET_DEFAULT = 5;  // System is aiming for this amount of watts to be drawn from grid
 const int POWER_TARGET_DEVIATION = 5;  // Max allowed deviation (+/-) from target power
-const int POWER_RAMPDOWN_RATE = 30; // Max power decrease per polling interval, MUST BE EQUAL OR LOWER THAN HM_MIN_POWER
+const int POWER_RAMPDOWN_RATE = 20; // Max power decrease per polling interval, MUST BE EQUAL OR HIGHER THAN -MW_MIN_POWER
 const int POWER_FILTER_CYCLES = 9;  // Number of cycles during which power spikes are filtered out
 const float POWER_LIMIT_RAMPDOWN = 0.67;  // Power rampdown rate when CELL_OVP or CELL_UVP is reached
 
