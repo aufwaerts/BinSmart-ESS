@@ -789,7 +789,7 @@ bool UserCommand(bool read_input) {
             repeat_command = 'b';  // repeat command response
             if (read_input) break;  // ... starting next cycle
             cmd_resp = "Batt voltage   : ";
-            cmd_resp += String(vbat/1000.0,2);
+            cmd_resp += String(vbat/1000.0,3);
             cmd_resp += " V\r\n";
             cmd_resp += "Cell voltages  : ";
             cmd_resp += vcell_min;
