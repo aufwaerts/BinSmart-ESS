@@ -44,6 +44,7 @@ unsigned long ts_cycle = 0, ts_power = 0, ts_HM_ON = 0, ts_MW_ON = 0, ts_pubip =
 int power_grid = 0, power_grid_min = 10000, power_pv = 0, power_ess = 0, power_new = 0, power_manual = 0;
 int power_target = POWER_TARGET_DEFAULT;
 int filter_cycles = POWER_FILTER_CYCLES;  // for filtering out power spikes
+bool rampdown = false;  // indicating if rampdown is active
 int vcell_min, vcell_max;  // Cell min/max voltages (in millivolts)
 int bms_uvp;  // BMS Cell UVP value (read from BMS)
 long vbat;  // Total batt voltage [mV]
