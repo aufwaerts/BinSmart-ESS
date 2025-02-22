@@ -429,9 +429,17 @@ void SetNewPower() {
     }
     else filter_cycles = POWER_FILTER_CYCLES;  // reset filter cycle countdown
 
-    if (manual_mode) power_new = power_manual;  // Manual power setting overrides calculation
-    if (auto_recharge) power_new = max(MW_RECHARGE_POWER, power_new);  // Auto recharge power overrides calculation and manual setting
-
+    if (manual_mode) {
+        power_new = power_manual;  // Manual power setting overrides calculation
+        rampdown = false;
+        filter_cycles = POWER_FILTER_CYCLES;
+    }
+    if (auto_recharge) {
+        power_new = max(MW_RECHARGE_POWER, power_new);  // Auto recharge power overrides calculation and manual setting
+        rampdown = false;
+        filter_cycles = POWER_FILTER_CYCLES;
+    }
+    
     // Make sure charging/discharging power limits are not exceeded
     if (power_new > mw_power_limit) power_new = mw_power_limit;
     if (power_new < hm_power_limit) power_new = hm_power_limit;
