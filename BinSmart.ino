@@ -959,7 +959,7 @@ bool UserCommand(bool read_input) {
                 sprintf(buf,"%.1f %%",ess_to_cons/from_ess*100);
                 cmd_resp += buf;
                 // ESS efficiency
-                cmd_resp += "\r\n\nFrom/to ESS: ";
+                cmd_resp += "\r\n\nFrom/to ESS : ";
                 cmd_resp += String(from_ess/1000,3);
                 cmd_resp += "/";
                 cmd_resp += String(to_ess/1000,3);
@@ -970,8 +970,10 @@ bool UserCommand(bool read_input) {
                 cmd_resp += "\r\n";
             }
             // PV energy consumed in household (directly or via ESS)
-            cmd_resp += "PV consumed: ";
+            cmd_resp += "PV cons/prod: ";
             cmd_resp += String(pv_consumed/1000,3);
+            cmd_resp += "/";
+            cmd_resp += String(from_pv/1000,3);
             if (pv_consumed <= from_pv) {
                 sprintf(buf," (%.1f %%)",pv_consumed/from_pv*100);
                 cmd_resp += buf;
