@@ -883,7 +883,7 @@ bool UserCommand(bool read_input) {
             repeat_command = 'n';  // repeat command response
             if (read_input) break;  // ... starting next cycle
             cmd_resp = "Energy flows [kWh] since ";
-            sprintf(buf,"%02d/%02d/%04d %02d:%02d\r\n",day(resettime_energy),month(resettime_energy),year(resettime_energy),hour(resettime_energy),minute(resettime_energy));
+            sprintf(buf,"%02d/%02d/%04d %02d:%02d\r\n\n",day(resettime_energy),month(resettime_energy),year(resettime_energy),hour(resettime_energy),minute(resettime_energy));
             cmd_resp += buf;
 
             if (from_pv) {
