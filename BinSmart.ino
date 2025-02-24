@@ -419,7 +419,7 @@ void SetNewPower() {
 
     // Filter out power spikes and slowly increase discharging power (reduces power loss to grid when consumer is suddenly turned  off)
     rampdown = false;
-    if ((power_new >= hm_power_limit) && (power_ess - power_new > POWER_RAMPDOWN_RATE)) {
+    if (power_ess - max(power_new, hm_power_limit) > POWER_RAMPDOWN_RATE) {
         filter_cycles = max(filter_cycles-1, 0);  // countdown filter cycles
         if (filter_cycles) power_new = power_ess;  // filter out power spikes
         else {
