@@ -42,7 +42,8 @@ void setup() {
         FlashLED(false); delay(PROCESSING_DELAY);   // if WiFi unavailable or wrong SSID/PWD, system keeps flashing LED in endless loop
     } while (WiFi.status() != WL_CONNECTED);
 
-    // Allow reuse of http connection
+    // Set http response timeout, allow reuse of http connection
+    http.setTimeout(HTTP_TIMEOUT*1000);
     http.setReuse(true);
     
     // Start OTA software update service
