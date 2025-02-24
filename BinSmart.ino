@@ -564,10 +564,10 @@ void FinishCycle() {
         // PV power
         sprintf(buf,"%4d",power_pv);
         cycle_msg += buf;
-        if (!daytime) cycle_msg += PV_SYMBOL[0];
+        if (!daytime) cycle_msg += PV_SYMBOL[1];
         else {
-            if (power_pv < PV_SUN_THRESHOLD) cycle_msg += PV_SYMBOL[1];
-            else cycle_msg += PV_SYMBOL[min((power_pv-PV_SUN_THRESHOLD)*(PV_LEVELS-2)/(PV_MAX_POWER-PV_SUN_THRESHOLD)+2, PV_LEVELS-1)];
+            if (power_pv < PV_SUN_THRESHOLD) cycle_msg += PV_SYMBOL[2];
+            else cycle_msg += PV_SYMBOL[min((power_pv-PV_SUN_THRESHOLD)*(PV_LEVELS-2)/(PV_MAX_POWER-PV_SUN_THRESHOLD)+3, PV_LEVELS-1)];
         }
         cycle_msg += FLOW_SYMBOL[2*(power_pv>0)];
         cycle_msg += PV_CABLE_SYMBOL;
@@ -891,7 +891,7 @@ bool UserCommand(bool read_input) {
                 cmd_resp += "From PV:\r\n";
                 sprintf(buf,"%7.3f",from_pv/1000);
                 cmd_resp += buf;
-                cmd_resp += PV_SYMBOL[2];
+                cmd_resp += PV_SYMBOL[0];
                 cmd_resp += FLOW_SYMBOL[2];
                 cmd_resp += PV_CABLE_SYMBOL;
                 cmd_resp += ESS_CABLE_SYMBOL;
