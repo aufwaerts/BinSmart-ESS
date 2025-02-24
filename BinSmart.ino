@@ -1,4 +1,4 @@
-const String SW_VERSION = "v1.27";
+const String SW_VERSION = "v1.28";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <HTTPClient.h>  // standard Arduino/ESP32, METHOD connect() MADE PUBLIC
@@ -419,7 +419,7 @@ void SetNewPower() {
 
     // Filter out power spikes and slowly increase discharging power (reduces power loss to grid when consumer is suddenly turned  off)
     rampdown = false;
-    if (power_ess - power_new > POWER_RAMPDOWN_RATE) {
+    if ((power_new >= hm_power_limit) && (power_ess - power_new > POWER_RAMPDOWN_RATE)) {
         filter_cycles = max(filter_cycles-1, 0);  // countdown filter cycles
         if (filter_cycles) power_new = power_ess;  // filter out power spikes
         else {
@@ -581,8 +581,8 @@ void FinishCycle() {
             if (power_ess >= mw_power_limit)
                 cycle_msg += FLOW_SYMBOL[4*(power_ess >= mw_max_power) + 6*(power_ess < mw_max_power) + 2*(!power_ess)];
         }
-        if (vbat >= ESS_UVP*8) cycle_msg += ESS_LEVEL_SYMBOL[min(int((vbat-ESS_UVP*8)*(ESS_LEVELS-2)/((ESS_OVPR-ESS_UVP)*8)+1), ESS_LEVELS-1)];
-        else cycle_msg += ESS_LEVEL_SYMBOL[0];
+        int ess_level = ((vbat-ESS_EMPTY)*(ESS_LEVELS-2))/(ESS_FULL-ESS_EMPTY)+1;
+        cycle_msg += ESS_LEVEL_SYMBOL[max(min(ess_level,ESS_LEVELS-1),0)];
         cycle_msg += power_ess;
         if (power_new != power_ess) {
             cycle_msg += DIFF_SYMBOL[(power_new > power_ess)];
