@@ -129,7 +129,7 @@ const int ESS_OVPR = 3450;  // all cells below this voltage: re-enable charging 
 const int ESS_UVP = 3200;  // one cell below this voltage: ramp down discharging power (ESS_UVP - BMS_UVP >= ESS_BMS_UVP_DIFF)
 const int ESS_UVPR = 3250;  // all cells above this voltage: re-enable discharging
 const int ESS_FULL = 27200;  // batt voltage at which ESS is considered "full"
-const int ESS_EMPTY = 25200;  // batt voltage at which ESS is considered "empty"
+const int ESS_EMPTY = ESS_UVP*8;  // batt voltage at which ESS is considered "empty"
 
 // PWM params for Meanwell power control
 #define PWM_CHANNEL 0
@@ -158,7 +158,7 @@ const String GRID_SYMBOL = " 🏭╶─";
 const String GRID_CABLE_SYMBOL = "─┘";
 const String CONS_CABLE_SYMBOL = "└─";
 const String CONS_SYMBOL = "╴📺 ";
-const String OPS_SYMBOL[] = {" 🏃"," 🧎"," 💤🛌"};
+const String OPS_SYMBOL[] = {" 🏃"," 🧍"," 💤🛌"};
 const String POWERFILTER_SYMBOL[] = {" ✋🕛"," ✋🕐"," ✋🕑"," ✋🕒"," ✋🕓"," ✋🕔"," ✋🕕"," ✋🕖"," ✋🕗"," ✋🕘"," ✋🕙"," ✋🕚"};
 const String RAMPDOWN_SYMBOL = "🪜";
 const String OVP_LIMIT_SYMBOL = "                     ▁▁";
