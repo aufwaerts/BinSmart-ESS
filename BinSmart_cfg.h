@@ -148,11 +148,13 @@ const int ERROR_TYPES = sizeof(ERROR_TYPE)/sizeof(ERROR_TYPE[0]);
 const int ERROR_LIMIT = 20;  // number of consecutive erroneous cycles before system is halted
 
 // Symbols for a nice telnet frontend
-const String FLOW_SYMBOL[] = {"╴×╶","╴◀╶","╴▶╶","╴◀◀","╴▶▶","┇◀╶","╴▶┇","┃◁╶","╴▷┃"};
+const String ESS_FLOW_SYMBOL[] = {"╴×╶","╴\033[32m◀\033[0m╶","╴\033[32m▶\033[0m╶","╴\033[32m◀◀\033[0m","╴\033[32m▶▶\033[0m","┇\033[32m◀\033[0m╶","╴\033[32m▶\033[0m┇","┃◁╶","╴▷┃"};
+const String PV_FLOW_SYMBOL[] = {"╴×╶","╴\033[33m◀\033[0m╶","╴\033[33m▶\033[0m╶","╴\033[33m◀◀\033[0m","╴\033[33m▶▶\033[0m","┇\033[33m◀\033[0m╶","╴\033[33m▶\033[0m┇","┃◁╶","╴▷┃"};
+const String GRID_FLOW_SYMBOL[] = {"╴×╶","╴\033[35m◀\033[0m╶","╴\033[35m▶\033[0m╶","╴\033[35m◀◀\033[0m","╴\033[35m▶▶\033[0m","┇\033[35m◀\033[0m╶","╴\033[35m▶\033[0m┇","┃◁╶","╴▷┃"};
 const String DIFF_SYMBOL[] = {" ▼"," ▲"};
 const String ESS_LEVEL_SYMBOL[] = {"──🪫 ","─⢀🔋 ","─⢠🔋 ","─⢰🔋 ","─⢸🔋 "};
 const int ESS_LEVELS = sizeof(ESS_LEVEL_SYMBOL)/sizeof(ESS_LEVEL_SYMBOL[0]);
-const String PV_SYMBOL[] = {" ▦╶─"," 🌜▦╶"," ☁️­▦╶"," ⛅▦╶"," 🌤️­▦╶"," ☀️­▦╶"};
+const String PV_SYMBOL[] = {" ☀️­╶"," 🌙╶─"," ☁️­╶─"," ⛅╶─"," 🌤️­╶─"," ☀️­╶─"};
 const int PV_LEVELS = sizeof(PV_SYMBOL)/sizeof(PV_SYMBOL[0]);
 const String CABLE_SYMBOL = "─";
 const String PV_CABLE_SYMBOL = "─┐";
