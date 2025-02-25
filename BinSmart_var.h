@@ -58,7 +58,7 @@ int uvp_countdown = UVP_WAKEUP_RESET;  // countdown before ESS falls asleep
 float from_pv = 0, pv_to_cons = 0, pv_to_ess = 0, pv_to_grid = 0, pv_consumed;  // PV energy counters [Wh]
 float from_grid = 0, to_grid = 0, grid_to_cons = 0, grid_to_ess = 0;  // Grid energy counters [Wh]
 float from_ess = 0, to_ess = 0, ess_to_cons = 0, ess_to_grid = 0;  // ESS energy counters [Wh]
-bool manual_mode = false, auto_recharge = false, pm_eco_mode = true;
+bool manual_mode = false, auto_recharge = false, pm_eco_mode = true, mwplug_eco_mode = true;
 char buf[30];  // buffer for formatting output with sprintf()
 String cycle_msg, ota_msg, cmd_resp;
 char repeat_command = 0;  // saves user commands that are to be repeated
