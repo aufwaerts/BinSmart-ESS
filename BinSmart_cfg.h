@@ -93,7 +93,7 @@ const int MW_PLUG_TIMER = 180;  // number of secs after which Meanwell is automa
 const int HM_PLUG_TIMER = 900;  // number of secs after which Hoymiles is automatically turned off (unless "keep alive" command resets timer)
 const int DDNS_UPDATE_INTERVAL = 60;  // DDNS IP address check interval (in secs)
 const int EM_RESET_INTERVAL = 600;  // EM internal data reset interval (in secs)
-const int HTTP_TIMEOUT = 7;  // HTTP response timeout (in secs)
+const int HTTP_TIMEOUT = 2;  // HTTP response timeout (in secs)
 const int READCOMMAND_TIMEOUT = 4;  // max waiting time (in secs) for terminal input
 const String GET_ASTRO_TIME = "03:30";  // time at which astro times (sunrise/sunset) will be calculated (after a possible DST change, before sunrise)
 
