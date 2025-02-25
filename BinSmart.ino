@@ -36,7 +36,7 @@ void setup() {
 
     // Init WiFi
     WiFi.config(ESP32_ADDR, ROUTER_ADDR, SUBNET, DNS_SERVER1, DNS_SERVER2);
-    WiFi.setTxPower(WIFI_POWER_7dBm);
+    WiFi.setTxPower(WIFI_POWER_11dBm);
     WiFi.begin(WIFI_SSID, WIFI_PWD);
     do {
         FlashLED(false); delay(PROCESSING_DELAY);   // if WiFi unavailable or wrong SSID/PWD, system keeps flashing LED in endless loop
@@ -567,7 +567,7 @@ void FinishCycle() {
         if (!daytime) cycle_msg += PV_SYMBOL[1];
         else {
             if (power_pv < PV_SUN_THRESHOLD) cycle_msg += PV_SYMBOL[2];
-            else cycle_msg += PV_SYMBOL[min((power_pv-PV_SUN_THRESHOLD)*(PV_LEVELS-2)/(PV_MAX_POWER-PV_SUN_THRESHOLD)+3, PV_LEVELS-1)];
+            else cycle_msg += PV_SYMBOL[min((power_pv-PV_SUN_THRESHOLD)*(PV_LEVELS-3)/(PV_MAX_POWER-PV_SUN_THRESHOLD)+3, PV_LEVELS-1)];
         }
         cycle_msg += FLOW_SYMBOL[2*(power_pv>0)];
         cycle_msg += PV_CABLE_SYMBOL;
