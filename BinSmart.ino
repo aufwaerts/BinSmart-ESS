@@ -61,7 +61,8 @@ void setup() {
     while (!telnet) telnet = server.available();
 
     // Print startup cycle_msg
-    cycle_msg = "BinSmart ESS ";
+    cycle_msg = "\033[0H\033[0J";  // clear entire terminal screen
+    cycle_msg += "BinSmart ESS ";
     cycle_msg += SW_VERSION;
     cycle_msg += "\r\n\n";
     telnet.print(cycle_msg);
