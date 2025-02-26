@@ -19,6 +19,7 @@ const int GOOD_WIFI_RSSI = -70;  // RSSI above this value is considered "good en
 const int TELNET_PORT = ***;  // TCP port for communication with terminal
 IPAddress ESP32_ADDR(***,***,***,***);  // Local IP address of BinSmart ESS
 IPAddress ROUTER_ADDR(***,***,***,***);   // Local WiFi router
+IPAddress WIN_CLIENT_ADDR(***,***,***,***);  // Windows telnet client
 IPAddress SUBNET(***,***,***,***);   // WiFi subnet
 IPAddress DNS_SERVER1(1,1,1,1);  // Cloudflare DNS resolver
 IPAddress DNS_SERVER2(1,0,0,1);  // Backup DNS server
@@ -115,9 +116,8 @@ const String MWPLUG_REBOOT = "http://" + MWPLUG_ADDR + "/rpc/Shelly.Reboot?delay
 const String HMPLUG_ON = "http://" + HMPLUG_ADDR + "/relay/0?turn=on";
 const String HMPLUG_OFF = "http://" + HMPLUG_ADDR + "/relay/0?turn=off";
 const String HMPLUG_STATUS = "http://" + HMPLUG_ADDR + "/rpc/Switch.GetStatus?id=0";
-const String PUBLIC_IP1 = "http://api.ipify.org";  // public service for obtaining WiFi routers public IP address
-const String PUBLIC_IP2 = "http://whatismyip.akamai.com";  // backup service for obtaining WiFi routers public IP address
-const String DDNS_UPDATE = "http://***  // public DynDNS server
+const String PUBLIC_IP_SERVER = "http://api.ipify.org";  // public service for obtaining WiFi routers public IP address
+const String DDNS_SERVER_UPDATE = "http://***:***@dynupdate.no-ip.com/nic/update?hostname=***.ddns.net&myip=";  // public DDNS service
 
 // Power settings
 const int POWER_TARGET_DEFAULT = 5;  // System is aiming for this amount of watts to be drawn from grid
@@ -148,14 +148,14 @@ const int ERROR_TYPES = sizeof(ERROR_TYPE)/sizeof(ERROR_TYPE[0]);
 const int ERROR_LIMIT = 20;  // number of consecutive erroneous cycles before system is halted
 
 // Symbols for a nice telnet frontend
-const String ESS_FLOW_SYMBOL[] = {"╴×╶","╴\033[32m◀\033[0m╶","╴\033[32m▶\033[0m╶","╴\033[32m◀◀\033[0m","╴\033[32m▶▶\033[0m","┇\033[32m◀\033[0m╶","╴\033[32m▶\033[0m┇","┃◁╶","╴▷┃"};
-const String PV_FLOW_SYMBOL[] = {"╴×╶","╴\033[33m◀\033[0m╶","╴\033[33m▶\033[0m╶","╴\033[33m◀◀\033[0m","╴\033[33m▶▶\033[0m","┇\033[33m◀\033[0m╶","╴\033[33m▶\033[0m┇","┃◁╶","╴▷┃"};
-const String GRID_FLOW_SYMBOL[] = {"╴×╶","╴\033[35m◀\033[0m╶","╴\033[35m▶\033[0m╶","╴\033[35m◀◀\033[0m","╴\033[35m▶▶\033[0m","┇\033[35m◀\033[0m╶","╴\033[35m▶\033[0m┇","┃◁╶","╴▷┃"};
+const String ESS_FLOW_SYMBOL[] = {"╴×╶","╴\033[32m◀\033[0m╶","╴\033[32m▶\033[0m╶"};  // green flow symbols
+const String PV_FLOW_SYMBOL[] = {"╴×╶","╴\033[33m◀\033[0m╶","╴\033[33m▶\033[0m╶"};  // yellow flow symbols
+const String GRID_FLOW_SYMBOL[] = {"───","╴\033[31m◀\033[0m╶","╴\033[31m▶\033[0m╶"};  // red flow symbols
 const String DIFF_SYMBOL[] = {" ▼"," ▲"};
 const String ESS_LEVEL_SYMBOL[] = {"──🪫 ","─⢀🔋 ","─⢠🔋 ","─⢰🔋 ","─⢸🔋 "};
 const int ESS_LEVELS = sizeof(ESS_LEVEL_SYMBOL)/sizeof(ESS_LEVEL_SYMBOL[0]);
-const String PV_SYMBOL[] = {" ☀️­╶"," 🌙╶─"," ☁️­╶─"," ⛅╶─"," 🌤️­╶─"," ☀️­╶─"};
-const int PV_LEVELS = sizeof(PV_SYMBOL)/sizeof(PV_SYMBOL[0]);
+const String PV_SYMBOL[] = {" ☀️╶"," ☀️­╶"," 🌙╶─"," 🌙╶─"," ☁️╶─"," ☁️­╶─"," ⛅╶─"," ⛅╶─"," 🌤╶─"," 🌤️­╶─"," ☀️╶─"," ☀️­╶─"};
+const int PV_LEVELS = sizeof(PV_SYMBOL)/sizeof(PV_SYMBOL[0])/2;
 const String CABLE_SYMBOL = "─";
 const String PV_CABLE_SYMBOL = "─┐";
 const String ESS_CABLE_SYMBOL = "┌─";
