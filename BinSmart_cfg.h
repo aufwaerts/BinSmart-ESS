@@ -140,7 +140,7 @@ const int ESS_EMPTY = ESS_UVP*8;  // batt voltage at which ESS is considered "em
 const int PWM_DUTY_CYCLE_MAX = pow(2,PWM_RESOLUTION)-1;
 
 // Errors
-const String ERROR_TYPE[] = {"WIFI", "PUBIP", "DDNS", "BMS", "RF24", "3EM", "1PM", "MWPLUG", "HMPLUG"};  // error messages correspond with these types! changes here also need changed error messages
+const String ERROR_TYPE[] = {"WIFI", "PUBIP", "DDNS", "BMS", "RF24", "3EM", "1PM", "MWPLUG"};  // error messages correspond with these types! changes here also need changed error messages
 const int ERROR_TYPES = sizeof(ERROR_TYPE)/sizeof(ERROR_TYPE[0]);
 const int ERROR_LIMIT = 20;  // number of consecutive erroneous cycles before error is considered persistent and system is halted
 const int UNCRITICAL_ERROR_TYPES = 3;  // ERROR_LIMIT doesn't apply to first ... error types
