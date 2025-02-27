@@ -47,7 +47,7 @@ int filter_cycles = POWER_FILTER_CYCLES;  // for filtering out power spikes
 bool rampdown = false;  // indicating if rampdown is active
 int vcell_min, vcell_max;  // Cell min/max voltages (in millivolts)
 int bms_uvp;  // BMS Cell UVP value (read from BMS)
-long vbat;  // Total batt voltage [mV]
+int vbat;  // Total batt voltage [mV]
 int cbat;  // Batt charging/discharging current [cA]
 float pbat;  // Batt DC power [W]
 int mw_max_power;  // MW max charging power depends on vbat, will be calculated after first read of vbat from BMS
