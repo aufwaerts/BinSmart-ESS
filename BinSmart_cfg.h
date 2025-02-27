@@ -21,8 +21,8 @@ IPAddress ESP32_ADDR(***,***,***,***);  // Local IP address of BinSmart ESS
 IPAddress ROUTER_ADDR(***,***,***,***);   // Local WiFi router
 IPAddress WIN_CLIENT_ADDR(***,***,***,***);  // Windows telnet client
 IPAddress SUBNET(***,***,***,***);   // WiFi subnet
-IPAddress DNS_SERVER1(1,1,1,1);  // Cloudflare DNS resolver
-IPAddress DNS_SERVER2(1,0,0,1);  // Backup DNS server
+IPAddress DNS_SERVER1(8,8,8,8);  // Google DNS resolver
+IPAddress DNS_SERVER2(9,9,9,9);  // Quad9 DNS server
 const String EM_ADDR = "***.***.***.***";  // Shelly 3EM
 const String PM_ADDR = "***.***.***.***";  // Shelly Plus 1PM
 const String MWPLUG_ADDR = "***.***.***.***";  // Shelly Plus Plug, connecting Meanwell charger to AC
@@ -166,8 +166,8 @@ const String CONS_SYMBOL = "╴📺 ";
 const String OPS_SYMBOL[] = {" 🏃"," 🧍"," 💤🛌"};
 const String POWERFILTER_SYMBOL[] = {" ✋🕛"," ✋🕐"," ✋🕑"," ✋🕒"," ✋🕓"," ✋🕔"," ✋🕕"," ✋🕖"," ✋🕗"," ✋🕘"," ✋🕙"," ✋🕚"};
 const String RAMPDOWN_SYMBOL = "🪜";
-const String OVP_LIMIT_SYMBOL = "                     \033[32m▁▁\033[0m";
-const String UVP_LIMIT_SYMBOL = "      \033[32m▔▔\033[0m";
+const String OVP_LIMIT_SYMBOL = "                     ▁▁";
+const String UVP_LIMIT_SYMBOL = "      ▔▔";
 const String MODE_SYMBOL[] = {""," 👆"," 🔌"};
 const String WIFI_SYMBOL[] = {" ⚠️­"," 📶"};
 const String ERROR_SYMBOL = "❌";
