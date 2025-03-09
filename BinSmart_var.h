@@ -7,6 +7,7 @@ WiFiClient telnet;
 HTTPClient http;
 String http_resp;
 String public_IP = "000.000.000.000", DDNS_address = "000.000.000.000";
+int rssi;
 
 // BMS
 byte BMS_resp[300];
