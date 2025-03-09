@@ -130,8 +130,8 @@ const int ESS_OVP = 3550;  // one cell above this voltage: ramp down charging po
 const int ESS_OVPR = 3450;  // all cells below this voltage: re-enable charging (should be the same as BMS Balancer Start Voltage)
 const int ESS_UVP = 3200;  // one cell below this voltage: ramp down discharging power (ESS_UVP - BMS_UVP >= ESS_BMS_UVP_DIFF)
 const int ESS_UVPR = 3250;  // all cells above this voltage: re-enable discharging
-const int ESS_FULL = 27400;  // batt voltage at which ESS is considered "full"
-const int ESS_EMPTY = ESS_UVP*8;  // batt voltage at which ESS is considered "empty"
+const int ESS_FULL = 27100;  // batt voltage at which ESS is considered "full" (>80%)
+const int ESS_EMPTY = 25600;  // batt voltage at which ESS is considered "empty" (<20%)
 
 // PWM params for Meanwell power control
 #define PWM_CHANNEL 0
