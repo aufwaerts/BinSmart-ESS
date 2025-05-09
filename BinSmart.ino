@@ -824,6 +824,7 @@ bool UserCommand(bool read_input) {
             cmd_resp += vcell_max;
             cmd_resp += " mV\r\nMax cell diff  : ";
             cmd_resp += vcell_max-vcell_min;
+            cmd_resp += " mV";
             if ((vcell_max-vcell_min >= BMS_balancer_trigger) && (vcell_max >= BMS_balancer_start)) cmd_resp += BALANCER_SYMBOL;
             cmd_resp += "\r\nMW power limit : ";
             cmd_resp += mw_max_power;
