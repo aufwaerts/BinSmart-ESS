@@ -92,7 +92,7 @@ const int MW_PLUG_TIMER = 180;  // number of secs after which Meanwell is automa
 const int HM_PLUG_TIMER = 900;  // number of secs after which Hoymiles AC side is automatically turned off (unless "keep alive" command resets timer)
 const int DDNS_UPDATE_INTERVAL = 60;  // DDNS IP address check interval (in secs)
 const int EM_RESET_INTERVAL = 600;  // EM internal data reset interval (in secs)
-const int HTTP_TIMEOUT = 4;  // HTTP response timeout (in secs)
+const int HTTP_TIMEOUT = 5;  // HTTP response timeout (in secs)
 const int READCOMMAND_TIMEOUT = 4;  // max waiting time (in secs) for terminal input
 const String GET_ASTRO_TIME = "03:30";  // time at which astro times (sunrise/sunset) will be calculated (after a possible DST change, before sunrise)
 
@@ -116,7 +116,7 @@ const String DDNS_SERVER_UPDATE = "http://***:***@dynupdate.no-ip.com/nic/update
 
 // Power settings
 const int POWER_TARGET_DEFAULT = 5;  // System is aiming for this amount of watts to be drawn from grid
-const int POWER_TARGET_DEVIATION = 5;  // Max allowed deviation (+/-) from target power
+const int POWER_TARGET_DEVIATION = 6;  // Max allowed deviation (+/-) from target power
 const int POWER_RAMPDOWN_RATE = 20; // Max power decrease per polling interval, MUST BE EQUAL OR HIGHER THAN -MW_MIN_POWER
 const int POWER_FILTER_CYCLES = 12;  // Number of cycles during which power spikes are filtered out
 const float POWER_LIMIT_RAMPDOWN = 0.67;  // Power rampdown rate when CELL_OVP or CELL_UVP is reached
