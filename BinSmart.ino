@@ -1,4 +1,4 @@
-const String SW_VERSION = "v1.36";
+const String SW_VERSION = "v1.37";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <HTTPClient.h>  // standard Arduino/ESP32, METHOD connect() MADE PUBLIC
@@ -330,6 +330,7 @@ bool ShellyCommand(const String URL) {
             return true;
         }
         if (URL == MWPLUG_OFF) {
+            if ((millis()-ts_MW_ON)/1000 < MW_PLUG_MIN_DELAY) return false;  // prevents oscillation of Meanwell plug
             if (mw_turned_on) mw_counter++;
             mw_turned_on = false;
             return true;
