@@ -42,9 +42,6 @@ void setup() {
     do {
         FlashLED(false); delay(PROCESSING_DELAY);   // if WiFi unavailable or wrong SSID/PWD, system keeps flashing LED in endless loop
     } while (WiFi.status() != WL_CONNECTED);
-
-    // Set http connect timeout
-    http.setConnectTimeout(1000);
     
     // Start OTA software update service
     ota_msg = "BinSmart ESS ";
