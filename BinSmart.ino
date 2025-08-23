@@ -124,10 +124,10 @@ void setup() {
     // Turn on Hoymiles plug
     if (ShellyCommand(HMPLUG_ON)) telnet.print("Hoymiles plug found\r\n");
     
-    // Turn off Meanwell plug, set eco mode
+    // Turn off Meanwell plug
     if (ShellyCommand(MWPLUG_OFF)) telnet.print("Meanwell plug found\r\n");
 
-    // Read PV power from Shelly PM, set eco mode
+    // Read PV power from Shelly PM
     if (ShellyCommand(PM_STATUS)) telnet.print("Shelly 1PM found\r\n");
 
     // No erros during setup: Zero error counters, set timestamps, start polling cycle
