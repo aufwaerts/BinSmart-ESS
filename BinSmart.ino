@@ -1,4 +1,4 @@
-const String SW_VERSION = "v1.40";
+const String SW_VERSION = "v1.41";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <HTTPClient.h>  // standard Arduino/ESP32, METHOD connect() MADE PUBLIC
@@ -444,6 +444,7 @@ void FinishCycle() {
 
     // Calculate cycle time, reset cycle timestamp
     float secs_cycle = (millis()-ts_cycle)/1000.0;
+    if (secs_cycle > max_secs_cycle) max_secs_cycle = secs_cycle;
     ts_cycle = millis();
 
     // Daytime: Read PV power from Shelly 1PM (at nighttime power_pv is zero)
@@ -810,6 +811,9 @@ bool UserCommand(bool read_input) {
             cmd_resp += buf;
             cmd_resp += "\r\nESS uptime   : ";
             sprintf(buf,"%03dd %02dh %02dm %02ds",elapsedDays(unixtime-starttime),numberOfHours(unixtime-starttime),numberOfMinutes(unixtime-starttime),numberOfSeconds(unixtime-starttime));
+            cmd_resp += buf;
+            cmd_resp += "\r\nMax cycle secs: ";
+            sprintf(buf,"%.3f",max_secs_cycle);
             cmd_resp += buf;
             cmd_resp += "\r\nSunrise today: ";
             cmd_resp += sunrise;
