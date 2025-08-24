@@ -441,7 +441,7 @@ void FinishCycle() {
 
     // Calculate cycle time, reset cycle timestamp
     float secs_cycle = (millis()-ts_cycle)/1000.0;
-    if (secs_cycle > max_secs_cycle) max_secs_cycle = secs_cycle;
+    if (uvp_countdown) max_secs_cycle = max(secs_cycle, max_secs_cycle);
     ts_cycle = millis();
 
     // Daytime: Read PV power from Shelly 1PM (at nighttime power_pv is zero)
