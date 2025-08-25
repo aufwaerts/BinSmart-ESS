@@ -102,6 +102,8 @@ const String EM_SETTINGS = "http://" + EM_ADDR + "/settings";
 const String EM_STATUS = "http://" + EM_ADDR + "/status";
 const String EM_RESET = "http://" + EM_ADDR + "/reset_data";
 const String PM_STATUS = "http://" + PM_ADDR + "/rpc/Switch.GetStatus?id=0";
+const String PM_ECO_ON = "http://" + PM_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
+const String PM_ECO_OFF = "http://" + PM_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":false}}";
 const String MWPLUG_ON = "http://" + MWPLUG_ADDR + "/relay/0?turn=on&timer=" + String(MW_PLUG_TIMER);
 const String MWPLUG_OFF = "http://" + MWPLUG_ADDR + "/relay/0?turn=off";
 const String HMPLUG_ON = "http://" + HMPLUG_ADDR + "/relay/0?turn=on";
