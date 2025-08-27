@@ -115,9 +115,6 @@ void setup() {
     }
     else error_msg = "RF24 radio init failed";
 
-    // Set timeout for establishing http connections
-    http.setConnectTimeout(10000);
-
     // Read time values from Shelly 3EM
     if (ShellyCommand(EM_SETTINGS)) telnet.print("Shelly 3EM found\r\n");
 
