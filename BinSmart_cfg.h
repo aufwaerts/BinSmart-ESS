@@ -61,7 +61,6 @@ const byte HM_SERIAL[] = {0x**, 0x**, 0x**, 0x**, 0x**, 0x**};  // serial number
 const byte RF24_CHANNELS[] = {03, 23, 40, 61, 75};  // Frequency is 2400 + RF24_CHANNELS [MHz]
 const byte RF24_PALEVELS[] = {RF24_PA_MIN, RF24_PA_LOW, RF24_PA_HIGH, RF24_PA_MAX};
 const int RF24_TX_TIMEOUT = 2000;  // max time (in ms) for sending RF24 data and receiving an ACK packet
-const int RF24_MIN_DELAY = 20;  // Minimum time gap (in ms) between two consecutive Hoymiles commands
 
 // BMS definitions and commands
 #define BMS_STX_1 0x4E
@@ -91,7 +90,6 @@ const int PROCESSING_DELAY = 2000;  // minimum delay (in msecs) for power change
 const int STATE_CHANGE_DELAY = 1000;  // additional delay when charging or discharging was switched on or off (power takes a litte longer to stabilize)
 const int UVP_SLEEP_DELAY = 20000;  // cycle duration (in msecs) during UVP sleep mode
 const int UVP_WAKEUP_RESET = 1700;  // number of cycles in UVP mode (hm_power_limit == 0) before UVP sleep mode is activated (must be an even number)
-const int MW_PLUG_TIMER = 60;  // number of secs after which Meanwell is automatically turned off (unless "keep alive" command resets timer)
 const int MW_PLUG_TIMER = 30;  // number of secs after which Meanwell plug is automatically turned off (safety feature if system fails)
 const int DDNS_UPDATE_INTERVAL = 300;  // DDNS IP address check interval (in secs)
 const int EM_RESET_INTERVAL = 600;  // EM internal data reset interval (in secs)
