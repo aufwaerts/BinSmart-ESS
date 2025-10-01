@@ -91,7 +91,7 @@ const int STATE_CHANGE_DELAY = 1000;  // additional delay when charging or disch
 const int UVP_SLEEP_DELAY = 20000;  // cycle duration (in msecs) during UVP sleep mode
 const int UVP_WAKEUP_RESET = 1700;  // number of cycles in UVP mode (hm_power_limit == 0) before UVP sleep mode is activated (must be an even number)
 const int MW_PLUG_TIMER = 30;  // number of secs after which Meanwell plug is automatically turned off (safety feature if system fails)
-const int DDNS_UPDATE_INTERVAL = 300;  // DDNS IP address check interval (in secs)
+const int DDNS_UPDATE_INTERVAL = 60;  // DDNS IP address check interval (in secs)
 const int EM_RESET_INTERVAL = 600;  // EM internal data reset interval (in secs)
 const int READCOMMAND_TIMEOUT = 4;  // max waiting time (in secs) for terminal input
 const String GET_ASTRO_TIME = "03:30";  // time at which astro times (sunrise/sunset) will be calculated (after a possible DST change, before sunrise)
@@ -112,7 +112,7 @@ const String DDNS_SERVER_UPDATE = "http://***:***@dynupdate.no-ip.com/nic/update
 
 // Power settings
 const int POWER_TARGET_DEFAULT = 5;  // System is aiming for this amount of watts to be drawn from grid
-const int POWER_TARGET_DEVIATION = 5;  // Max allowed deviation (+/-) from target power
+const int POWER_TARGET_DEVIATION = 10;  // Max allowed deviation (+/-) from target power
 const int POWER_RAMPDOWN_RATE = 40; // Max power decrease per polling interval, MUST BE EQUAL OR HIGHER THAN -MW_MIN_POWER
 const int POWER_FILTER_CYCLES = 10;  // Number of cycles during which power spikes are filtered out
 const float POWER_LIMIT_RAMPDOWN = 0.67;  // Power rampdown rate when CELL_OVP or CELL_UVP is reached
