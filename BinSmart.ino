@@ -736,10 +736,13 @@ bool UserCommand(bool read_input) {
         case 'b':
             repeat_command = 'b';  // repeat command response
             if (read_input) break;  // ... starting next cycle
-            cmd_resp = "Batt voltage   : ";
+            cmd_resp = "Batt power (DC): ";
+            cmd_resp += String(pbat,0);
+            cmd_resp += " W\r\nBatt current   : ";
+            cmd_resp += String(cbat/100.0,2);
+            cmd_resp += " A\r\nBatt voltage   : ";
             cmd_resp += String(vbat/1000.0,3);
-            cmd_resp += " V\r\n";
-            cmd_resp += "Cell voltages  : ";
+            cmd_resp += " V\r\nCell voltages  : ";
             cmd_resp += vcell_min;
             cmd_resp += " - ";
             cmd_resp += vcell_max;
@@ -747,12 +750,6 @@ bool UserCommand(bool read_input) {
             cmd_resp += vcell_max-vcell_min;
             cmd_resp += " mV";
             if ((vcell_max-vcell_min >= BMS_balancer_trigger) && (vcell_max >= BMS_balancer_start)) cmd_resp += BALANCER_SYMBOL;
-            cmd_resp += "\r\nBatt current   : ";
-            cmd_resp += String(cbat/100.0,1);
-            cmd_resp += " A";
-            cmd_resp += "\r\nBatt power (DC): ";
-            cmd_resp += String(pbat,1);
-            cmd_resp += " W";
             cmd_resp += "\r\nMW power limit : ";
             cmd_resp += mw_max_power;
             cmd_resp += " W";
