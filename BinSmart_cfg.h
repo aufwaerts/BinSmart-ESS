@@ -92,6 +92,7 @@ const int UVP_WAKEUP_RESET = 1700;  // number of cycles in UVP mode (hm_power_li
 const int DDNS_UPDATE_INTERVAL = 60;  // DDNS IP address check interval (in secs)
 const int EM_RESET_INTERVAL = 600;  // EM internal data reset interval (in secs)
 const int READCOMMAND_TIMEOUT = 4;  // max waiting time (in secs) for terminal input
+const int HTTP_TIMEOUT = 6;  // max waiting time (in secs) for HTTP responses
 const String GET_ASTRO_TIME = "03:30";  // time at which astro times (sunrise/sunset) will be calculated (after a possible DST change, before sunrise)
 
 // URLs
