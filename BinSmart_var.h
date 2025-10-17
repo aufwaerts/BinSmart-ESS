@@ -8,7 +8,6 @@ HTTPClient http;
 String http_resp;
 int http_resp_code;
 String public_IP = "000.000.000.000", DDNS_address = "000.000.000.000";
-int rssi;
 
 // BMS
 byte BMS_resp[300];
@@ -56,7 +55,6 @@ int hm_power_limit = HM_MAX_POWER, mw_power_limit = mw_max_power;
 unsigned long mw_counter = 0;  // counter for Meanwell plug state changes (i.e. relay operations)
 bool pm_eco_mode = true, mwplug_eco_mode = true;  // eco mode of Shelly 1PM and Meanwell Shelly plug
 bool mwplug_on = false;  // state of Meanwell Shelly plug (allows counting of plug relay operations)
-int uvp_countdown = UVP_WAKEUP_RESET;  // countdown before ESS falls asleep
 float from_pv = 0, pv_to_cons = 0, pv_to_ess = 0, pv_to_grid = 0, pv_consumed;  // PV energy counters [Wh]
 float from_grid = 0, to_grid = 0, grid_to_cons = 0, grid_to_ess = 0;  // Grid energy counters [Wh]
 float from_ess = 0, to_ess = 0, ess_to_cons = 0, ess_to_grid = 0;  // ESS energy counters [Wh]
