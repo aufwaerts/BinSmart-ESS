@@ -112,6 +112,7 @@ const String MWPLUG_ECO_OFF = "http://" + MWPLUG_ADDR + "/rpc/Sys.SetConfig?conf
 const String HMPLUG_ON = "http://" + HMPLUG_ADDR + "/relay/0?turn=on";
 const String HMPLUG_OFF = "http://" + HMPLUG_ADDR + "/relay/0?turn=off";
 const String PUBLIC_IP_SERVER = "http://api.ipify.org";  // public service for obtaining WiFi routers public IP address
+// const String PUBLIC_IP_SERVER = "http://ifconfig.me/ip";  // alternative service
 const String DDNS_SERVER_UPDATE = "http://***:***@dynupdate.no-ip.com/nic/update?hostname=***.ddns.net&myip=";  // public DDNS service
 
 // Power settings
