@@ -440,8 +440,7 @@ void SetNewPower() {
             ShellyCommand(MWPLUG_OFF);
             delay(100);
         }
-        // if ((cbat >= 0) || ((millis()-ts_HM)/1000 >= 30)) HoymilesCommand(hm_turnon, sizeof(hm_turnon));
-        if (cbat >= 0) HoymilesCommand(hm_turnon, sizeof(hm_turnon));
+        if ((cbat >= 0) || ((millis()-ts_HM)/1000 >= 30)) HoymilesCommand(hm_turnon, sizeof(hm_turnon));
     }
     ts_power = millis();
 }
