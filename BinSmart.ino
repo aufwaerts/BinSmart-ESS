@@ -435,12 +435,12 @@ void SetNewPower() {
         if ((cbat <= 0) || ((millis()-ts_MW)/1000 >= MW_PLUG_TIMER-30)) ShellyCommand(MWPLUG_ON);
     }
     if (power_new < 0) {  // set new discharging power, turn charging off, turn discharging on
-        if (power_new != power_ess) HoymilesCommand(hm_power, sizeof(hm_power));
+        if ((power_new != power_ess) || ((millis()-ts_HM)/1000 >= 30)) HoymilesCommand(hm_power, sizeof(hm_power));
         if (cbat > 0) {
             ShellyCommand(MWPLUG_OFF);
             delay(100);
         }
-        if ((cbat >= 0) || ((millis()-ts_HM)/1000 >= 30)) HoymilesCommand(hm_turnon, sizeof(hm_turnon));
+        if (cbat >= 0) HoymilesCommand(hm_turnon, sizeof(hm_turnon));
     }
     ts_power = millis();
 }
