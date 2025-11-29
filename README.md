@@ -5,18 +5,18 @@ This project is about a low-cost, high-efficiency energy storage solution (ESS) 
 Having used a small 435 Wp "Balkonkraftwerk" for a year, it showed that only a third of the energy was used by our household, two thirds were exported to the grid (with no financial compensation). I came up with the idea of retrofitting an ESS solution, which should at least double the household consumption. However, in 2023 I found nothing on the market that met my following criteria:
 - storage capacity: at least 2 kWh
 - total cost (including battery and energy meter): less than €600
-- charging/discharging power: at least 300 W
+- charging/discharging power: min. 300 W
 - indoor "AC-coupled" solution, no additional wiring to outdoor PV installation
 - "zero" export to grid (less than 1% when battery not fully charged)
 - silent operation (no fans)
 - self-consumption of the entire system (including energy meter): less than 5 W
-- total efficiency (AC-to-AC): higher than 80%
+- total efficiency (AC-to-AC): > 80%
 
-Available AC-coupled solutions were either expensive, inefficient, noisy or consumed a lot of energy themselves. I concluded that I had to build a solution myself.
+Available AC-coupled solutions were either too expensive, inefficient, noisy or consumed a lot of energy themselves. I concluded that I had to build an ESS solution myself.
 
 There were some "home-made" solutions around, but they had their drawbacks, too:
 - [OpenDTU-OnBattery](https://github.com/hoylabs/OpenDTU-OnBattery), a zero export solution based on [OpenDTU](https://github.com/tbnobody/OpenDTU), didn't support Meanwell chargers, and buying a Victron would have violated my cost criteria.
-- The [Trucki Stick](https://trucki.de/) would have been able to control Meanwell chargers, but on the inverter side, only Sun or Lumentree were supported by Trucki. With those inverters I wouldn't have fulfilled my efficiency & silence criteria.
+- The [Trucki Stick](https://trucki.de/) would have been able to control Meanwell chargers, but on the inverter side, only Sun or Lumentree were supported. With those inverters I wouldn't have fulfilled my efficiency & silence criteria.
 - Other solutions found on various YouTube channels were not AC-coupled or didn't include controllable chargers and inverters, which would have violated my "zero export" criteria.
 
 I must however give credit to Thomas Basler (and everybody who supported him) for their OpenDTU project, without their achievements I would never have managed to get the Hoymiles radio communication working. A big "thank you" also goes to Christian from [Der Kanal](https://www.youtube.com/@DerKanal) and Thomas from [MaInTec](https://www.youtube.com/@MaInTec24) who demonstrated that Meanwell LED drivers can be used as controllable battery chargers.
