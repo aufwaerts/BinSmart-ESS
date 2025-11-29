@@ -9,7 +9,7 @@ Having used a small 435 Wp "Balkonkraftwerk" for a year, it showed that only a t
 - indoor "AC-coupled" solution, no additional wiring to outdoor PV installation
 - "zero" export to grid (less than 1% when battery not fully charged)
 - silent operation (no fans)
-- self-consumption of the entire system: less than 5 W
+- self-consumption of the entire system (including energy meter): less than 5 W
 - total efficiency (AC-to-AC): higher than 80%
 
 Available AC-coupled solutions were either expensive, inefficient, noisy or consumed a lot of energy themselves. I concluded that I had to build a solution myself.
