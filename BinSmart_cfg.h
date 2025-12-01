@@ -102,15 +102,19 @@ const String GET_ASTRO_TIME = "03:30";  // time at which astro times (sunrise/su
 const String EM_STATUS = "http://" + EM_ADDR + "/status";
 const String EM_RESET = "http://" + EM_ADDR + "/reset_data";
 const String PM_STATUS = "http://" + PM_ADDR + "/rpc/Switch.GetStatus?id=0";
+const String PM_RESET = "http://" + PM_ADDR + "/rpc/Switch.ResetCounters?id=0";
 const String PM_ECO_ON = "http://" + PM_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
 const String PM_ECO_OFF = "http://" + PM_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":false}}";
-// const String MWPLUG_ON = "http://" + MWPLUG_ADDR + "/relay/0?turn=on";
+const String MWPLUG_STATUS = "http://" + MWPLUG_ADDR + "/rpc/Switch.GetStatus?id=0";
+const String MWPLUG_RESET = "http://" + MWPLUG_ADDR + "/rpc/Switch.ResetCounters?id=0";
 const String MWPLUG_ON = "http://" + MWPLUG_ADDR + "/relay/0?turn=on&timer=" + String(MW_PLUG_TIMER);
 const String MWPLUG_OFF = "http://" + MWPLUG_ADDR + "/relay/0?turn=off";
 const String MWPLUG_ECO_ON = "http://" + MWPLUG_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
 const String MWPLUG_ECO_OFF = "http://" + MWPLUG_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":false}}";
 const String HMPLUG_ON = "http://" + HMPLUG_ADDR + "/relay/0?turn=on";
 const String HMPLUG_OFF = "http://" + HMPLUG_ADDR + "/relay/0?turn=off";
+const String HMPLUG_STATUS = "http://" + HMPLUG_ADDR + "/status";
+const String HMPLUG_RESET = "http://" + HMPLUG_ADDR + "/reboot";
 const String PUBLIC_IP_SERVER = "http://api.ipify.org";  // public service for obtaining WiFi routers public IP address
 // const String PUBLIC_IP_SERVER = "http://ifconfig.me/ip";  // alternative service
 const String DDNS_SERVER_UPDATE = "http://***:***@dynupdate.no-ip.com/nic/update?hostname=***.ddns.net&myip=";  // public DDNS service
