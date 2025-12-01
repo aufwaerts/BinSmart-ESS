@@ -41,7 +41,7 @@ unsigned long pubip_time = 0, DDNS_time = 0;  // unixtime of last public IP addr
 unsigned long ts_cycle = 0, ts_power = 0, ts_pubip = 0, ts_EM_reset = 0, ts_MW = 0, ts_HM = 0;  // various timestamps
 
 // Other global variables
-int power_grid = 0, power_grid_min = 10000, power_pv = 0, power_ess = 0, power_new = 0, power_manual = 0;
+int power_grid = 0, power_grid_min = 10000, power_pv = 0, power_old = 0, power_new = 0, power_manual = 0;
 int power_target = POWER_TARGET_DEFAULT;
 int filter_cycles = POWER_FILTER_CYCLES;  // for filtering out power spikes
 bool rampdown = false;  // indicating if rampdown is active
