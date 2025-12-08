@@ -22,11 +22,6 @@ String error_msg = "", last_error_msg = "";  // if error(s) occured during polli
 bool error_flag = false;  // errors occured and not yet read by user?
 
 // Hoymiles/RF24
-byte hm_radio_ID[5] = {0x01, 0xFF, 0xFF, 0xFF, 0xFF};  // 0xFF will be replaced by HM serial number
-// in the following HM commands, 0xFF will be replaced by HM serial number, 0x00 will be replaced by calculation
-byte hm_turnon[15] =  {0x51, 0xFF, 0xFF, 0xFF, 0xFF, 0x80, 0x17, 0x41, 0x72, 0x81, 0x00, 0x00, 0xB0, 0x01, 0x00};
-byte hm_turnoff[15] = {0x51, 0xFF, 0xFF, 0xFF, 0xFF, 0x80, 0x17, 0x41, 0x72, 0x81, 0x01, 0x00, 0x20, 0x00, 0x00};
-byte hm_power[19] =   {0x51, 0xFF, 0xFF, 0xFF, 0xFF, 0x80, 0x17, 0x41, 0x72, 0x81, 0x0B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 RF24 radio(RF24_CE_PIN, RF24_CSN_PIN);
 CRC8 crc8;
 CRC16 crc16;
@@ -55,7 +50,7 @@ int hm_power_limit = HM_MAX_POWER, mw_power_limit = mw_max_power;
 unsigned long mw_counter = 0;  // counter for Meanwell plug state changes (i.e. relay operations)
 bool pm_eco_mode = true, mwplug_eco_mode = true;  // eco mode of Shelly 1PM and Meanwell Shelly plug
 bool mwplug_on = false;  // state of Meanwell Shelly plug (allows counting of plug relay operations)
-float from_pv = 0, pv_to_cons = 0, pv_to_ess = 0, pv_to_grid = 0, pv_consumed;  // PV energy counters [Wh]
+float from_pv = 0, pv_to_cons = 0, pv_to_ess = 0, pv_to_grid = 0, pv_consumed = 0;  // PV energy counters [Wh]
 float from_grid = 0, to_grid = 0, grid_to_cons = 0, grid_to_ess = 0;  // Grid energy counters [Wh]
 float from_ess = 0, to_ess = 0, ess_to_cons = 0, ess_to_grid = 0;  // ESS energy counters [Wh]
 bool manual_mode = false, auto_recharge = false;
