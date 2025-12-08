@@ -31,9 +31,9 @@ const String HMPLUG_ADDR = "*.*.*.*";  // Shelly Plus Plug, connecting Hoymiles 
 // PV module/inverter max AC output
 const int PV_MAX_POWER = 360;
 
-// Hoymiles params
+// Hoymiles power parameters
 const int HM_MIN_POWER = -10;  // Hoymiles turned off above min_power
-const int HM_MAX_POWER = -300;  // Hoymiles discharging power limit
+const int HM_MAX_POWER = -200;  // Hoymiles discharging power limit
 // tests have shown that Hoymiles power output is non-linear, the following formula corrects it
 // the formula needs adapting for different inverters and/or different battery voltages
 // this is an excellent site for determining the formula parameters: https://www.arndt-bruenner.de/mathe/scripts/regrnl.htm
@@ -46,7 +46,7 @@ const int HM_HIGH_POWER_THRESHOLD = -160;  // tests have also shown that Hoymile
 // #define HM_HIGH_POWER_FORMULA -0.01977*power*power-13.40136*power+24.2 (this was for HM-300)
 #define HM_HIGH_POWER_FORMULA -0.00019255*power*power*power-0.1629286114853008*power*power-48.3149403751306*power-2761.25
 
-// Meanwell params
+// Meanwell power parameters
 const int MW_MIN_POWER = 12;  // Meanwell turned off below min_power
 const int MW_RECHARGE_POWER = 200;  // Meanwell power setting for automatic recharging (to prevent BMS turnoff): MW operates at highest efficiency
 // the following formulas are the result of Meanwell power output tests, they need adapting for different chargers
@@ -57,7 +57,14 @@ const int MW_LOW_POWER_THRESHOLD = 25;  // Meanwell power output below this thre
 #define MW_POWER_LIMIT_FORMULA vbat/77.057*(0.9636-1.0/PWM_DUTY_CYCLE_MAX)  // MW max charging power also depends on vbat
 
 // Hoymiles/RF24 comms
-const byte HM_SERIAL[] = {0x**, 0x**, 0x**, 0x**, 0x**, 0x**};  // serial number of Hoymiles inverter
+const byte RF24_CHANNEL = 03; // Possible RF24 channles for Hoymiles comms are 03, 23, 40, 61, 75; frequency in MHz is 2400 + channel
+const byte RF24_PALEVEL = RF24_PA_MIN; // Possible RF24 PA levels are RF24_PA_MIN, RF24_PA_LOW, RF24_PA_HIGH, RF24_PA_MAX
+const byte HM_SN[] = {0x**, 0x**, 0x**, 0x**, 0x**, 0x**};  // serial number of Hoymiles inverter
+byte hm_radio_ID[5] = {0x01, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5]};
+byte hm_turnon[15] =  {0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17, 0x41, 0x72, 0x81, 0x00, 0x00, 0xB0, 0x01, 0x00};
+byte hm_turnoff[15] = {0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17, 0x41, 0x72, 0x81, 0x01, 0x00, 0x20, 0x00, 0x00};
+byte hm_power[19] =   {0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17, 0x41, 0x72, 0x81, 0x0B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
 const byte RF24_CHANNELS[] = {03, 23, 40, 61, 75};  // Frequency is 2400 + RF24_CHANNELS [MHz]
 const byte RF24_PALEVELS[] = {RF24_PA_MIN, RF24_PA_LOW, RF24_PA_HIGH, RF24_PA_MAX};
 const int RF24_TX_TIMEOUT = 2000;  // max time (in ms) for sending RF24 data and receiving an ACK packet
@@ -87,15 +94,15 @@ const byte BMS_CURRENT[] = {BMS_STX_1, BMS_STX_2, 0x00, 0x13, 0x00, 0x00, 0x00, 
 
 // Time/Timer settings
 const int PROCESSING_DELAY = 2000;  // minimum delay (in msecs) for power changes to take effect
-const int UVP_SLEEP_DELAY = 20000;  // cycle duration (in msecs) during UVP sleep mode
+const int UVP_SLEEP_DELAY = 30000;  // cycle duration (in msecs) during UVP sleep mode
 const int MW_PLUG_TIMER = 60;  // number of secs after which Meanwell plug is automatically turned off (safety feature if system fails)
 const int DDNS_UPDATE_INTERVAL = 60;  // DDNS IP address check interval (in secs)
 const int EM_RESET_INTERVAL = 600;  // EM internal data reset interval (in secs)
 const int READCOMMAND_TIMEOUT = 4;  // max waiting time (in secs) for terminal input
 const int HTTP_TIMEOUT = 6;  // max waiting time (in secs) for HTTP responses
 const int ESS_TIMEZONE = +1;  // ESS is installed in this timezone (relative to UTC)
-const float ESS_LATITUDE = 46.817;  // geo coordinates of ESS
-const float ESS_LONGITUDE = 13.520;
+const float ESS_LATITUDE = 46.**;  // geo coordinates of ESS
+const float ESS_LONGITUDE = 13.**;
 const String GET_ASTRO_TIME = "03:30";  // time at which astro times (sunrise/sunset) will be calculated (after a possible DST change, before sunrise)
 
 // URLs
