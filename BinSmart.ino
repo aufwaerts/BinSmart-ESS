@@ -1,4 +1,4 @@
-const String SW_VERSION = "v1.94";
+const String SW_VERSION = "v1.95";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <HTTPClient.h>  // standard Arduino/ESP32
@@ -85,6 +85,7 @@ void setup() {
         radio.setAddressWidth(sizeof(hm_radio_ID));
         radio.enableDynamicPayloads();
         radio.openWritingPipe(hm_radio_ID);
+        radio.stopListening();
 
         crc16.setPolynome((uint16_t)0x18005);
         crc16.setStartXOR(0xFFFF);
@@ -1091,7 +1092,6 @@ bool HoymilesCommand(byte command[], int size) {
 
     // Send command to Hoymiles via RF24
     while (millis()-ts_HM < 50);  // minimum delay between two consecutive HM commands: 50 ms
-    radio.stopListening();
     if (radio.writeBlocking(command, size, 100))
         if (radio.txStandBy(1000)) {
             ts_HM = millis();
