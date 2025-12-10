@@ -32,7 +32,7 @@ const String HMPLUG_ADDR = "*.*.*.*";  // Shelly Plus Plug, connecting Hoymiles 
 const int PV_MAX_POWER = 360;
 
 // Hoymiles power parameters
-const int HM_MIN_POWER = -10;  // Hoymiles turned off above min_power
+const int HM_MIN_POWER = -12;  // Hoymiles turned off above min_power
 const int HM_MAX_POWER = -200;  // Hoymiles discharging power limit
 // tests have shown that Hoymiles power output is non-linear, the following formula corrects it
 // the formula needs adapting for different inverters and/or different battery voltages
