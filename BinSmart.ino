@@ -449,7 +449,7 @@ void FinishCycle() {
     if (!pm_eco_mode) ShellyCommand(PM_STATUS);
 
     // Discharging disabled (UVP active) and low PV production: enable sleep mode
-    uvp_sleep_mode = (hm_power_limit == 0) && mwplug_eco_mode;
+    uvp_sleep_mode = !hm_power_limit && mwplug_eco_mode && !cbat;
 
     // Calculate power flows that aren't measured by Shellies (or set by power_old)
     int power_cons = power_pv - power_old + power_grid;
