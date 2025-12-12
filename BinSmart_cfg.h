@@ -108,6 +108,8 @@ const String GET_ASTRO_TIME = "03:30";  // time at which astro times (sunrise/su
 // URLs
 const String EM_STATUS = "http://" + EM_ADDR + "/status";
 const String EM_RESET = "http://" + EM_ADDR + "/reset_data";
+const String EM_ECO_ON = "http://" + EM_ADDR + "/settings?eco_mode_enabled=true";
+const String EM_ECO_OFF = "http://" + EM_ADDR + "/settings?eco_mode_enabled=false";
 const String PM_STATUS = "http://" + PM_ADDR + "/rpc/Switch.GetStatus?id=0";
 const String PM_RESET = "http://" + PM_ADDR + "/rpc/Switch.ResetCounters?id=0";
 const String PM_ECO_ON = "http://" + PM_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
