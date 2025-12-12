@@ -33,7 +33,8 @@ bool dst, daytime;  // flags for daylight saving time and daytime/nighttime
 unsigned long local_unixtime = 0, starttime = 0, resettime_errors = 0, resettime_energy = 0; // epoch times (will be read from Shelly 3EM)
 unsigned long minpower_time = 0;  // unixtime of last lowest power consumption reading
 unsigned long pubip_time = 0, DDNS_time = 0;  // unixtime of last public IP address check and last DDNS update
-unsigned long ts_cycle = 0, ts_power = 0, ts_pubip = 0, ts_EM_reset = 0, ts_MW = 0, ts_HM = 0, ts_BMS = 0;  // various timestamps
+unsigned long ts_power = 0, ts_pubip = 0, ts_EM_reset = 0, ts_MW = 0, ts_HM = 0, ts_BMS = 0;  // various timestamps
+float secs_cycle;  // duration of one polling cycle in secs
 
 // Other global variables
 int power_grid = 0, power_grid_min = 10000, power_pv = 0, power_old = 0, power_new = 0, power_manual = 0;
