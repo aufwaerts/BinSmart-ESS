@@ -1098,7 +1098,7 @@ bool HoymilesCommand(float power) {
 
     while (millis()-ts_HM < 100);  // minimum delay between two consecutive HM commands: 100 ms
 
-    if (!power) {  // turn off Hoymiles
+    if (power == HM_OFF) {  // turn off Hoymiles
         if (radio.writeFast(hm_turnoff, sizeof(hm_turnoff)))
             if (radio.txStandBy(RF24_TIMEOUT*1000)) {
                 ts_HM = millis();
@@ -1110,7 +1110,7 @@ bool HoymilesCommand(float power) {
         return false;
     }
 
-    if (power > 0) {  // turn on Hoymiles
+    if (power == HM_ON) {  // turn on Hoymiles
         if (radio.writeFast(hm_turnon, sizeof(hm_turnon)))
             if (radio.txStandBy(RF24_TIMEOUT*1000)) {
                 ts_HM = millis();
