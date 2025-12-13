@@ -1122,33 +1122,32 @@ bool HoymilesCommand(float power) {
         return false;
     }
 
-    if (power < 0) {  // set Hoymiles power limit
-        // calculate power limit value for Hoymiles RF24 command
-        unsigned int limit = round(-10*power);
-        if (power >= HM_LOW_POWER_THRESHOLD) limit = round(HM_LOW_POWER_FORMULA);
-        if (power < HM_HIGH_POWER_THRESHOLD) limit = round(HM_HIGH_POWER_FORMULA);
-        // update RF24 command with calculated power value and CRCs
-        hm_power[12] = highByte(limit);
-        hm_power[13] = lowByte(limit);
-        crc16.restart();
-        crc16.add(&hm_power[10],6);
-        unsigned int crc = crc16.getCRC();
-        hm_power[16] = highByte(crc);
-        hm_power[17] = lowByte(crc);
-        crc8.restart();
-        crc8.add(hm_power, 18);
-        hm_power[18] = crc8.getCRC();
-
-        if (radio.writeFast(hm_power, sizeof(hm_power)))
-            if (radio.txStandBy(RF24_TIMEOUT*1000)) {
-                ts_HM = millis();
-                return true;
-            }
-        // RF24 command failed
-        ts_HM = millis();
-        error_msg = "Hoymiles RF24 power command failed";
-        return false;
-    }
+    // set Hoymiles power limit
+    // calculate power limit value for Hoymiles RF24 command
+    unsigned int limit = round(-10*power);
+    if (power >= HM_LOW_POWER_THRESHOLD) limit = round(HM_LOW_POWER_FORMULA);
+    if (power < HM_HIGH_POWER_THRESHOLD) limit = round(HM_HIGH_POWER_FORMULA);
+    // update RF24 command with calculated power value and CRCs
+    hm_power[12] = highByte(limit);
+    hm_power[13] = lowByte(limit);
+    crc16.restart();
+    crc16.add(&hm_power[10],6);
+    unsigned int crc = crc16.getCRC();
+    hm_power[16] = highByte(crc);
+    hm_power[17] = lowByte(crc);
+    crc8.restart();
+    crc8.add(hm_power, 18);
+    hm_power[18] = crc8.getCRC();
+    
+    if (radio.writeFast(hm_power, sizeof(hm_power)))
+        if (radio.txStandBy(RF24_TIMEOUT*1000)) {
+            ts_HM = millis();
+            return true;
+        }
+    // RF24 command failed
+    ts_HM = millis();
+    error_msg = "Hoymiles RF24 power command failed";
+    return false;
 }
 
 bool UpdateDDNS() {
