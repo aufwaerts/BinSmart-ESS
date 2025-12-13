@@ -95,6 +95,7 @@ const int DDNS_UPDATE_INTERVAL = 60;  // DDNS IP address check interval (in secs
 const int EM_RESET_INTERVAL = 600;  // EM internal data reset interval (in secs)
 const int READCOMMAND_TIMEOUT = 4;  // max waiting time (in secs) for terminal input
 const int HTTP_TIMEOUT = 6;  // max waiting time (in secs) for HTTP responses
+const int RF24_TIMEOUT = 4;  // max waiting time (in secs) for RF24 responses
 const int ESS_TIMEZONE = +1;  // ESS is installed in this timezone (relative to UTC)
 const float ESS_LATITUDE = 46.**;  // geo coordinates of ESS
 const float ESS_LONGITUDE = 13.**;
