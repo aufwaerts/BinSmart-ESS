@@ -8,10 +8,6 @@
 #define UART_RX_PIN 16
 #define UART_TX_PIN 17
 
-// Definitions for UserCommand()
-#define REPEAT false
-#define READ true
-
 // Networking
 const String WIFI_SSID = "***";
 const String WIFI_PWD = "***";
@@ -45,6 +41,8 @@ const int HM_LOW_POWER_THRESHOLD = -90;  // tests have shown that Hoymiles power
 const int HM_HIGH_POWER_THRESHOLD = -160;  // tests have also shown that Hoymiles power above this threshold needs a different formula
 // #define HM_HIGH_POWER_FORMULA -0.01977*power*power-13.40136*power+24.2 (this was for HM-300)
 #define HM_HIGH_POWER_FORMULA -0.00019255*power*power*power-0.1629286114853008*power*power-48.3149403751306*power-2761.25
+#define HM_OFF 0
+#define HM_ON 1
 
 // Meanwell power parameters
 const int MW_MIN_POWER = 12;  // Meanwell turned off below min_power
