@@ -30,16 +30,13 @@ const int PV_MAX_POWER = 360;
 // Hoymiles power parameters
 const int HM_MIN_POWER = -12;  // Hoymiles turned off above min_power
 const int HM_MAX_POWER = -200;  // Hoymiles discharging power limit
-// tests have shown that Hoymiles power output is non-linear, the following formula corrects it
-// the formula needs adapting for different inverters and/or different battery voltages
+// tests have shown that Hoymiles power output is non-linear, the following formulas correct it
+// the formulas needs adapting for different inverters and/or different battery voltages
 // this is an excellent site for determining the formula parameters: https://www.arndt-bruenner.de/mathe/scripts/regrnl.htm
 // formulas include conversion to positive power values in deciwatts
-#define HM_POWER_FORMULA -10*power
-const int HM_LOW_POWER_THRESHOLD = -90;  // tests have shown that Hoymiles power below this threshold needs a different formula
-// #define HM_LOW_POWER_FORMULA -0.001308*power*power*power-0.1891*power*power-17.1*power-19 (this was for HM-300)
+const int HM_LOW_POWER_THRESHOLD = -90;  // power below this threshold needs a special formula
 #define HM_LOW_POWER_FORMULA -0.00072275*power*power*power-0.136224*power*power-16.484*power-9.45
-const int HM_HIGH_POWER_THRESHOLD = -160;  // tests have also shown that Hoymiles power above this threshold needs a different formula
-// #define HM_HIGH_POWER_FORMULA -0.01977*power*power-13.40136*power+24.2 (this was for HM-300)
+const int HM_HIGH_POWER_THRESHOLD = -160;  // power above this value needs a special formula
 #define HM_HIGH_POWER_FORMULA -0.00019255*power*power*power-0.1629286114853008*power*power-48.3149403751306*power-2761.25
 #define HM_OFF 0
 #define HM_ON 1
