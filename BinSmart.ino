@@ -1102,8 +1102,8 @@ bool HoymilesCommand(float power) {
     while (millis()-ts_HM < 200);  // minimum delay between two consecutive HM commands: 200 ms
 
     if (!power) {  // turn off Hoymiles
-        if (radio.writeBlocking(hm_turnoff, sizeof(hm_turnoff), 1000))
-            if (radio.txStandBy(2000)) {
+        if (radio.writeFast(hm_turnoff, sizeof(hm_turnoff)))
+            if (radio.txStandBy(RF24_TIMEOUT*1000)) {
                 ts_HM = millis();
                 return true;
             }
@@ -1114,8 +1114,8 @@ bool HoymilesCommand(float power) {
     }
 
     if (power > 0) {  // turn on Hoymiles
-        if (radio.writeBlocking(hm_turnon, sizeof(hm_turnon), 1000))
-            if (radio.txStandBy(2000)) {
+        if (radio.writeFast(hm_turnon, sizeof(hm_turnon)))
+            if (radio.txStandBy(RF24_TIMEOUT*1000)) {
                 ts_HM = millis();
                 return true;
             }
@@ -1142,8 +1142,8 @@ bool HoymilesCommand(float power) {
         crc8.add(hm_power, 18);
         hm_power[18] = crc8.getCRC();
 
-        if (radio.writeBlocking(hm_power, sizeof(hm_power), 1000))
-            if (radio.txStandBy(2000)) {
+        if (radio.writeFast(hm_power, sizeof(hm_power)))
+            if (radio.txStandBy(RF24_TIMEOUT*1000)) {
                 ts_HM = millis();
                 return true;
             }
