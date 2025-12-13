@@ -56,4 +56,4 @@ float from_ess = 0, to_ess = 0, ess_to_cons = 0, ess_to_grid = 0;  // ESS energy
 bool manual_mode = false, auto_recharge = false;
 char buf[30];  // buffer for formatting output with sprintf()
 String cycle_msg, ota_msg, cmd_resp;
-char repeat_command = 0;  // saves user commands that are to be repeated
+char command = 0;  // user command (read via telnet)
