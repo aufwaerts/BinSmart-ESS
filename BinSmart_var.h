@@ -47,7 +47,7 @@ float pbat;  // Batt DC power [W]
 int mw_max_power;  // MW max charging power depends on vbat, will be calculated after first read of vbat from BMS
 int hm_power_limit = HM_MAX_POWER, mw_power_limit = mw_max_power;
 unsigned long mw_counter = 0;  // counter for Meanwell plug state changes (i.e. relay operations)
-bool em_eco_mode, pm_eco_mode, mwplug_eco_mode;  // eco mode of Shellys
+bool pm_eco_mode = false, mwplug_eco_mode = false;  // eco mode of Shellys
 bool mwplug_on = false;  // state of Meanwell Shelly plug (allows counting of plug relay operations)
 bool uvp_sleep_mode = false;  // true if system is in sleep mode (UVP active and low PV production)
 float from_pv = 0, pv_to_cons = 0, pv_to_ess = 0, pv_to_grid = 0, pv_consumed = 0;  // PV energy counters [Wh]
