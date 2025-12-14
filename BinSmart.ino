@@ -169,10 +169,10 @@ void loop() {
     ShellyCommand(EM_STATUS);  // Read local time and grid power from Shelly 3EM (while BMS is fetching cell voltages)
     ReadBMSResponse();  // Read cell voltages from BMS
     SetNewPower();  // Set power limits, calculate and apply new charging/discharging power
-    UserCommand();  // Process user command from previous cycle(s)
-    FinishCycle();  // Update energy counters, print cycle info, read PV power from Shelly 1PM, carry out maintenance tasks
-    CheckErrors();  // Check errors, halt system if an error is persistent, or show completed cycle and error status by flashing LED
-
+    UserCommand();  // Prepare response to user command from previous cycle(s)
+    FinishCycle();  // Update energy counters, read PV power, print cycle info and command response, run maintenance task
+    CheckErrors();  // Check errors, halt system if error is persistent, show cycle status by flashing LED
+    
     // Read user command while waiting for power changes to take effect (UVP sleep mode: extend waiting time)
     while (millis()-ts_power < max(PROCESSING_DELAY, uvp_sleep_mode * UVP_SLEEP_DELAY))
         if (ReadCommand() && (millis()-ts_power >= PROCESSING_DELAY)) break;
@@ -597,15 +597,15 @@ void FinishCycle() {
         cycle_msg += "\r\n\n";
     }
 
+    // Daytime (Shelly 1PM eco mode turned off): Read PV power from Shelly 1PM (at nighttime power_pv is zero)
+    if (!pm_eco_mode) ShellyCommand(PM_STATUS);
+    
     // Put together and print output message
     output_msg = cycle_msg;
     output_msg += cmd_resp;
     // Append command prompt
     output_msg += "Enter command or [h] for help: ";
     telnet.print(output_msg);
-
-    // Daytime (Shelly 1PM eco mode turned off): Read PV power from Shelly 1PM (at nighttime power_pv is zero)
-    if (!pm_eco_mode) ShellyCommand(PM_STATUS);
 
     // ESS is asleep: check for new min grid power (min household consumption)
     if (uvp_sleep_mode && (power_grid < power_grid_min)) {
