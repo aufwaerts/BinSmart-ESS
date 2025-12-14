@@ -180,4 +180,6 @@ const String MODE_SYMBOL[] = {""," 👈"," 🔌"};
 const String WIFI_SYMBOL[] = {" ⚠️­"," 📶"};
 const String ERROR_SYMBOL = "❌";
 const String BALANCER_SYMBOL = " 🔄";
-
+const String CLEAR_SCREEN = "\033[0H\033[0J";
+const String SHOW_CURSOR = "\033[?25h";
+const String HIDE_CURSOR = "\033[?25l";
