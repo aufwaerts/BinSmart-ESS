@@ -562,7 +562,7 @@ void FinishCycle() {
     }
     else if (filter_cycles && (filter_cycles < POWER_FILTER_CYCLES)) cycle_msg += POWERFILTER_SYMBOL[filter_cycles%12];
     cycle_msg += MODE_SYMBOL[manual_mode + 2*auto_recharge];
-    cycle_msg += "\r\n";
+    cycle_msg += "\r\n ";
 
     // House symbol, UVP limit symbol
     cycle_msg += HOUSE_SYMBOL;
