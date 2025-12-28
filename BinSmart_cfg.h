@@ -20,9 +20,8 @@ IPAddress SUBNET(*,*,*,*);   // WiFi subnet
 IPAddress DNS_SERVER1(8,8,8,8);  // Google DNS resolver
 IPAddress DNS_SERVER2(9,9,9,9);  // Quad9 DNS server
 const String EM_ADDR = "*.*.*.*";  // Shelly 3EM
-const String PM_ADDR = "*.*.*.*";  // Shelly Plus 1PM
-const String MWPLUG_ADDR = "*.*.*.*";  // Shelly Plus Plug, connecting Meanwell charger to AC
-const String HMPLUG_ADDR = "*.*.*.*";  // Shelly Plus Plug, connecting Hoymiles inverter to AC
+const String PM1_ADDR = "*.*.*.*";  // Shelly Plus 1PM, connecting Maxeon solar panel to AC
+const String PM2_ADDR = "*.*.*.*";  // Shelly 2PM Gen3, connecting Meanwell charger and Hoymiles inverter to AC
 
 // PV module/inverter max AC output
 const int PV_MAX_POWER = 360;
@@ -89,8 +88,8 @@ const byte BMS_CURRENT[] = {BMS_STX_1, BMS_STX_2, 0x00, 0x13, 0x00, 0x00, 0x00, 
 
 // Time/Timer settings
 const int PROCESSING_DELAY = 2000;  // minimum delay (in msecs) for power changes to take effect
-const int UVP_SLEEP_DELAY = 30000;  // cycle duration (in msecs) during UVP sleep mode
-const int MW_PLUG_TIMER = 60;  // number of secs after which Meanwell plug is automatically turned off (safety feature if system fails)
+const int UVP_SLEEP_DELAY = 20000;  // cycle duration (in msecs) during UVP sleep mode
+const int MW_TIMER = 60;  // number of secs after which Meanwell plug is automatically turned off (safety feature if system fails)
 const int DDNS_UPDATE_INTERVAL = 60;  // DDNS IP address check interval (in secs)
 const int EM_RESET_INTERVAL = 600;  // EM internal data reset interval (in secs)
 const int READCOMMAND_TIMEOUT = 4;  // max waiting time (in secs) for terminal input
@@ -104,21 +103,17 @@ const String GET_ASTRO_TIME = "03:30";  // time at which astro times (sunrise/su
 
 // URLs
 const String EM_STATUS = "http://" + EM_ADDR + "/status";
-const String EM_RESET = "http://" + EM_ADDR + "/reset_data";
-const String PM_STATUS = "http://" + PM_ADDR + "/rpc/Switch.GetStatus?id=0";
-const String PM_RESET = "http://" + PM_ADDR + "/rpc/Switch.ResetCounters?id=0";
-const String PM_ECO_ON = "http://" + PM_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
-const String PM_ECO_OFF = "http://" + PM_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":false}}";
-const String MWPLUG_STATUS = "http://" + MWPLUG_ADDR + "/rpc/Switch.GetStatus?id=0";
-const String MWPLUG_RESET = "http://" + MWPLUG_ADDR + "/rpc/Switch.ResetCounters?id=0";
-const String MWPLUG_ON = "http://" + MWPLUG_ADDR + "/relay/0?turn=on&timer=" + String(MW_PLUG_TIMER);
-const String MWPLUG_OFF = "http://" + MWPLUG_ADDR + "/relay/0?turn=off";
-const String MWPLUG_ECO_ON = "http://" + MWPLUG_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
-const String MWPLUG_ECO_OFF = "http://" + MWPLUG_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":false}}";
-const String HMPLUG_ON = "http://" + HMPLUG_ADDR + "/relay/0?turn=on";
-const String HMPLUG_OFF = "http://" + HMPLUG_ADDR + "/relay/0?turn=off";
-const String HMPLUG_STATUS = "http://" + HMPLUG_ADDR + "/status";
-const String HMPLUG_RESET = "http://" + HMPLUG_ADDR + "/reboot";
+const String PM1_STATUS = "http://" + PM1_ADDR + "/rpc/Switch.GetStatus?id=0";
+const String PM1_ECO_ON = "http://" + PM1_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
+const String PM1_ECO_OFF = "http://" + PM1_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":false}}";
+const String PM2_MW_STATUS = "http://" + PM2_ADDR + "/rpc/Switch.GetStatus?id=0";
+const String PM2_HM_STATUS = "http://" + PM2_ADDR + "/rpc/Switch.GetStatus?id=1";
+const String PM2_MW_ON = "http://" + PM2_ADDR + "/relay/0?turn=on&timer=" + String(MW_TIMER);
+const String PM2_MW_OFF = "http://" + PM2_ADDR + "/relay/0?turn=off";
+const String PM2_HM_ON = "http://" + PM2_ADDR + "/relay/1?turn=on";
+const String PM2_HM_OFF = "http://" + PM2_ADDR + "/relay/1?turn=off";
+const String PM2_ECO_ON = "http://" + PM2_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
+const String PM2_ECO_OFF = "http://" + PM2_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":false}}";
 const String PUBLIC_IP_SERVER = "http://api.ipify.org";  // public service for obtaining WiFi routers public IP address
 // const String PUBLIC_IP_SERVER = "http://ifconfig.me/ip";  // alternative service
 const String DDNS_SERVER_UPDATE = "http://***:***@dynupdate.no-ip.com/nic/update?hostname=***.ddns.net&myip=";  // public DDNS service
@@ -147,7 +142,7 @@ const int ESS_EMPTY = 25600;  // batt voltage at which ESS is considered "empty"
 const unsigned long PWM_DUTY_CYCLE_MAX = pow(2,PWM_RESOLUTION)-1;
 
 // Errors
-const String ERROR_TYPE[] = {"WIFI", "DDNS", "BMS", "RF24", "3EM", "1PM", "MWPLUG"};  // error messages correspond with these types! changes here also need changed error messages
+const String ERROR_TYPE[] = {"WIFI", "DDNS", "BMS", "RF24", "3EM", "1PM", "2PM"};  // error messages correspond with these types! changes here also need changed error messages
 const int ERROR_TYPES = sizeof(ERROR_TYPE)/sizeof(ERROR_TYPE[0]);
 const int ERROR_LIMIT = 20;  // number of consecutive erroneous cycles before error is considered persistent and system is halted
 const int UNCRITICAL_ERROR_TYPES = 2;  // ERROR_LIMIT doesn't apply to first ... error types
