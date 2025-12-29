@@ -51,7 +51,6 @@ int hm_power_limit = HM_MAX_POWER, mw_power_limit = mw_max_power;
 unsigned long mw_counter = 0;  // counter for Meanwell relay operations
 bool pm1_eco_mode = false, pm2_eco_mode = false;  // eco mode of Shelly PMs
 bool mw_on = false;  // state of Meanwell relay
-bool uvp_sleep_mode = false;  // true if system is in sleep mode (UVP active and low PV production)
 float en_from_pv = 0, en_pv_to_cons = 0, en_pv_to_ess = 0, en_pv_to_grid = 0, en_pv_consumed = 0;  // PV energy counters [Wh]
 float en_from_grid = 0, en_to_grid = 0, en_grid_to_cons = 0, en_grid_to_ess = 0;  // Grid energy counters [Wh]
 float en_from_ess = 0, en_to_ess = 0, en_ess_to_cons = 0, en_ess_to_grid = 0;  // ESS energy counters [Wh]
@@ -60,3 +59,4 @@ bool manual_mode = false, auto_recharge = false;
 char buf[30];  // buffer for formatting output with sprintf()
 String cycle_msg, ota_msg, cmd_resp, output_msg;  // output message strings
 char command = 0;  // user command (read via telnet)
+
