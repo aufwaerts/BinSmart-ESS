@@ -158,7 +158,7 @@ void loop() {
 
     BMSCommand(BMS_VOLTAGES, sizeof(BMS_VOLTAGES));  // Read cell voltages from BMS
     if (daytime) ShellyCommand(PM1_STATUS);  // Read PV power from Shelly 1PM
-    if (power_new) ShellyCommand(PM2_STATUS[power_new < 0]);
+    if (power_new) ShellyCommand(PM2_STATUS[power_new < 0]);  // Read Meanwell or Hoymiles AC power from Shelly 2PM
     ShellyCommand(EM_STATUS);  // Read local time and grid power from Shelly 3EM
     SetNewPower();  // Set power limits, calculate and apply new charging/discharging power
     UserCommand();  // Respond to user command from previous cycle(s)
