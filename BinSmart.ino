@@ -162,7 +162,7 @@ void loop() {
     ShellyCommand(EM_STATUS);  // Read local time and grid power from Shelly 3EM
     SetNewPower();  // Set power limits, calculate and apply new charging/discharging power
     UserCommand();  // Respond to user command from previous cycle(s)
-    FinishCycle();  // Update energy counters, read PV power, print cycle info and command response, run maintenance task
+    FinishCycle();  // Update energy counters, read PV power, print cycle info and command response, carry out maintenance tasks
     CheckErrors();  // Check errors, halt system if error is persistent, show cycle status by flashing LED
 
     // Read user command while waiting for power changes to take effect
