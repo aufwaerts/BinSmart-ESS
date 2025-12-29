@@ -87,8 +87,7 @@ const byte BMS_VOLTAGES[] = {BMS_STX_1, BMS_STX_2, 0x00, 0x13, 0x00, 0x00, 0x00,
 const byte BMS_CURRENT[] = {BMS_STX_1, BMS_STX_2, 0x00, 0x13, 0x00, 0x00, 0x00, 0x00, BMS_READ_DATA, 0x03, 0x00, BMS_CURRENT_ID, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0xAA};
 
 // Time/Timer settings
-const int PROCESSING_DELAY = 2000;  // minimum delay (in msecs) for power changes to take effect
-const int UVP_SLEEP_DELAY = 20000;  // cycle duration (in msecs) during UVP sleep mode
+const int PROCESSING_DELAY = 2;  // minimum delay (in secs) for power changes to take effect
 const int MW_TIMER = 60;  // number of secs after which Meanwell plug is automatically turned off (safety feature if system fails)
 const int DDNS_UPDATE_INTERVAL = 60;  // DDNS IP address check interval (in secs)
 const int EM_RESET_INTERVAL = 600;  // EM internal data reset interval (in secs)
@@ -106,8 +105,7 @@ const String EM_STATUS = "http://" + EM_ADDR + "/status";
 const String PM1_STATUS = "http://" + PM1_ADDR + "/rpc/Switch.GetStatus?id=0";
 const String PM1_ECO_ON = "http://" + PM1_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
 const String PM1_ECO_OFF = "http://" + PM1_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":false}}";
-const String PM2_MW_STATUS = "http://" + PM2_ADDR + "/rpc/Switch.GetStatus?id=0";
-const String PM2_HM_STATUS = "http://" + PM2_ADDR + "/rpc/Switch.GetStatus?id=1";
+const String PM2_STATUS[] = {"http://" + PM2_ADDR + "/rpc/Switch.GetStatus?id=0", "http://" + PM2_ADDR + "/rpc/Switch.GetStatus?id=1"};
 const String PM2_MW_ON = "http://" + PM2_ADDR + "/relay/0?turn=on&timer=" + String(MW_TIMER);
 const String PM2_MW_OFF = "http://" + PM2_ADDR + "/relay/0?turn=off";
 const String PM2_HM_ON = "http://" + PM2_ADDR + "/relay/1?turn=on";
