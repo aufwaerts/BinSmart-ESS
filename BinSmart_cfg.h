@@ -27,28 +27,31 @@ const String PM2_ADDR = "*.*.*.*";  // Shelly 2PM Gen3, connecting Meanwell char
 const int PV_MAX_POWER = 360;
 
 // Hoymiles power parameters
-const int HM_MIN_POWER = -12;  // Hoymiles turned off above min_power
-const int HM_MAX_POWER = -200;  // Hoymiles discharging power limit
-// tests have shown that Hoymiles power output is non-linear, the following formulas correct it
+const int HM_MIN_POWER = -61;  // Hoymiles turned off above min_power
+const int HM_MAX_POWER = -180;  // Hoymiles discharging power limit
+#define HM_POWER_FORMULA -10*power
+// tests have shown that Hoymiles power output in low and high power ranges is non-linear, the following formulas correct it
 // the formulas needs adapting for different inverters and/or different battery voltages
 // this is an excellent site for determining the formula parameters: https://www.arndt-bruenner.de/mathe/scripts/regrnl.htm
-// formulas include conversion to positive power values in deciwatts
-const int HM_LOW_POWER_THRESHOLD = -90;  // power below this threshold needs a special formula
+// const int HM_LOW_POWER_THRESHOLD = -90;  // power output below this value is non-linear
+const int HM_LOW_POWER_THRESHOLD = -61;
 #define HM_LOW_POWER_FORMULA -0.00072275*power*power*power-0.136224*power*power-16.484*power-9.45
-const int HM_HIGH_POWER_THRESHOLD = -160;  // power above this value needs a special formula
+// const int HM_HIGH_POWER_THRESHOLD = -160;  // power output above this value is non-linear
+const int HM_HIGH_POWER_THRESHOLD = -180;
 #define HM_HIGH_POWER_FORMULA -0.00019255*power*power*power-0.1629286114853008*power*power-48.3149403751306*power-2761.25
-#define HM_OFF 0
-#define HM_ON 1
+#define HM_OFF false
+#define HM_ON true
 
 // Meanwell power parameters
-const int MW_MIN_POWER = 12;  // Meanwell turned off below min_power
+const int MW_MIN_POWER = 25;  // Meanwell turned off below min_power
 const int MW_RECHARGE_POWER = 200;  // Meanwell power setting for automatic recharging (to prevent BMS turnoff): MW operates at highest efficiency
-// the following formulas are the result of Meanwell power output tests, they need adapting for different chargers
-// translating MW charging power to PWM value: higher PWM value means less power
-#define MW_PWM_FORMULA PWM_DUTY_CYCLE_MAX*(0.9636-77.057*power/vbat)  // PWM signal controls Meanwell charging current; for correct charging power, vbat needs to be included in PWM formula
-const int MW_LOW_POWER_THRESHOLD = 25;  // Meanwell power output below this threshold is not linear
+// the following formulas are the results of Meanwell HLG-320 power output tests
+// translating PWM value to charging power: higher PWM value means less power
+// PWM signal controls Meanwell charging current; for correct charging power, vbat needs to be included in PWM formula
+#define MW_POWER_FORMULA PWM_DUTY_CYCLE_MAX*(0.9636-77.057*power/vbat)
+const int MW_LOW_POWER_THRESHOLD = 25;  // power output below this value is non-linear
 #define MW_LOW_POWER_FORMULA PWM_DUTY_CYCLE_MAX*(129119.635*power/vbat*power/vbat-321.337*power/vbat+1.08)
-#define MW_POWER_LIMIT_FORMULA vbat/77.057*(0.9636-1.0/PWM_DUTY_CYCLE_MAX)  // MW max charging power also depends on vbat
+#define MW_POWER_LIMIT_FORMULA vbat/77.057*(0.9636-1.0/PWM_DUTY_CYCLE_MAX)  // MW max charging power depends on vbat
 
 // Hoymiles/RF24 comms
 const byte RF24_CHANNEL = 03; // Possible RF24 channles for Hoymiles comms are 03, 23, 40, 61, 75; frequency in MHz is 2400 + channel
@@ -92,8 +95,8 @@ const int MW_TIMER = 60;  // number of secs after which Meanwell plug is automat
 const int DDNS_UPDATE_INTERVAL = 60;  // DDNS IP address check interval (in secs)
 const int EM_RESET_INTERVAL = 600;  // EM internal data reset interval (in secs)
 const int READCOMMAND_TIMEOUT = 4;  // max waiting time (in secs) for terminal input
-const int HTTP_TIMEOUT = 8;  // max waiting time (in secs) for HTTP responses
-const int RF24_KEEPALIVE = 20;  // number of secs after which Hoymiles RF24 module receives "keep alive" message
+const int HTTP_TIMEOUT = 6;  // max waiting time (in secs) for HTTP responses
+const int HOYMILES_KEEPALIVE = 30;  // number of secs after which Hoymiles RF24 module receives "keep alive" message
 const int RF24_TIMEOUT = 4;  // max waiting time (in secs) for RF24 responses
 const int ESS_TIMEZONE = +1;  // ESS is installed in this timezone (relative to UTC)
 const float ESS_LATITUDE = 46.**;  // geo coordinates of ESS
@@ -102,6 +105,7 @@ const String GET_ASTRO_TIME = "03:30";  // time at which astro times (sunrise/su
 
 // URLs
 const String EM_STATUS = "http://" + EM_ADDR + "/status";
+const String EM_RESET = "http://" + EM_ADDR + "/reset_data";
 const String PM1_STATUS = "http://" + PM1_ADDR + "/rpc/Switch.GetStatus?id=0";
 const String PM1_ECO_ON = "http://" + PM1_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
 const String PM1_ECO_OFF = "http://" + PM1_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":false}}";
@@ -118,8 +122,8 @@ const String DDNS_SERVER_UPDATE = "http://***:***@dynupdate.no-ip.com/nic/update
 
 // Power settings
 const int POWER_TARGET_DEFAULT = 5;  // System is aiming for this amount of watts to be drawn from grid
-const int POWER_TARGET_DEVIATION = 10;  // Max allowed deviation (+/-) from target power
-const int POWER_RAMPDOWN_RATE = 40; // Max power decrease per polling interval, MUST BE EQUAL OR HIGHER THAN -MW_MIN_POWER
+const int POWER_TARGET_DEVIATION = 5;  // Max allowed deviation (+/-) from target power
+const int POWER_RAMPDOWN_RATE = -40; // Max power decrease per polling interval, MUST BE EQUAL OR HIGHER THAN -MW_MIN_POWER
 const int POWER_FILTER_CYCLES = 12;  // Number of cycles during which power spikes are filtered out
 const float POWER_LIMIT_RAMPDOWN = 0.67;  // Power rampdown rate when CELL_OVP or CELL_UVP is reached
 
