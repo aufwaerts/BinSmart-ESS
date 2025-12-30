@@ -690,11 +690,7 @@ void CheckErrors() {
 }
 
 bool ReadCommand() {
-    if (!telnet) {
-        telnet = server.available();  // new telnet session?
-        telnet.print(cycle_msg);  // welcome new telnet session with cycle message
-        return false;
-    }
+    if (!telnet) telnet = server.available();  // new telnet session?
     if (!telnet.available()) return false;  // user command available?
     command = telnet.readString()[0];  // read user command (discard everything after first character)
     return true;
