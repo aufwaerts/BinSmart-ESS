@@ -361,15 +361,21 @@ void SetNewPower() {
     // Update OVP max charging power, depending on vbat and max cell voltage
     if ((vcell_max <= ESS_OVPR) || mw_limit_was_max) mw_power_limit = mw_max_power;  // exit OVP mode or update Meanwell power limit
     if (vcell_max >= ESS_OVP) {
-        mw_power_limit = round(power_old*POWER_LIMIT_RAMPDOWN);  // ramp down charging power limit softly
-        if (mw_power_limit < MW_MIN_POWER) mw_power_limit = 0;  // enter OVP mode
+        if (mw_power_limit == MW_MIN_POWER) mw_power_limit = 0;  // enter OVP mode
+        else {
+            mw_power_limit = round(power_old*POWER_LIMIT_RAMPDOWN);  // ramp down charging power limit softly
+            if (mw_power_limit < MW_MIN_POWER) mw_power_limit = MW_MIN_POWER;  // last power limit before OVP mode
+        }
     }
 
     // Update UVP max discharging power, depending on min cell voltage
     if (vcell_min >= ESS_UVPR) hm_power_limit = HM_MAX_POWER;  // exit UVP mode
     if (vcell_min <= ESS_UVP) {
-        hm_power_limit = round(power_old*POWER_LIMIT_RAMPDOWN);  // ramp down discharging power limit softly
-        if (hm_power_limit > HM_MIN_POWER) hm_power_limit = 0;  // enter UVP mode
+        if (hm_power_limit == HM_MIN_POWER) hm_power_limit = 0;  // enter UVP mode
+        else {
+            hm_power_limit = round(power_old*POWER_LIMIT_RAMPDOWN);  // ramp up discharging power limit softly
+            if (hm_power_limit > HM_MIN_POWER) hm_power_limit = HM_MIN_POWER;  // last power limit before UVP mode
+        }
     }
 
     // Turn on/off automatic recharge feature (prevents BMS Cell UVP shutdown)
