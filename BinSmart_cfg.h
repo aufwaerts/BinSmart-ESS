@@ -23,35 +23,53 @@ const String EM_ADDR = "*.*.*.*";  // Shelly 3EM
 const String PM1_ADDR = "*.*.*.*";  // Shelly Plus 1PM, connecting Maxeon solar panel to AC
 const String PM2_ADDR = "*.*.*.*";  // Shelly 2PM Gen3, connecting Meanwell charger and Hoymiles inverter to AC
 
-// PV module/inverter max AC output
-const int PV_MAX_POWER = 360;
+// Power settings
+const int PV_MAX_POWER = 360;  // PV module/inverter max AC output
+const int POWER_TARGET_DEFAULT = 5;  // System is aiming for this amount of watts to be drawn from grid
+const int POWER_TARGET_TOLERANCE = 5;  // Max tolerated deviation (+/-) from target power
+const int HM_LOW_POWER_TOLERANCE = 15;  // Max tolerated positive deviation when Hoymiles is below HM_LOW_POWER_THRESHOLD
+const int POWER_RAMPDOWN_RATE = -40; // Max power decrease per cycle
+const int POWER_FILTER_CYCLES = 12;  // Number of cycles during which power spikes are filtered out
+const float POWER_LIMIT_RAMPDOWN = 0.67;  // Power rampdown rate when CELL_OVP or CELL_UVP is reached
 
-// Hoymiles power parameters
-const int HM_MIN_POWER = -61;  // Hoymiles turned off above min_power
-const int HM_MAX_POWER = -180;  // Hoymiles discharging power limit
-#define HM_POWER_FORMULA -10*power
-// tests have shown that Hoymiles power output in low and high power ranges is non-linear, the following formulas correct it
-// the formulas needs adapting for different inverters and/or different battery voltages
-// this is an excellent site for determining the formula parameters: https://www.arndt-bruenner.de/mathe/scripts/regrnl.htm
-// const int HM_LOW_POWER_THRESHOLD = -90;  // power output below this value is non-linear
-const int HM_LOW_POWER_THRESHOLD = -61;
-#define HM_LOW_POWER_FORMULA -0.00072275*power*power*power-0.136224*power*power-16.484*power-9.45
-// const int HM_HIGH_POWER_THRESHOLD = -160;  // power output above this value is non-linear
-const int HM_HIGH_POWER_THRESHOLD = -180;
-#define HM_HIGH_POWER_FORMULA -0.00019255*power*power*power-0.1629286114853008*power*power-48.3149403751306*power-2761.25
+// Time/Timer settings
+const int PROCESSING_DELAY = 2;  // minimum delay (in secs) for power changes to take effect
+const int MW_TIMER = 60;  // number of secs after which Meanwell is automatically turned off (unless keep-alive message is received)
+const int DDNS_UPDATE_INTERVAL = 60;  // DDNS IP address check interval (in secs)
+const int EM_RESET_INTERVAL = 600;  // EM internal data reset interval (in secs)
+const int READCOMMAND_TIMEOUT = 4;  // max waiting time (in secs) for terminal input
+const int HTTP_TIMEOUT = 6;  // max waiting time (in secs) for HTTP responses
+const int HOYMILES_KEEPALIVE = 30;  // number of secs after which Hoymiles receives "keep alive" message
+const int RF24_TIMEOUT = 4;  // max waiting time (in secs) for RF24 responses
+const int ESS_TIMEZONE = +1;  // ESS is installed in this timezone (relative to UTC)
+const float ESS_LATITUDE = 46.***;  // geo coordinates of ESS
+const float ESS_LONGITUDE = 13.***;
+const String GET_ASTRO_TIME = "03:30";  // time at which astro times (sunrise/sunset) will be calculated (after a possible DST change, before sunrise)
+
+// Meanwell (charging) power parameters
+const int MW_MAX_POWER = 340;  // Meanwell power limit
+const int MW_MIN_POWER = 15;  // Meanwell turned off below min_power (power output would be unstable and very inefficient)
+const int MW_LOW_POWER_THRESHOLD = 25;  // power output below this threshold is non-linear
+const int MW_RECHARGE_POWER = 200;  // power setting for automatic recharging (prevents BMS UVP)
+// the following formulas are the results of Meanwell HLG-320 power output tests
+// PWM signal controls Meanwell charging current; charging power also depends on vbat
+// higher PWM value means less power
+#define MW_POWER_FORMULA PWM_DUTY_CYCLE_MAX*(0.9636-77.057*current)
+#define MW_LOW_POWER_FORMULA PWM_DUTY_CYCLE_MAX*(129119.635*current*current-321.337*current+1.08)
+
+// PWM params for Meanwell power control
+#define PWM_CHANNEL 0
+#define PWM_FREQ 250
+#define PWM_RESOLUTION 10
+#define PWM_DUTY_CYCLE_MIN 1
+const int PWM_DUTY_CYCLE_MAX = pow(2,PWM_RESOLUTION)-1;
+
+// Hoymiles (discharging) power parameters
+const int HM_MAX_POWER = -180;  // Limit of linear power output range
+const int HM_LOW_POWER_THRESHOLD = -61;  // Hoymiles power output above this threshold is unstable
+const int HM_MIN_POWER = -15;  // Hoymiles turned off above min_power (power would be too unstable)
 #define HM_OFF false
 #define HM_ON true
-
-// Meanwell power parameters
-const int MW_MIN_POWER = 25;  // Meanwell turned off below min_power
-const int MW_RECHARGE_POWER = 200;  // Meanwell power setting for automatic recharging (to prevent BMS turnoff): MW operates at highest efficiency
-// the following formulas are the results of Meanwell HLG-320 power output tests
-// translating PWM value to charging power: higher PWM value means less power
-// PWM signal controls Meanwell charging current; for correct charging power, vbat needs to be included in PWM formula
-#define MW_POWER_FORMULA PWM_DUTY_CYCLE_MAX*(0.9636-77.057*power/vbat)
-const int MW_LOW_POWER_THRESHOLD = 25;  // power output below this value is non-linear
-#define MW_LOW_POWER_FORMULA PWM_DUTY_CYCLE_MAX*(129119.635*power/vbat*power/vbat-321.337*power/vbat+1.08)
-#define MW_POWER_LIMIT_FORMULA vbat/77.057*(0.9636-1.0/PWM_DUTY_CYCLE_MAX)  // MW max charging power depends on vbat
 
 // Hoymiles/RF24 comms
 const byte RF24_CHANNEL = 03; // Possible RF24 channles for Hoymiles comms are 03, 23, 40, 61, 75; frequency in MHz is 2400 + channel
@@ -62,9 +80,32 @@ byte hm_turnon[15] =  {0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17,
 byte hm_turnoff[15] = {0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17, 0x41, 0x72, 0x81, 0x01, 0x00, 0x20, 0x00, 0x00};
 byte hm_power[19] =   {0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17, 0x41, 0x72, 0x81, 0x0B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
-const byte RF24_CHANNELS[] = {03, 23, 40, 61, 75};  // Frequency is 2400 + RF24_CHANNELS [MHz]
-const byte RF24_PALEVELS[] = {RF24_PA_MIN, RF24_PA_LOW, RF24_PA_HIGH, RF24_PA_MAX};
-const int RF24_TX_TIMEOUT = 2000;  // max time (in ms) for sending RF24 data and receiving an ACK packet
+// URLs
+const String EM_STATUS = "http://" + EM_ADDR + "/status";
+const String EM_RESET = "http://" + EM_ADDR + "/reset_data";
+const String PM1_STATUS = "http://" + PM1_ADDR + "/rpc/Switch.GetStatus?id=0";
+const String PM1_ECO_ON = "http://" + PM1_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
+const String PM1_ECO_OFF = "http://" + PM1_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":false}}";
+const String PM2_STATUS[] = {"http://" + PM2_ADDR + "/rpc/Switch.GetStatus?id=0", "http://" + PM2_ADDR + "/rpc/Switch.GetStatus?id=1"};
+const String PM2_MW_ON = "http://" + PM2_ADDR + "/relay/0?turn=on&timer=" + String(MW_TIMER);
+const String PM2_MW_OFF = "http://" + PM2_ADDR + "/relay/0?turn=off";
+const String PM2_HM_ON = "http://" + PM2_ADDR + "/relay/1?turn=on";
+const String PM2_HM_OFF = "http://" + PM2_ADDR + "/relay/1?turn=off";
+const String PM2_ECO_ON = "http://" + PM2_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
+const String PM2_ECO_OFF = "http://" + PM2_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":false}}";
+const String PUBLIC_IP_SERVER = "http://api.ipify.org";  // public service for obtaining WiFi routers public IP address
+// const String PUBLIC_IP_SERVER = "http://ifconfig.me/ip";  // alternative service
+const String DDNS_SERVER_UPDATE = "http://***:***@dynupdate.no-ip.com/nic/update?hostname=***.ddns.net&myip=";  // public DDNS service
+
+// BMS/batt voltage protection settings in millivolts
+const int ESS_BMS_OVP_DIFF = 100;  // min difference between ESS and BMS OVP settings
+const int ESS_BMS_UVP_DIFF = 100;  // min difference between ESS and BMS UVP settings
+const int ESS_OVP = 3500;  // one cell above this voltage: ramp down charging power (BMS_OVP - ESS_OVP >= ESS_BMS_OVP_DIFF)
+const int ESS_OVPR = 3450;  // all cells below this voltage: re-enable charging (should be the same as BMS Balancer Start Voltage)
+const int ESS_UVP = 3200;  // one cell below this voltage: ramp down discharging power (ESS_UVP - BMS_UVP >= ESS_BMS_UVP_DIFF)
+const int ESS_UVPR = 3250;  // all cells above this voltage: re-enable discharging
+const int ESS_FULL = 27100;  // batt voltage at which ESS is considered "full" (>80%)
+const int ESS_EMPTY = 25600;  // batt voltage at which ESS is considered "empty" (<20%)
 
 // BMS definitions and commands
 #define BMS_STX_1 0x4E
@@ -89,60 +130,6 @@ const byte BMS_SETTINGS[] = {BMS_STX_1, BMS_STX_2, 0x00, 0x13, 0x00, 0x00, 0x00,
 const byte BMS_VOLTAGES[] = {BMS_STX_1, BMS_STX_2, 0x00, 0x13, 0x00, 0x00, 0x00, 0x00, BMS_READ_DATA, 0x03, 0x00, BMS_VCELLS_ID, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0x9F};
 const byte BMS_CURRENT[] = {BMS_STX_1, BMS_STX_2, 0x00, 0x13, 0x00, 0x00, 0x00, 0x00, BMS_READ_DATA, 0x03, 0x00, BMS_CURRENT_ID, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0xAA};
 
-// Time/Timer settings
-const int PROCESSING_DELAY = 2;  // minimum delay (in secs) for power changes to take effect
-const int MW_TIMER = 60;  // number of secs after which Meanwell plug is automatically turned off (safety feature if system fails)
-const int DDNS_UPDATE_INTERVAL = 60;  // DDNS IP address check interval (in secs)
-const int EM_RESET_INTERVAL = 600;  // EM internal data reset interval (in secs)
-const int READCOMMAND_TIMEOUT = 4;  // max waiting time (in secs) for terminal input
-const int HTTP_TIMEOUT = 6;  // max waiting time (in secs) for HTTP responses
-const int HOYMILES_KEEPALIVE = 30;  // number of secs after which Hoymiles RF24 module receives "keep alive" message
-const int RF24_TIMEOUT = 4;  // max waiting time (in secs) for RF24 responses
-const int ESS_TIMEZONE = +1;  // ESS is installed in this timezone (relative to UTC)
-const float ESS_LATITUDE = 46.**;  // geo coordinates of ESS
-const float ESS_LONGITUDE = 13.**;
-const String GET_ASTRO_TIME = "03:30";  // time at which astro times (sunrise/sunset) will be calculated (after a possible DST change, before sunrise)
-
-// URLs
-const String EM_STATUS = "http://" + EM_ADDR + "/status";
-const String EM_RESET = "http://" + EM_ADDR + "/reset_data";
-const String PM1_STATUS = "http://" + PM1_ADDR + "/rpc/Switch.GetStatus?id=0";
-const String PM1_ECO_ON = "http://" + PM1_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
-const String PM1_ECO_OFF = "http://" + PM1_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":false}}";
-const String PM2_STATUS[] = {"http://" + PM2_ADDR + "/rpc/Switch.GetStatus?id=0", "http://" + PM2_ADDR + "/rpc/Switch.GetStatus?id=1"};
-const String PM2_MW_ON = "http://" + PM2_ADDR + "/relay/0?turn=on&timer=" + String(MW_TIMER);
-const String PM2_MW_OFF = "http://" + PM2_ADDR + "/relay/0?turn=off";
-const String PM2_HM_ON = "http://" + PM2_ADDR + "/relay/1?turn=on";
-const String PM2_HM_OFF = "http://" + PM2_ADDR + "/relay/1?turn=off";
-const String PM2_ECO_ON = "http://" + PM2_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
-const String PM2_ECO_OFF = "http://" + PM2_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":false}}";
-const String PUBLIC_IP_SERVER = "http://api.ipify.org";  // public service for obtaining WiFi routers public IP address
-// const String PUBLIC_IP_SERVER = "http://ifconfig.me/ip";  // alternative service
-const String DDNS_SERVER_UPDATE = "http://***:***@dynupdate.no-ip.com/nic/update?hostname=***.ddns.net&myip=";  // public DDNS service
-
-// Power settings
-const int POWER_TARGET_DEFAULT = 5;  // System is aiming for this amount of watts to be drawn from grid
-const int POWER_TARGET_DEVIATION = 5;  // Max allowed deviation (+/-) from target power
-const int POWER_RAMPDOWN_RATE = -40; // Max power decrease per polling interval, MUST BE EQUAL OR HIGHER THAN -MW_MIN_POWER
-const int POWER_FILTER_CYCLES = 12;  // Number of cycles during which power spikes are filtered out
-const float POWER_LIMIT_RAMPDOWN = 0.67;  // Power rampdown rate when CELL_OVP or CELL_UVP is reached
-
-// BMS/batt voltage protection settings in millivolts
-const int ESS_BMS_OVP_DIFF = 50;  // min difference between ESS and BMS OVP settings
-const int ESS_BMS_UVP_DIFF = 100;  // min difference between ESS and BMS UVP settings
-const int ESS_OVP = 3550;  // one cell above this voltage: ramp down charging power (BMS_OVP - ESS_OVP >= ESS_BMS_OVP_DIFF)
-const int ESS_OVPR = 3450;  // all cells below this voltage: re-enable charging (should be the same as BMS Balancer Start Voltage)
-const int ESS_UVP = 3200;  // one cell below this voltage: ramp down discharging power (ESS_UVP - BMS_UVP >= ESS_BMS_UVP_DIFF)
-const int ESS_UVPR = 3250;  // all cells above this voltage: re-enable discharging
-const int ESS_FULL = 27100;  // batt voltage at which ESS is considered "full" (>80%)
-const int ESS_EMPTY = 25600;  // batt voltage at which ESS is considered "empty" (<20%)
-
-// PWM params for Meanwell power control
-#define PWM_CHANNEL 0
-#define PWM_FREQ 250
-#define PWM_RESOLUTION 10
-const unsigned long PWM_DUTY_CYCLE_MAX = pow(2,PWM_RESOLUTION)-1;
-
 // Errors
 const String ERROR_TYPE[] = {"WIFI", "DDNS", "BMS", "RF24", "3EM", "1PM", "2PM"};  // error messages correspond with these types! changes here also need changed error messages
 const int ERROR_TYPES = sizeof(ERROR_TYPE)/sizeof(ERROR_TYPE[0]);
@@ -160,7 +147,7 @@ const String SUN_SYMBOL[] = {" ☀️╶"," ☀️­╶"};
 const String MOON_SYMBOL[] = {" 🌙╶─"," 🌙╶─"};
 const String PV_LEVEL_SYMBOL[] = {" ☁️╶─"," ☁️­╶─"," ⛅╶─"," ⛅╶─"," 🌤╶─"," 🌤️­╶─"," ☀️╶─"," ☀️­╶─"};
 const int PV_LEVELS = sizeof(PV_LEVEL_SYMBOL)/sizeof(PV_LEVEL_SYMBOL[0])/2;
-const String CABLE_SYMBOL = "─";
+const String CABLE_SYMBOL[] = {"","─"};
 const String PV_CABLE_SYMBOL = "─┐";
 const String ESS_CABLE_SYMBOL = "┌─";
 const String ESS_SYMBOL = "─🔋 ";
@@ -172,8 +159,8 @@ const String CONS_SYMBOL = "╴📺 ";
 const String OPS_SYMBOL[] = {" 🏃"," 🧍"," 💤🛌"};
 const String POWERFILTER_SYMBOL[] = {" 🕛"," 🕐"," 🕑"," 🕒"," 🕓"," 🕔"," 🕕"," 🕖"," 🕗"," 🕘"," 🕙"," 🕚"};
 const String RAMPDOWN_SYMBOL = "🪜";
-const String OVP_LIMIT_SYMBOL = "                       ▁▁";
-const String UVP_LIMIT_SYMBOL = "       ▔▔";
+const String MW_LIMIT_SYMBOL[] = {"                  ▁","                   ▁"};
+const String HM_LIMIT_SYMBOL[] = {"  ▔","   ▔"};
 const String MODE_SYMBOL[] = {""," 👈"," 🔌"};
 const String WIFI_SYMBOL[] = {" ⚠️­"," 📶"};
 const String ERROR_SYMBOL = "❌";
