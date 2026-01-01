@@ -46,8 +46,7 @@ int vcell_min, vcell_max;  // Cell min/max voltages (in millivolts)
 int bms_uvp;  // BMS Cell UVP value (read from BMS)
 int vbat;  // Total batt voltage [mV]
 float pbat;  // Batt DC power [W]
-int mw_max_power;  // MW max charging power depends on vbat, will be calculated after first read of vbat from BMS
-int hm_power_limit = HM_MAX_POWER, mw_power_limit = mw_max_power;
+int hm_power_limit = HM_MAX_POWER, mw_power_limit = MW_MAX_POWER;
 unsigned long mw_counter = 0;  // counter for Meanwell relay operations
 bool pm1_eco_mode = false, pm2_eco_mode = false;  // eco mode of Shelly PMs
 bool mw_on = false;  // state of Meanwell relay
