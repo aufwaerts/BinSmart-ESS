@@ -351,6 +351,7 @@ bool ShellyCommand(const String URL) {
 
 void SetNewPower() {
 
+    // Update charging/discharging power limits
     if ((vcell_max <= ESS_OVPR) || (mw_power_limit >= MW_MAX_POWER)) mw_power_limit = round(MW_POWER_LIMIT_FORMULA);  // exit OVP mode (update MW power limit)
     if (vcell_max >= ESS_OVP) {  // OVP cell voltage reached: reduce MW power limit
         if (mw_power_limit == MW_MIN_POWER) mw_power_limit = 0;  // enter OVP mode
