@@ -47,7 +47,9 @@ const float ESS_LONGITUDE = 13.***;
 const String GET_ASTRO_TIME = "03:30";  // time at which astro times (sunrise/sunset) will be calculated (after a possible DST change, before sunrise)
 
 // Meanwell (charging) power parameters
-const int MW_MAX_POWER = 340;  // Meanwell power limit
+const int MW_MAX_POWER = 300;  // max power output at minimum voltage (24V)
+// max power output ranges from 300 to 350W, depending on vbat
+#define MW_POWER_LIMIT_FORMULA vbat/77.057*(0.9636-1.0/PWM_DUTY_CYCLE_MAX)
 const int MW_MIN_POWER = 15;  // Meanwell turned off below min_power (power output would be unstable and very inefficient)
 const int MW_LOW_POWER_THRESHOLD = 25;  // power output below this threshold is non-linear
 const int MW_RECHARGE_POWER = 200;  // power setting for automatic recharging (prevents BMS UVP)
