@@ -15,7 +15,6 @@ const int GOOD_WIFI_RSSI = -70;  // RSSI above this value is considered "good en
 const int TELNET_PORT = ***;  // TCP port for communication with terminal
 IPAddress ESP32_ADDR(*,*,*,*);  // Local IP address of ESS
 IPAddress ROUTER_ADDR(*,*,*,*);   // Local WiFi router
-IPAddress WIN_CLIENT_ADDR(*,*,*,*);
 IPAddress SUBNET(*,*,*,*);   // WiFi subnet
 IPAddress DNS_SERVER1(8,8,8,8);  // Google DNS resolver
 IPAddress DNS_SERVER2(9,9,9,9);  // Quad9 DNS server
@@ -33,7 +32,7 @@ const int POWER_FILTER_CYCLES = 12;  // Number of cycles during which power spik
 const float POWER_LIMIT_RAMPDOWN = 0.67;  // Power rampdown rate when CELL_OVP or CELL_UVP is reached
 
 // Time/Timer settings
-const int PROCESSING_DELAY = 2;  // minimum delay (in secs) for power changes to take effect
+const int PROCESSING_DELAY = 2000;  // minimum delay (in secs) for power changes to take effect
 const int MW_TIMER = 60;  // number of secs after which Meanwell is automatically turned off (unless keep-alive message is received)
 const int DDNS_UPDATE_INTERVAL = 60;  // DDNS IP address check interval (in secs)
 const int EM_RESET_INTERVAL = 600;  // EM internal data reset interval (in secs)
@@ -88,7 +87,8 @@ const String EM_RESET = "http://" + EM_ADDR + "/reset_data";
 const String PM1_STATUS = "http://" + PM1_ADDR + "/rpc/Switch.GetStatus?id=0";
 const String PM1_ECO_ON = "http://" + PM1_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
 const String PM1_ECO_OFF = "http://" + PM1_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":false}}";
-const String PM2_STATUS[] = {"http://" + PM2_ADDR + "/rpc/Switch.GetStatus?id=0", "http://" + PM2_ADDR + "/rpc/Switch.GetStatus?id=1"};
+const String PM2_MW_STATUS = "http://" + PM2_ADDR + "/rpc/Switch.GetStatus?id=0";
+const String PM2_HM_STATUS = "http://" + PM2_ADDR + "/rpc/Switch.GetStatus?id=1";
 const String PM2_MW_ON = "http://" + PM2_ADDR + "/relay/0?turn=on&timer=" + String(MW_TIMER);
 const String PM2_MW_OFF = "http://" + PM2_ADDR + "/relay/0?turn=off";
 const String PM2_HM_ON = "http://" + PM2_ADDR + "/relay/1?turn=on";
@@ -106,8 +106,8 @@ const int ESS_OVP = 3500;  // one cell above this voltage: ramp down charging po
 const int ESS_OVPR = 3450;  // all cells below this voltage: re-enable charging (should be the same as BMS Balancer Start Voltage)
 const int ESS_UVP = 3200;  // one cell below this voltage: ramp down discharging power (ESS_UVP - BMS_UVP >= ESS_BMS_UVP_DIFF)
 const int ESS_UVPR = 3250;  // all cells above this voltage: re-enable discharging
-const int ESS_FULL = 27100;  // batt voltage at which ESS is considered "full" (>80%)
-const int ESS_EMPTY = 25600;  // batt voltage at which ESS is considered "empty" (<20%)
+const int BAT_FULL = 27100;  // voltage at which battery is considered full
+const int BAT_EMPTY = 25600;  // voltage at which battery is considered empty
 
 // BMS definitions and commands
 #define BMS_STX_1 0x4E
@@ -139,28 +139,27 @@ const int ERROR_LIMIT = 20;  // number of consecutive erroneous cycles before er
 const int UNCRITICAL_ERROR_TYPES = 2;  // ERROR_LIMIT doesn't apply to first ... error types
 
 // Symbols for a nice telnet frontend
-const String ESS_FLOW_SYMBOL[] = {"───","╴\033[32m◀\033[0m╶","╴\033[32m▶\033[0m╶","╏\033[32m◀\033[0m╶","╴\033[32m▶\033[0m╏"};  // green flow symbols
-const String PV_FLOW_SYMBOL[] = {"───","╴\033[33m◀\033[0m╶","╴\033[33m▶\033[0m╶","╴\033[33m▶\033[0m╏"};  // yellow flow symbols
-const String GRID_FLOW_SYMBOL[] = {"─","╴\033[31m◀\033[0m╶","╴\033[31m▶\033[0m╶","╴\033[31m▶\033[0m╏"};  // red flow symbols
-const String DIFF_SYMBOL[] = {" ▲"," ▼"," ▽"};
-const String ESS_LEVEL_SYMBOL[] = {"─\033[33m⢀\033[0m🔋 ","─\033[32m⢀\033[0m🔋 ","─\033[32m⢠\033[0m🔋 ","─\033[32m⢰\033[0m🔋 ","─\033[32m⢸\033[0m🔋 "};
-const int ESS_LEVELS = sizeof(ESS_LEVEL_SYMBOL)/sizeof(ESS_LEVEL_SYMBOL[0]);
-const String SUN_SYMBOL[] = {" ☀️╶"," ☀️­╶"};
-const String MOON_SYMBOL[] = {" 🌙╶─"," 🌙╶─"};
-const String PV_LEVEL_SYMBOL[] = {" ☁️╶─"," ☁️­╶─"," ⛅╶─"," ⛅╶─"," 🌤╶─"," 🌤️­╶─"," ☀️╶─"," ☀️­╶─"};
-const int PV_LEVELS = sizeof(PV_LEVEL_SYMBOL)/sizeof(PV_LEVEL_SYMBOL[0])/2;
-const String CABLE_SYMBOL[] = {"","─"};
-const String PV_CABLE_SYMBOL = "─┐";
-const String ESS_CABLE_SYMBOL = "┌─";
+const String ESS_FLOW_SYMBOL[] = {"\033[1m───\033[0m","┃\033[32m◀\033[0m╶","╴\033[32m◀\033[0m╶","┇\033[32m◀\033[0m╶","╸\033[32m◀\033[0m╺","╴\033[32m▶\033[0m╶"};  // green flow symbols
+const String PV_FLOW_SYMBOL[] = {"───","╴\033[33m▶\033[0m╶","╴\033[33m▶\033[0m┃","╴\033[33m▶\033[0m┇","╸\033[33m▶\033[0m╺","╴\033[33m◀\033[0m╶"};  // yellow flow symbols
+const String GRID_FLOW_SYMBOL[] = {"───","╴\033[31m▶\033[0m╶","╴\033[31m▶\033[0m┃","╴\033[31m▶\033[0m┇","╸\033[31m▶\033[0m╺"};  // red flow symbols
+const String DIFF_SYMBOL[] = {" ▲"," ▼"," ▼🪜"};
+const String BAT_LEVEL_SYMBOL[] = {"🪫 \033[33m⡀\033[0m ","🔋\033[32m⡀\033[0m ","🔋\033[32m⣀\033[0m ","🔋\033[32m⣄\033[0m ","🔋\033[32m⣤\033[0m ","🔋\033[32m⣦\033[0m ","🔋\033[32m⣶\033[0m ","🔋\033[32m⣷\033[0m ","🔋\033[32m⣿\033[0m "};
+const int BAT_LEVELS = sizeof(BAT_LEVEL_SYMBOL)/sizeof(BAT_LEVEL_SYMBOL[0]);
+const String MOON_SYMBOL = " 🌙╶";
+const String SUN_SYMBOL[] = {"🌞╶","🌞╺"};
+const String CABLE_SYMBOL[] = {"─","━"};
+const String PV_CABLE_SYMBOL[] = {"──┐","━━┓"};
+const String ESS_CABLE_SYMBOL[] = {"┌──","┏━━"};
 const String ESS_SYMBOL = "─🔋 ";
 const String HOUSE_SYMBOL = "             🏠";
-const String GRID_SYMBOL[] = {" 🏭╶"," 🏭╶─"};
-const String GRID_CABLE_SYMBOL = "─┘";
-const String CONS_CABLE_SYMBOL = "└─";
-const String CONS_SYMBOL[] = {"╴📺 ","─╴📺 "};
+const String GRID_SYMBOL = " 🏭╶";
+const String GRID_CABLE_SYMBOL = "──┘";
+const String CONS_CABLE_SYMBOL = "└──";
+const String CONS_SYMBOL = "╴📺 ";
 const String OPS_SYMBOL[] = {" 🏃"," 🧍"," 💤🛌"};
-const String POWERFILTER_SYMBOL = {" ⏳"};
-const String MODE_SYMBOL[] = {""," 👈"," 🔌"};
+const String POWERFILTER_SYMBOL = " ⏳";
+const String MANUAL_MODE_SYMBOL = " 👈";
+const String AUTO_RECHARGE_SYMBOL = " 🔌";
 const String WIFI_SYMBOL[] = {" ⚠️­"," 📶"};
 const String ERROR_SYMBOL = "❌";
 const String BALANCER_SYMBOL = " 🔄";
