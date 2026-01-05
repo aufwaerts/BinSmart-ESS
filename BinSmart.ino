@@ -363,7 +363,7 @@ void SetNewPower() {
 
     // Update charging/discharging power limits
     if ((vcell_max <= ESS_OVPR) || (mw_power_limit >= MW_MAX_POWER)) mw_power_limit = round(MW_POWER_LIMIT_FORMULA);  // exit OVP mode (update MW power limit)
-    if (vcell_max >= ESS_OVP) {  // OVP cell voltage reached: reduce MW power limit
+    if ((vcell_max >= ESS_OVP) && (mw_power_limit > 0)) {  // OVP cell voltage reached: reduce MW power limit
         if (mw_power_limit == MW_MIN_POWER) mw_power_limit = 0;  // enter OVP mode
         else {
             mw_power_limit = round(power_old*POWER_LIMIT_RAMPDOWN);  // ramp down charging power limit softly
@@ -372,11 +372,11 @@ void SetNewPower() {
     }
 
     if (vcell_min >= ESS_UVPR) hm_power_limit = HM_MAX_POWER;  // exit UVP mode (reset HM power limit)
-    if (vcell_min <= ESS_UVP) {  // UVP cell voltage reached: reduce HM power limit
+    if ((vcell_min <= ESS_UVP) && (hm_power_limit < 0)) {  // UVP cell voltage reached: reduce HM power limit
         if (hm_power_limit == HM_MIN_POWER) hm_power_limit = 0;  // enter UVP mode
         else {
             hm_power_limit = round(power_old*POWER_LIMIT_RAMPDOWN);  // ramp up discharging power limit softly
-            if (hm_power_limit > HM_MIN_POWER) hm_power_limit = HM_MIN_POWER;  // last power limit before UVP mode
+            if (hm_power_limit > HM_MIN_POWER) hm_power_limit = HM_MIN_POWER;
         }
     }
 
