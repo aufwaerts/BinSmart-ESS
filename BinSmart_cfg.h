@@ -32,17 +32,16 @@ const int POWER_FILTER_CYCLES = 12;  // Number of cycles during which power spik
 const float POWER_LIMIT_RAMPDOWN = 0.67;  // Power rampdown rate when CELL_OVP or CELL_UVP is reached
 
 // Time/Timer settings
-const int PROCESSING_DELAY = 2000;  // minimum delay (in secs) for power changes to take effect
-const int MW_TIMER = 60;  // number of secs after which Meanwell is automatically turned off (unless keep-alive message is received)
-const int DDNS_UPDATE_INTERVAL = 60;  // DDNS IP address check interval (in secs)
-const int EM_RESET_INTERVAL = 600;  // EM internal data reset interval (in secs)
-const int READCOMMAND_TIMEOUT = 4;  // max waiting time (in secs) for terminal input
-const int HTTP_TIMEOUT = 6;  // max waiting time (in secs) for HTTP responses
-const int HOYMILES_KEEPALIVE = 30;  // number of secs after which Hoymiles receives "keep alive" message
-const int RF24_TIMEOUT = 4;  // max waiting time (in secs) for RF24 responses
+const unsigned long PROCESSING_DELAY = 2000;  // minimum delay (in ms) for power changes to take effect
+const unsigned long DDNS_UPDATE_INTERVAL = 60000;  // DDNS IP address check interval (in ms)
+const unsigned long READINPUT_TIMEOUT = 4000;  // max waiting time (in ms) for terminal input
+const unsigned int HTTP_TIMEOUT = 6000;  // max waiting time (in ms) for HTTP responses
+const unsigned long RF24_TIMEOUT = 4000;  // max waiting time (in ms) for RF24 responses
+const unsigned long RF24_KEEPALIVE = 30000;  // number of ms after which Hoymiles RF24 interface receives "keep alive" message
+const unsigned long MW_TIMER = 60000;  // number of ms after which Meanwell is automatically turned off (unless keep-alive message is received)
 const int ESS_TIMEZONE = +1;  // ESS is installed in this timezone (relative to UTC)
-const float ESS_LATITUDE = 46.***;  // geo coordinates of ESS
-const float ESS_LONGITUDE = 13.***;
+const float ESS_LATITUDE = 46.817;  // geo coordinates of ESS
+const float ESS_LONGITUDE = 13.520;
 const String GET_ASTRO_TIME = "03:30";  // time at which astro times (sunrise/sunset) will be calculated (after a possible DST change, before sunrise)
 
 // Meanwell (charging) power parameters
@@ -89,7 +88,7 @@ const String PM1_ECO_ON = "http://" + PM1_ADDR + "/rpc/Sys.SetConfig?config={\"d
 const String PM1_ECO_OFF = "http://" + PM1_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":false}}";
 const String PM2_MW_STATUS = "http://" + PM2_ADDR + "/rpc/Switch.GetStatus?id=0";
 const String PM2_HM_STATUS = "http://" + PM2_ADDR + "/rpc/Switch.GetStatus?id=1";
-const String PM2_MW_ON = "http://" + PM2_ADDR + "/relay/0?turn=on&timer=" + String(MW_TIMER);
+const String PM2_MW_ON = "http://" + PM2_ADDR + "/relay/0?turn=on&timer=" + String(MW_TIMER/1000);
 const String PM2_MW_OFF = "http://" + PM2_ADDR + "/relay/0?turn=off";
 const String PM2_HM_ON = "http://" + PM2_ADDR + "/relay/1?turn=on";
 const String PM2_HM_OFF = "http://" + PM2_ADDR + "/relay/1?turn=off";
@@ -139,11 +138,11 @@ const int ERROR_LIMIT = 20;  // number of consecutive erroneous cycles before er
 const int UNCRITICAL_ERROR_TYPES = 2;  // ERROR_LIMIT doesn't apply to first ... error types
 
 // Symbols for a nice telnet frontend
-const String ESS_FLOW_SYMBOL[] = {"\033[1m───\033[0m","┃\033[32m◀\033[0m╶","╴\033[32m◀\033[0m╶","┇\033[32m◀\033[0m╶","╸\033[32m◀\033[0m╺","╴\033[32m▶\033[0m╶"};  // green flow symbols
+const String ESS_FLOW_SYMBOL[] = {"───","┃\033[32m◀\033[0m╶","╴\033[32m◀\033[0m╶","┇\033[32m◀\033[0m╶","╸\033[32m◀\033[0m╺","╴\033[32m▶\033[0m╶"};  // green flow symbols
 const String PV_FLOW_SYMBOL[] = {"───","╴\033[33m▶\033[0m╶","╴\033[33m▶\033[0m┃","╴\033[33m▶\033[0m┇","╸\033[33m▶\033[0m╺","╴\033[33m◀\033[0m╶"};  // yellow flow symbols
 const String GRID_FLOW_SYMBOL[] = {"───","╴\033[31m▶\033[0m╶","╴\033[31m▶\033[0m┃","╴\033[31m▶\033[0m┇","╸\033[31m▶\033[0m╺"};  // red flow symbols
 const String DIFF_SYMBOL[] = {" ▲"," ▼"," ▼🪜"};
-const String BAT_LEVEL_SYMBOL[] = {"🪫 \033[33m⡀\033[0m ","🔋\033[32m⡀\033[0m ","🔋\033[32m⣀\033[0m ","🔋\033[32m⣄\033[0m ","🔋\033[32m⣤\033[0m ","🔋\033[32m⣦\033[0m ","🔋\033[32m⣶\033[0m ","🔋\033[32m⣷\033[0m ","🔋\033[32m⣿\033[0m "};
+const String BAT_LEVEL_SYMBOL[] = {"🔋\033[33m⡀\033[0m ","🔋\033[32m⡀\033[0m ","🔋\033[32m⣀\033[0m ","🔋\033[32m⣄\033[0m ","🔋\033[32m⣤\033[0m ","🔋\033[32m⣦\033[0m ","🔋\033[32m⣶\033[0m ","🔋\033[32m⣷\033[0m ","🔋\033[32m⣿\033[0m "};
 const int BAT_LEVELS = sizeof(BAT_LEVEL_SYMBOL)/sizeof(BAT_LEVEL_SYMBOL[0]);
 const String MOON_SYMBOL = " 🌙╶";
 const String SUN_SYMBOL[] = {" 🌞╶"," 🌞╺"};
