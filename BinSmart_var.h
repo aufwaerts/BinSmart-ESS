@@ -12,6 +12,7 @@ String public_IP = "000.000.000.000", DDNS_address = "000.000.000.000";
 // BMS
 int BMS_balancer_start;  // BMS balancer cell voltage threshold [mV] (read from BMS)
 int BMS_balancer_trigger;  // BMS balancer cell diff threshold [mV] (read from BMS)
+byte BMS_resp[300];  // buffer for BMS response
 
 // Errors
 int error_counter[ERROR_TYPES];
@@ -42,8 +43,9 @@ int power_target = POWER_TARGET_DEFAULT;  // Systems aims for this grid power ta
 int filter_cycles = POWER_FILTER_CYCLES;  // for filtering out power spikes
 int vcell_min, vcell_max;  // Cell min/max voltages (in millivolts)
 int bms_uvp;  // BMS Cell UVP value (read from BMS)
-int vbat;  // Total batt voltage [mV]
 int cbat;  // Batt DC current [cA]
+int vbat, vbat_idle;  // Total batt voltage [mV] (vbat_idle for voltage at cbat=0)
+int bat_level;  // Battery state of charge, as number between 0 and BAT_SOC_LEVELS-1
 float pbat;  // Batt DC power [W]
 int hm_power_limit = HM_MAX_POWER, mw_power_limit = MW_MAX_POWER;
 unsigned long mw_counter = 0;  // counter for Meanwell relay operations
