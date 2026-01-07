@@ -638,7 +638,7 @@ void FinishCycle() {
     UpdateDDNS();
 
     // ESS is asleep: check for new min grid power (min household consumption)
-    if (pm2_eco_mode && (power_grid < power_grid_min)) {
+    if (pm1_eco_mode && pm2_eco_mode && (power_grid < power_grid_min)) {
         power_grid_min = power_grid;
         minpower_time = local_unixtime;
     }
