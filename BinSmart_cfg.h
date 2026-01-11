@@ -138,16 +138,15 @@ const int ERROR_LIMIT = 20;  // number of consecutive erroneous cycles before er
 const int UNCRITICAL_ERROR_TYPES = 2;  // ERROR_LIMIT doesn't apply to first ... error types
 
 // Symbols for a nice telnet frontend
-const String ESS_FLOW_SYMBOL[] = {"───","┃\033[32m◀\033[0m╶","╴\033[32m◀\033[0m╶","┇\033[32m◀\033[0m╶","╴\033[32m\033[1m«\033[0m╶","╴\033[32m▶\033[0m╶"};  // green flow symbols
-const String PV_FLOW_SYMBOL[] = {"───","╴\033[33m▶\033[0m╶","╴\033[33m▶\033[0m┃","╴\033[33m▶\033[0m┇","╴\033[33m\033[1m»\033[0m╶","╴\033[33m◀\033[0m╶"};  // yellow flow symbols
-const String GRID_FLOW_SYMBOL[] = {"───","╴\033[31m▶\033[0m╶","╴\033[31m▶\033[0m┃","╴\033[31m▶\033[0m┇","╴\033[31m\033[1m»\033[0m╶"};  // red flow symbols
+const String ESS_FLOW_SYMBOL[] = {"───","┃\033[32m◁\033[0m╶","╴\033[32m◀\033[0m╶","┇\033[32m◀\033[0m╶","╴\033[32m«\033[0m╶","╴\033[32m▶\033[0m╶"};  // green flow symbols
+const String PV_FLOW_SYMBOL[] = {"───","╴\033[33m▶\033[0m╶","╴\033[33m▷\033[0m┃","╴\033[33m▶\033[0m┇","╴\033[33m»\033[0m╶","╴\033[33m◀\033[0m╶"};  // yellow flow symbols
+const String GRID_FLOW_SYMBOL[] = {"───","╴\033[31m▶\033[0m╶","╴\033[31m▷\033[0m┃","╴\033[31m▶\033[0m┇","╴\033[31m»\033[0m╶"};  // red flow symbols
 const String DIFF_SYMBOL[] = {" ▲"," ▼"," ▼🪜"};
 const String BAT_LEVEL_SYMBOL[] = {"🔋\033[33m⡀\033[0m ","🔋\033[32m⡀\033[0m ","🔋\033[32m⣀\033[0m ","🔋\033[32m⣄\033[0m ","🔋\033[32m⣤\033[0m ","🔋\033[32m⣦\033[0m ","🔋\033[32m⣶\033[0m ","🔋\033[32m⣷\033[0m ","🔋\033[32m⣿\033[0m "};
 const int BAT_LEVELS = sizeof(BAT_LEVEL_SYMBOL)/sizeof(BAT_LEVEL_SYMBOL[0]);
 const String BAT_OVP_SYMBOL = "                     ▁▁▁";
 const String BAT_UVP_SYMBOL = "      ▔▔";
-const String MOON_SYMBOL = " 🌙╶";
-const String SUN_SYMBOL[] = {" 🌞╶"," 🌞╺"};
+const String NIGHT_DAY_SYMBOL[] = {" 🌙╶"," 🌞╶"};
 const String CABLE_SYMBOL = "─";
 const String PV_CABLE_SYMBOL = "──┐";
 const String ESS_CABLE_SYMBOL = "┌──";
