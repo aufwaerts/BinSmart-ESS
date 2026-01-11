@@ -561,7 +561,7 @@ void FinishCycle() {
     cycle_msg += buf;
     if (power_new != power_old) cycle_msg += DIFF_SYMBOL[(power_new < power_old) + !filter_cycles];
     else if (filter_cycles && (filter_cycles < POWER_FILTER_CYCLES)) cycle_msg += POWERFILTER_SYMBOL;
-    if (manual_mode && (power_old == power_manual)) cycle_msg += MANUAL_MODE_SYMBOL;
+    if (manual_mode) cycle_msg += MANUAL_MODE_SYMBOL;
     if (auto_recharge && (power_old == MW_RECHARGE_POWER)) cycle_msg += AUTO_RECHARGE_SYMBOL;
     cycle_msg += "\r\n";
 
