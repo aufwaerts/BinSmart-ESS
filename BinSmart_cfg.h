@@ -99,10 +99,10 @@ const String PUBLIC_IP_SERVER = "http://api.ipify.org";  // public service for o
 const String DDNS_SERVER_UPDATE = "http://***:***@dynupdate.no-ip.com/nic/update?hostname=***.ddns.net&myip=";  // public DDNS service
 
 // BMS/batt voltage protection settings in millivolts
-const int ESS_BMS_OVP_DIFF = 100;  // min difference between ESS and BMS OVP settings
+const int ESS_BMS_OVP_DIFF = 50;  // min difference between ESS and BMS OVP settings
 const int ESS_BMS_UVP_DIFF = 100;  // min difference between ESS and BMS UVP settings
-const int ESS_OVP = 3500;  // one cell above this voltage: ramp down charging power (BMS_OVP - ESS_OVP >= ESS_BMS_OVP_DIFF)
-const int ESS_OVPR = 3450;  // all cells below this voltage: re-enable charging (should be the same as BMS Balancer Start Voltage)
+const int ESS_OVP = 3550;  // one cell above this voltage: ramp down charging power (BMS_OVP - ESS_OVP >= ESS_BMS_OVP_DIFF)
+const int ESS_OVPR = 3500;  // all cells below this voltage: re-enable charging (should be the same as BMS Balancer Start Voltage)
 const int ESS_UVP = 3200;  // one cell below this voltage: ramp down discharging power (ESS_UVP - BMS_UVP >= ESS_BMS_UVP_DIFF)
 const int ESS_UVPR = 3250;  // all cells above this voltage: re-enable discharging
 const int BAT_FULL = 27100;  // voltage at which battery is considered full
