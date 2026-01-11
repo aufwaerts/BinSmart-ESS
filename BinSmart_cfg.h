@@ -105,7 +105,7 @@ const int ESS_OVP = 3550;  // one cell above this voltage: ramp down charging po
 const int ESS_OVPR = 3500;  // all cells below this voltage: re-enable charging (should be the same as BMS Balancer Start Voltage)
 const int ESS_UVP = 3200;  // one cell below this voltage: ramp down discharging power (ESS_UVP - BMS_UVP >= ESS_BMS_UVP_DIFF)
 const int ESS_UVPR = 3250;  // all cells above this voltage: re-enable discharging
-const int BAT_FULL = 27100;  // voltage at which battery is considered full
+const int BAT_FULL = 27000;  // voltage at which battery is considered full
 const int BAT_EMPTY = 25600;  // voltage at which battery is considered empty
 
 // BMS definitions and commands
@@ -138,9 +138,9 @@ const int ERROR_LIMIT = 20;  // number of consecutive erroneous cycles before er
 const int UNCRITICAL_ERROR_TYPES = 2;  // ERROR_LIMIT doesn't apply to first ... error types
 
 // Symbols for a nice telnet frontend
-const String ESS_FLOW_SYMBOL[] = {"───","┃\033[32m◁\033[0m╶","╴\033[32m◀\033[0m╶","╏\033[32m◀\033[0m╶","╴\033[32m«\033[0m╶","╴\033[32m▶\033[0m╶"};  // green flow symbols
-const String PV_FLOW_SYMBOL[] = {"───","╴\033[33m▶\033[0m╶","╴\033[33m▷\033[0m┃","╴\033[33m▶\033[0m╏","╴\033[33m»\033[0m╶","╴\033[33m◀\033[0m╶"};  // yellow flow symbols
-const String GRID_FLOW_SYMBOL[] = {"───","╴\033[31m▶\033[0m╶","╴\033[31m▷\033[0m┃","╴\033[31m▶\033[0m╏","╴\033[31m»\033[0m╶"};  // red flow symbols
+const String ESS_FLOW_SYMBOL[] = {"───","┃\033[32m◁\033[0m╶","╴\033[32m◀\033[0m╶","╏\033[32m◀\033[0m╶","\033[32m◀◀\033[0m╶","╴\033[32m▶\033[0m╶"};  // green flow symbols
+const String PV_FLOW_SYMBOL[] = {"───","╴\033[33m▶\033[0m╶","╴\033[33m▷\033[0m┃","╴\033[33m▶\033[0m╏","╴\033[33m▶▶\033[0m","╴\033[33m◀\033[0m╶"};  // yellow flow symbols
+const String GRID_FLOW_SYMBOL[] = {"───","╴\033[31m▶\033[0m╶","╴\033[31m▷\033[0m┃","╴\033[31m▶\033[0m╏","╴\033[31m▶▶\033[0m"};  // red flow symbols
 const String DIFF_SYMBOL[] = {" ▲"," ▼"," ▼🪜"};
 const String BAT_LEVEL_SYMBOL[] = {"🔋\033[33m⡀\033[0m ","🔋\033[32m⡀\033[0m ","🔋\033[32m⣀\033[0m ","🔋\033[32m⣄\033[0m ","🔋\033[32m⣤\033[0m ","🔋\033[32m⣦\033[0m ","🔋\033[32m⣶\033[0m ","🔋\033[32m⣷\033[0m ","🔋\033[32m⣿\033[0m "};
 const int BAT_LEVELS = sizeof(BAT_LEVEL_SYMBOL)/sizeof(BAT_LEVEL_SYMBOL[0]);
