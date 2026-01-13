@@ -21,6 +21,7 @@ IPAddress DNS_SERVER2(9,9,9,9);  // Quad9 DNS server
 const String EM_ADDR = "*.*.*.*";  // Shelly 3EM
 const String PM1_ADDR = "*.*.*.*";  // Shelly Plus 1PM, connecting Maxeon solar panel to AC
 const String PM2_ADDR = "*.*.*.*";  // Shelly 2PM Gen3, connecting Meanwell charger and Hoymiles inverter to AC
+const char* JKBMS_MAC_ADDR = "*:*:*:*:*:*";  // MAC (= BLE) address of JKBMS
 
 // Power settings
 const int PV_MAX_POWER = 360;  // PV module/inverter max AC output
@@ -38,10 +39,11 @@ const unsigned long READINPUT_TIMEOUT = 4000;  // max waiting time (in ms) for t
 const unsigned int HTTP_TIMEOUT = 6000;  // max waiting time (in ms) for HTTP responses
 const unsigned long RF24_TIMEOUT = 4000;  // max waiting time (in ms) for RF24 responses
 const unsigned long RF24_KEEPALIVE = 30000;  // number of ms after which Hoymiles RF24 interface receives "keep alive" message
+const unsigned long BLE_TIMEOUT = 2;  // max waiting time (in secs) for JKBMS BLE server connection
 const unsigned long MW_TIMER = 60000;  // number of ms after which Meanwell is automatically turned off (unless keep-alive message is received)
 const int ESS_TIMEZONE = +1;  // ESS is installed in this timezone (relative to UTC)
-const float ESS_LATITUDE = 46.817;  // geo coordinates of ESS
-const float ESS_LONGITUDE = 13.520;
+const float ESS_LATITUDE = 46.***;  // geo coordinates of ESS
+const float ESS_LONGITUDE = 13.***;
 const String GET_ASTRO_TIME = "03:30";  // time at which astro times (sunrise/sunset) will be calculated (after a possible DST change, before sunrise)
 
 // Meanwell (charging) power parameters
@@ -103,8 +105,8 @@ const int ESS_BMS_OVP_DIFF = 50;  // min difference between ESS and BMS OVP sett
 const int ESS_BMS_UVP_DIFF = 100;  // min difference between ESS and BMS UVP settings
 const int ESS_OVP = 3550;  // one cell above this voltage: ramp down charging power (BMS_OVP - ESS_OVP >= ESS_BMS_OVP_DIFF)
 const int ESS_OVPR = 3500;  // all cells below this voltage: re-enable charging (should be the same as BMS Balancer Start Voltage)
-const int ESS_UVP = 3200;  // one cell below this voltage: ramp down discharging power (ESS_UVP - BMS_UVP >= ESS_BMS_UVP_DIFF)
-const int ESS_UVPR = 3250;  // all cells above this voltage: re-enable discharging
+const int ESS_UVP = 3100;  // one cell below this voltage: ramp down discharging power (ESS_UVP - BMS_UVP >= ESS_BMS_UVP_DIFF)
+const int ESS_UVPR = 3150;  // all cells above this voltage: re-enable discharging
 const int BAT_FULL = 27000;  // voltage at which battery is considered full
 const int BAT_EMPTY = 25600;  // voltage at which battery is considered empty
 
@@ -127,9 +129,15 @@ const int BAT_EMPTY = 25600;  // voltage at which battery is considered empty
 #define BMS_SBAL_ID 0x9B
 #define BMS_TBAL_POS 115
 #define BMS_TBAL_ID 0x9C
+#define BMS_COMMAND_LEN 21
+#define BLE_COMMAND_LEN 20
 const byte BMS_SETTINGS[] = {BMS_STX_1, BMS_STX_2, 0x00, 0x13, 0x00, 0x00, 0x00, 0x00, BMS_READ_ALL, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0x29};
 const byte BMS_VOLTAGES[] = {BMS_STX_1, BMS_STX_2, 0x00, 0x13, 0x00, 0x00, 0x00, 0x00, BMS_READ_DATA, 0x03, 0x00, BMS_VCELLS_ID, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0x9F};
 const byte BMS_CURRENT[] = {BMS_STX_1, BMS_STX_2, 0x00, 0x13, 0x00, 0x00, 0x00, 0x00, BMS_READ_DATA, 0x03, 0x00, BMS_CURRENT_ID, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0xAA};
+const byte BLE_GET_INFO[BLE_COMMAND_LEN] = {0xAA, 0x55, 0x90, 0xEB, 0x97, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11};
+const byte BLE_GET_DATA[BLE_COMMAND_LEN] = {0xAA, 0x55, 0x90, 0xEB, 0x96, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10};
+const byte BLE_BAL_OFF[BLE_COMMAND_LEN] = {0xAA, 0x55, 0x90, 0xEB, 0x1f, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x9D};
+const byte BLE_BAL_ON[BLE_COMMAND_LEN] = {0xAA, 0x55, 0x90, 0xEB, 0x1f, 0x04, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x9E};
 
 // Errors
 const String ERROR_TYPE[] = {"WIFI", "DDNS", "BMS", "RF24", "3EM", "1PM", "2PM"};  // error messages correspond with these types! changes here also need changed error messages
@@ -138,30 +146,32 @@ const int ERROR_LIMIT = 20;  // number of consecutive erroneous cycles before er
 const int UNCRITICAL_ERROR_TYPES = 2;  // ERROR_LIMIT doesn't apply to first ... error types
 
 // Symbols for a nice telnet frontend
-const String ESS_FLOW_SYMBOL[] = {"───","┃\033[32m◁\033[0m╶","╴\033[32m◀\033[0m╶","╏\033[32m◀\033[0m╶","\033[32m◀◀\033[0m╶","╴\033[32m▶\033[0m╶"};  // green flow symbols
-const String PV_FLOW_SYMBOL[] = {"───","╴\033[33m▶\033[0m╶","╴\033[33m▷\033[0m┃","╴\033[33m▶\033[0m╏","╴\033[33m▶▶\033[0m","╴\033[33m◀\033[0m╶"};  // yellow flow symbols
-const String GRID_FLOW_SYMBOL[] = {"───","╴\033[31m▶\033[0m╶","╴\033[31m▷\033[0m┃","╴\033[31m▶\033[0m╏","╴\033[31m▶▶\033[0m"};  // red flow symbols
+const String PV_FLOW_SYMBOL[3] = {"────", "╴\033[33m▶\033[0m╶─", "╴\033[33m▶▶\033[0m╏"};
+const String ESS_FLOW_SYMBOL[3] = {"────", "─╴▷┃", "─┃◁╶"};
+const String MW_FLOW_SYMBOL[3][2] = {{"─╴\033[33m▶\033[0m╶", "─╴\033[31m▶\033[0m╶"}, {"─╴\033[33m▶\033[0m╏", "─╴\033[31m▶\033[0m╏"}, {"╴\033[33m▶▶\033[0m╏", "╴\033[31m▶▶\033[0m╏"}};
+const String HM_FLOW_SYMBOL[3] = {"─╴\033[32m◀\033[0m╶", "─╏\033[32m◀\033[0m╶", "╏\033[32m◀◀\033[0m╶"};
+const String GRID_FLOW_SYMBOL[3][2] = {{"────", "────"}, {"╴\033[31m▶\033[0m╶─", "╴\033[31m▶\033[0m╶─"}, {"╴\033[33m◀\033[0m╶─", "╴\033[32m◀\033[0m╶─"}};
+const String CONS_FLOW_SYMBOL[3] = {"─╴\033[31m▶\033[0m╶", "─╴\033[32m▶\033[0m╶", "─╴\033[33m▶\033[0m╶"};
 const String DIFF_SYMBOL[] = {" ▲"," ▼"," ▼🪜"};
-const String BAT_LEVEL_SYMBOL[] = {"🔋\033[33m⡀\033[0m ","🔋\033[32m⡀\033[0m ","🔋\033[32m⣀\033[0m ","🔋\033[32m⣄\033[0m ","🔋\033[32m⣤\033[0m ","🔋\033[32m⣦\033[0m ","🔋\033[32m⣶\033[0m ","🔋\033[32m⣷\033[0m ","🔋\033[32m⣿\033[0m "};
+const String BAT_LEVEL_SYMBOL[] = {"─🔋\033[33m⡀\033[0m ","─🔋\033[32m⡀\033[0m ","─🔋\033[32m⣀\033[0m ","─🔋\033[32m⣄\033[0m ","─🔋\033[32m⣤\033[0m ","─🔋\033[32m⣦\033[0m ","─🔋\033[32m⣶\033[0m ","─🔋\033[32m⣷\033[0m ","─🔋\033[32m⣿\033[0m "};
 const int BAT_LEVELS = sizeof(BAT_LEVEL_SYMBOL)/sizeof(BAT_LEVEL_SYMBOL[0]);
-const String BAT_OVP_SYMBOL = "                     ▁▁▁";
-const String BAT_UVP_SYMBOL = "      ▔▔";
-const String NIGHT_DAY_SYMBOL[] = {" 🌙╶"," 🌞╶"};
-const String CABLE_SYMBOL = "─";
-const String PV_CABLE_SYMBOL = "──┐";
-const String ESS_CABLE_SYMBOL = "┌──";
+const String BAT_OVP_SYMBOL[3] = {" ", "                     ▁ ▁", "                     ▁▁▁"};
+const String BAT_UVP_SYMBOL[3] = {" ", "      ▔ ▔", "      ▔▔▔"};
+const String NIGHT_DAY_SYMBOL[2] = {" 🌙╶"," 🌞╶"};
+const String PV_CABLE_SYMBOL = "─┐";
+const String ESS_CABLE_SYMBOL = "┌─";
 const String ESS_SYMBOL = "─🔋 ";
 const String HOUSE_SYMBOL = "             🏠";
 const String GRID_SYMBOL = " 🏭╶";
-const String GRID_CABLE_SYMBOL = "──┘";
-const String CONS_CABLE_SYMBOL = "└──";
+const String GRID_CABLE_SYMBOL = "─┘";
+const String CONS_CABLE_SYMBOL = "└─";
 const String CONS_SYMBOL = "╴📺 ";
 const String OPS_SYMBOL[] = {" 🏃"," 🧍"," 💤🛌"};
 const String POWERFILTER_SYMBOL = " ⏳";
 const String MANUAL_MODE_SYMBOL = " 👈";
 const String AUTO_RECHARGE_SYMBOL = " 🔌";
-const String WIFI_SYMBOL[] = {" ⚠️­"," 📶"};
-const String ERROR_SYMBOL = "❌";
+const String WIFI_SYMBOL[] = {"⚠️­","📶"};
+const String ERROR_SYMBOL = "❌ ";
 const String BALANCER_SYMBOL = " 🔄";
 const String CLEAR_SCREEN = "\033[0H\033[0J";
 const String SHOW_CURSOR = "\033[?25h";
