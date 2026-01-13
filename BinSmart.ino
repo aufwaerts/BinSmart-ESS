@@ -251,10 +251,10 @@ bool BMSCommand(const byte command[]) {
                         // Turn on/off automatic recharge feature (prevents BMS turnoff)
                         if (vcell_min <= (bms_uvp + ESS_UVP)/2) auto_recharge = true;
                         if (vcell_min >= ESS_UVP) auto_recharge = false;
-                        return true;
                         // Turn on/off JKBMS balancer (bottom balancing)
                         if ((vcell_min <= ESS_UVP) && !bms_bal_on) bms_bal_on = BLECommand(BLE_BAL_ON);
                         if ((vcell_min >= ESS_UVPR) && bms_bal_on) bms_bal_on = !BLECommand(BLE_BAL_OFF);
+                        return true;
                     }
                     
                     if (BMS_resp[BMS_DATA_ID_POS] == BMS_CURRENT_ID) {
