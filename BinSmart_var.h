@@ -13,6 +13,8 @@ String public_IP = "000.000.000.000", DDNS_address = "000.000.000.000";
 int BMS_balancer_start;  // BMS balancer cell voltage threshold [mV] (read from BMS)
 int BMS_balancer_trigger;  // BMS balancer cell diff threshold [mV] (read from BMS)
 byte BMS_resp[300];  // buffer for BMS response
+NimBLEAddress serverAddress(JKBMS_MAC_ADDR);  // JKBMS BLE server address
+NimBLEClient* pClient = nullptr;  // pointer to BLE client object
 
 // Errors
 int error_counter[ERROR_TYPES];
@@ -37,23 +39,26 @@ unsigned long ts_power = 0, ts_pubip = 0, ts_MW = 0, ts_HM = 0, ts_BMS = 0, ts_i
 float secs_cycle;  // duration of one polling cycle in secs
 
 // Other global variables
-float power_grid = 0, power_grid_min = 10000, power_pv = 0, power_ess = 0;  // Power measured by Shellies
-int power_new = 0, power_old = 0, power_manual = 0;  // Power settings
+float power_grid = 0, power_grid_min = 10000, power_pv = 0, power_ess = 0;  // power measured by Shellies
+int power_new = 0, power_old = 0, power_manual = 0;  // power settings
+int hm_power_limit = HM_MAX_POWER, mw_power_limit = MW_MAX_POWER;  // power limit settings
+int power_new_limit = 0, power_old_limit = 0;  // applied power limits
 int power_target = POWER_TARGET_DEFAULT;  // Systems aims for this grid power target
 int filter_cycles = POWER_FILTER_CYCLES;  // for filtering out power spikes
 int vcell_min, vcell_max;  // Cell min/max voltages (in millivolts)
 int bms_uvp;  // BMS Cell UVP value (read from BMS)
+bool bms_bal_on = false;  // BMS balancer switch setting
 int cbat;  // Batt DC current [cA]
 int vbat, vbat_idle;  // Total batt voltage [mV] (vbat_idle for voltage at cbat=0)
 int bat_level;  // Battery state of charge, as number between 0 and BAT_SOC_LEVELS-1
 float pbat;  // Batt DC power [W]
-int hm_power_limit = HM_MAX_POWER, mw_power_limit = MW_MAX_POWER;
 unsigned long mw_counter = 0;  // counter for Meanwell relay operations
 bool pm1_eco_mode = false, pm2_eco_mode = false;  // eco mode of Shelly PMs
 bool mw_on = false;  // state of Meanwell relay
 float en_from_pv = 0, en_pv_to_cons = 0, en_pv_to_ess = 0, en_pv_to_grid = 0, en_pv_consumed = 0, en_pv_wasted = 0;  // PV energy counters [Wh]
 float en_from_grid = 0, en_to_grid = 0, en_grid_to_cons = 0, en_grid_to_ess = 0;  // Grid energy counters [Wh]
-float en_from_ess = 0, en_to_ess = 0, en_ess_to_cons = 0, en_ess_to_grid = 0;  // ESS energy counters [Wh]
+float en_from_ess = 0, en_to_ess = 0, en_ess_to_cons = 0, en_ess_to_grid = 0;  // ESS AC energy counters [Wh]
+float en_from_batt = 0, en_to_batt = 0;  // ESS DC energy counters [Wh]
 bool manual_mode = false, auto_recharge = false;
 char buf[30];  // buffer for formatting output with sprintf()
 String cycle_msg, ota_msg, cmd_resp;  // output message strings
