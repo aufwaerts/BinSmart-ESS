@@ -955,8 +955,8 @@ void ProcessUserCommand() {
             cmd_resp += buf;
 
             // PV energy wasted in ESS (20% of energy sent to ESS instead of consumer, despite grid energy being drawn)
-            cmd_resp += "PV energy wasted: ";
-            if (en_pv_wasted < en_from_pv) {
+            if (en_pv_to_grid+en_pv_wasted < en_from_pv) {
+                cmd_resp += "PV energy wasted: ";
                 sprintf(buf,"%.1f %%\r\n",(en_pv_to_grid+en_pv_wasted)/en_from_pv*100);
                 cmd_resp += buf;
             }
