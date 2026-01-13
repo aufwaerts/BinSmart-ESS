@@ -108,7 +108,7 @@ const int ESS_OVPR = 3500;  // all cells below this voltage: re-enable charging 
 const int ESS_UVP = 3100;  // one cell below this voltage: ramp down discharging power (ESS_UVP - BMS_UVP >= ESS_BMS_UVP_DIFF)
 const int ESS_UVPR = 3150;  // all cells above this voltage: re-enable discharging
 const int BAT_FULL = 27000;  // voltage at which battery is considered full
-const int BAT_EMPTY = 25600;  // voltage at which battery is considered empty
+const int BAT_EMPTY = 8*ESS_UVP;  // voltage at which battery is considered empty
 
 // BMS definitions and commands
 #define BMS_STX_1 0x4E
