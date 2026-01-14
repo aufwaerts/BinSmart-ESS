@@ -212,6 +212,7 @@ bool BMSCommand(const byte command[]) {
                     }
                 }
             }
+            pClient->disconnect();
         }
         error_msg = "BMS BLE command 0x";
         error_msg += String(command[BLE_COMMAND_POS],HEX);
