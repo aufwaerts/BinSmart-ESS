@@ -176,12 +176,12 @@ void setup() {
 void loop() {
 
     if (daytime) ShellyCommand(PM1_STATUS);  // Read AC PV power from Shelly 1PM
-    BMSCommand(READ_VOLTAGES);  // Read cell voltages from BMS
+    BMSCommand(READ_VOLTAGES);  // Read cell voltages from BMS, set charging/discharging power limits
     if (power_new > 0) ShellyCommand(PM2_MW_STATUS); // Read Meanwell AC charging power from Shelly 2PM
     if (power_new < 0) ShellyCommand(PM2_HM_STATUS); // Read Hoymiles AC discharging power from Shelly 2PM
     ShellyCommand(EM_STATUS);  // Read time and AC grid power from Shelly 3EM
     BMSCommand(READ_CURRENT);  // Read DC charging/discharging current from BMS
-    SetNewPower();  // Set power limits, calculate and apply new charging/discharging power
+    SetNewPower();  // Calculate and apply new charging/discharging power
     FinishCycle();  // Update energy counters, compile cycle info, carry out maintenance tasks
     CheckErrors();  // Check errors, halt system if error is persistent, show cycle status by flashing LED
     ProcessUserCommand();  // Process user command from previous cycle(s), print cycle info and user command response
