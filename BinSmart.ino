@@ -140,7 +140,7 @@ void setup() {
 
     // Shelly 2PM: Turn off Meanwell relay, turn on Hoymiles relay, turn off eco mode
     if (!ShellyCommand(PM2_MW_OFF)) telnet.println(ERROR_SYMBOL + error_msg);
-    telnet.println("Shelly 2PM found"); 
+    else telnet.println("Shelly 2PM found"); 
     if (!ShellyCommand(PM2_HM_ON)) telnet.println(ERROR_SYMBOL + error_msg);
     if (!ShellyCommand(PM2_ECO_OFF)) telnet.println(ERROR_SYMBOL + error_msg);
 
