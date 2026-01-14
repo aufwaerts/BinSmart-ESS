@@ -237,14 +237,10 @@ bool BMSCommand(const byte command[]) {
     // fill response buffer with BMS response
     while (Serial2.available()) {
         BMS_resp[len] = Serial2.read();
-    telnet.print("0x");
-    telnet.print(String(BMS_resp[len],HEX));
-    telnet.print(" ");
         sum += BMS_resp[len];
         len++;
     }
     ts_BMS = millis();
-    telnet.println();
 
     // check validity of BMS response
     if ((BMS_resp[0] == RS485_1) && (BMS_resp[1] == RS485_2)) {  // start of response frame
