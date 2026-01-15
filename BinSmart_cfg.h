@@ -52,7 +52,7 @@ const int MW_MAX_POWER = 300;  // max power output at minimum voltage (24V)
 #define MW_POWER_LIMIT_FORMULA vbat/77.057*(0.9636-1.0/PWM_DUTY_CYCLE_MAX)
 const int MW_MIN_POWER = 15;  // Meanwell turned off below min_power (power output would be unstable and very inefficient)
 const int MW_LOW_POWER_THRESHOLD = 25;  // power output below this threshold is non-linear
-const int MW_RECHARGE_POWER = 200;  // power setting for automatic recharging (prevents BMS UVP)
+const int MW_RECHARGE_POWER = 120;  // power setting for automatic recharging (prevents BMS UVP)
 // the following formulas are the results of Meanwell HLG-320 power output tests
 // PWM signal controls Meanwell charging current; charging power also depends on vbat
 // higher PWM value means less power
@@ -106,7 +106,7 @@ const int ESS_BMS_UVP_DIFF = 100;  // min difference between ESS and BMS UVP set
 const int ESS_OVP = 3550;  // one cell above this voltage: ramp down charging power (BMS_OVP - ESS_OVP >= ESS_BMS_OVP_DIFF)
 const int ESS_OVPR = 3500;  // all cells below this voltage: re-enable charging (should be the same as BMS Balancer Start Voltage)
 const int ESS_UVP = 3100;  // one cell below this voltage: ramp down discharging power (ESS_UVP - BMS_UVP >= ESS_BMS_UVP_DIFF)
-const int ESS_UVPR = 3150;  // all cells above this voltage: re-enable discharging
+const int ESS_UVPR = 3125;  // all cells above this voltage: re-enable discharging
 const int BAT_FULL = 27600;  // voltage at which battery is considered full
 const int BAT_EMPTY = 8*ESS_UVP;  // voltage at which battery is considered empty
 
