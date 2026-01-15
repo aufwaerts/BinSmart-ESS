@@ -41,8 +41,8 @@ float secs_cycle;  // duration of one polling cycle in secs
 // Other global variables
 float power_grid = 0, power_grid_min = 10000, power_pv = 0, power_ess = 0;  // power measured by Shellies
 int power_new = 0, power_old = 0, power_manual = 0;  // power settings
-int hm_power_limit = HM_MAX_POWER, mw_power_limit = MW_MAX_POWER;  // power limit settings
-int power_new_limit = 0, power_old_limit = 0;  // applied power limits
+int mw_limit = MW_MAX_POWER, mw_limit_old = MW_MAX_POWER;  // Meanwell power limit settings
+int hm_limit = HM_MAX_POWER, hm_limit_old = HM_MAX_POWER;  // Hoymiles power limit settings
 int power_target = POWER_TARGET_DEFAULT;  // Systems aims for this grid power target
 int filter_cycles = POWER_FILTER_CYCLES;  // for filtering out power spikes
 int vcell_min, vcell_max;  // Cell min/max voltages (in millivolts)
