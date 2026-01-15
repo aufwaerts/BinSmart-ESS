@@ -30,7 +30,7 @@ const int POWER_TARGET_TOLERANCE = 5;  // Max tolerated deviation (+/-) from tar
 const int HM_LOW_POWER_TOLERANCE = 15;  // Max tolerated positive deviation when Hoymiles is below HM_LOW_POWER_THRESHOLD
 const int POWER_RAMPDOWN_RATE = -40; // Max power decrease per cycle
 const int POWER_FILTER_CYCLES = 12;  // Number of cycles during which power spikes are filtered out
-const float POWER_LIMIT_RAMPDOWN = 0.67;  // Power rampdown rate when CELL_OVP or CELL_UVP is reached
+const float POWER_LIMIT_RAMPDOWN = 0.67;  // Power rampdown rate when ESS_OVP or ESS_UVP is reached
 
 // Time/Timer settings
 const unsigned long PROCESSING_DELAY = 2000;  // minimum delay (in ms) for power changes to take effect
