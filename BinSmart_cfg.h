@@ -100,13 +100,13 @@ const String PUBLIC_IP_SERVER = "http://api.ipify.org";  // public service for o
 // const String PUBLIC_IP_SERVER = "http://ifconfig.me/ip";  // alternative service
 const String DDNS_SERVER_UPDATE = "http://***:***@dynupdate.no-ip.com/nic/update?hostname=***.ddns.net&myip=";  // public DDNS service
 
-// BMS/batt voltage protection settings in millivolts
-const int ESS_BMS_OVP_DIFF = 50;  // min difference between ESS and BMS OVP settings
-const int ESS_BMS_UVP_DIFF = 100;  // min difference between ESS and BMS UVP settings
-const int ESS_OVP = 3550;  // one cell above this voltage: ramp down charging power (BMS_OVP - ESS_OVP >= ESS_BMS_OVP_DIFF)
-const int ESS_OVPR = 3500;  // all cells below this voltage: re-enable charging (should be the same as BMS Balancer Start Voltage)
-const int ESS_UVP = 3100;  // one cell below this voltage: ramp down discharging power (ESS_UVP - BMS_UVP >= ESS_BMS_UVP_DIFF)
+// BMS/ESS voltage protection settings in millivolts
+const int ESS_OVP = 3500;  // one cell above this voltage: ramp down charging power
+const int ESS_OVPR = 3450;  // all cells below this voltage: re-enable charging (should be the same as BMS Balancer Start Voltage)
+const int ESS_UVP = 3100;  // one cell below this voltage: ramp down discharging power
 const int ESS_UVPR = 3125;  // all cells above this voltage: re-enable discharging
+const int ESS_BMS_OVP_DIFF = 100;  // min difference between ESS and BMS OVP settings (bms_ovp - ESS_OVP >= ESS_BMS_OVP_DIFF)
+const int ESS_BMS_UVP_DIFF = 100;  // min difference between ESS and BMS UVP settings (ESS_UVP - bms_uvp >= ESS_BMS_UVP_DIFF)
 const int BAT_FULL = 27600;  // voltage at which battery is considered full
 const int BAT_EMPTY = 8*ESS_UVP;  // voltage at which battery is considered empty
 
