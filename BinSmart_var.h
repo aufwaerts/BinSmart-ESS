@@ -20,7 +20,7 @@ NimBLEClient* pClient = nullptr;  // pointer to BLE client object
 int error_counter[ERROR_TYPES];
 unsigned long errortime[ERROR_TYPES];
 int errors_consecutive = 0;
-String error_msg = "", last_error_msg = "";  // if error(s) occured during polling cycle, type of error is written in here
+String error_msg, last_error_msg;  // if error(s) occured during polling cycle, type of error is written in here
 bool error_flag = false;  // errors occured and not yet read by user?
 
 // Hoymiles/RF24
