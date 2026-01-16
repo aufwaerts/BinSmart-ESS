@@ -18,9 +18,9 @@ IPAddress ROUTER_ADDR(*,*,*,*);   // Local WiFi router
 IPAddress SUBNET(*,*,*,*);   // WiFi subnet
 IPAddress DNS_SERVER1(8,8,8,8);  // Google DNS resolver
 IPAddress DNS_SERVER2(9,9,9,9);  // Quad9 DNS server
-const String EM_ADDR = "*.*.*.*";  // Shelly 3EM
-const String PM1_ADDR = "*.*.*.*";  // Shelly Plus 1PM, connecting Maxeon solar panel to AC
-const String PM2_ADDR = "*.*.*.*";  // Shelly 2PM Gen3, connecting Meanwell charger and Hoymiles inverter to AC
+IPAddress EM_ADDR(*,*,*,*);  // Shelly 3EM
+IPAddress PM1_ADDR(*,*,*,*);  // Shelly Plus 1PM, connecting Maxeon solar panel to AC
+IPAddress PM2_ADDR(*,*,*,*);  // Shelly 2PM Gen3, connecting Meanwell charger and Hoymiles inverter to AC
 const char* JKBMS_MAC_ADDR = "*:*:*:*:*:*";  // MAC (= BLE) address of JKBMS
 
 // Power settings
@@ -52,7 +52,7 @@ const int MW_MAX_POWER = 300;  // max power output at minimum voltage (24V)
 #define MW_POWER_LIMIT_FORMULA vbat/77.057*(0.9636-1.0/PWM_DUTY_CYCLE_MAX)
 const int MW_MIN_POWER = 15;  // Meanwell turned off below min_power (power output would be unstable and very inefficient)
 const int MW_LOW_POWER_THRESHOLD = 25;  // power output below this threshold is non-linear
-const int MW_RECHARGE_POWER = 120;  // power setting for automatic recharging (prevents BMS UVP)
+const int MW_RECHARGE_POWER = 150;  // power setting for automatic recharging (prevents BMS UVP)
 // the following formulas are the results of Meanwell HLG-320 power output tests
 // PWM signal controls Meanwell charging current; charging power also depends on vbat
 // higher PWM value means less power
@@ -82,20 +82,19 @@ byte hm_turnon[15] =  {0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17,
 byte hm_turnoff[15] = {0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17, 0x41, 0x72, 0x81, 0x01, 0x00, 0x20, 0x00, 0x00};
 byte hm_power[19] =   {0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17, 0x41, 0x72, 0x81, 0x0B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
+// Shelly http commands
+const String EM_STATUS = "/status";
+const String EM_RESET = "/reset_data";
+const String PM_CH0_STATUS = "/rpc/Switch.GetStatus?id=0";
+const String PM_CH1_STATUS = "/rpc/Switch.GetStatus?id=1";
+const String PM_ECO_ON = "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
+const String PM_ECO_OFF = "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":false}}";
+const String PM_CH0_ON = "/relay/0?turn=on&timer=" + String(MW_TIMER/1000);
+const String PM_CH0_OFF = "/relay/0?turn=off";
+const String PM_CH1_ON = "/relay/1?turn=on";
+const String PM_CH1_OFF = "/relay/1?turn=off";
+
 // URLs
-const String EM_STATUS = "http://" + EM_ADDR + "/status";
-const String EM_RESET = "http://" + EM_ADDR + "/reset_data";
-const String PM1_STATUS = "http://" + PM1_ADDR + "/rpc/Switch.GetStatus?id=0";
-const String PM1_ECO_ON = "http://" + PM1_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
-const String PM1_ECO_OFF = "http://" + PM1_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":false}}";
-const String PM2_MW_STATUS = "http://" + PM2_ADDR + "/rpc/Switch.GetStatus?id=0";
-const String PM2_HM_STATUS = "http://" + PM2_ADDR + "/rpc/Switch.GetStatus?id=1";
-const String PM2_MW_ON = "http://" + PM2_ADDR + "/relay/0?turn=on&timer=" + String(MW_TIMER/1000);
-const String PM2_MW_OFF = "http://" + PM2_ADDR + "/relay/0?turn=off";
-const String PM2_HM_ON = "http://" + PM2_ADDR + "/relay/1?turn=on";
-const String PM2_HM_OFF = "http://" + PM2_ADDR + "/relay/1?turn=off";
-const String PM2_ECO_ON = "http://" + PM2_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
-const String PM2_ECO_OFF = "http://" + PM2_ADDR + "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":false}}";
 const String PUBLIC_IP_SERVER = "http://api.ipify.org";  // public service for obtaining WiFi routers public IP address
 // const String PUBLIC_IP_SERVER = "http://ifconfig.me/ip";  // alternative service
 const String DDNS_SERVER_UPDATE = "http://***:***@dynupdate.no-ip.com/nic/update?hostname=***.ddns.net&myip=";  // public DDNS service
@@ -136,6 +135,7 @@ const byte READ_VOLTAGES[RS485_COMMAND_LEN] = {RS485_1, RS485_2, 0x00, 0x13, 0x0
 const byte READ_CURRENT[RS485_COMMAND_LEN] = {RS485_1, RS485_2, 0x00, 0x13, 0x00, 0x00, 0x00, 0x00, READ_DATA, 0x03, 0x00, CURRENT_ID, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0xAA};
 #define BLE_COMMAND_LEN 20
 #define BLE_COMMAND_POS 4
+#define BLE_SETTING_POS 6
 #define BLE_INFO 0x97
 #define BLE_DATA 0x96
 #define BLE_BAL_SWITCH 0x1F
