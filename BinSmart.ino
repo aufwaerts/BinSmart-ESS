@@ -680,7 +680,7 @@ void FinishCycle() {
         pm2_eco_mode = !ShellyCommand(PM2_ADDR, PM_ECO_OFF);
         return;
     }
-    if (!hm_limit && (power_pv < 1) && !power_old && !pm2_eco_mode) {
+    if (!hm_limit && (!int(round(power_pv))) && !power_old && !pm2_eco_mode) {
         pm2_eco_mode = ShellyCommand(PM2_ADDR, PM_ECO_ON);
         return;
     }
@@ -692,7 +692,7 @@ void FinishCycle() {
     }
 
     // Turn on/off JKBMS balancer (enable/disable bottom balancing), depending on UVP and charging state
-    if (!hm_limit && (vcell_min < ESS_UVP) && !bms_bal_on) bms_bal_on = BMSCommand(BAL_ON);
+    if (!hm_limit && !bms_bal_on) bms_bal_on = BMSCommand(BAL_ON);
     if ((power_new > 0) && (vcell_min > ESS_UVP) && bms_bal_on) bms_bal_on = !BMSCommand(BAL_OFF);
 }
 
