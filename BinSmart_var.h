@@ -5,7 +5,7 @@ AsyncWebServer OTAserver(80);
 WiFiServer server(TELNET_PORT);
 WiFiClient telnet;
 HTTPClient http;
-String http_resp;
+String http_command, http_resp;
 int http_resp_code;
 String public_IP = "000.000.000.000", DDNS_address = "000.000.000.000";
 
