@@ -47,7 +47,7 @@ int power_target = POWER_TARGET_DEFAULT;  // Systems aims for this grid power ta
 int filter_cycles = POWER_FILTER_CYCLES;  // for filtering out power spikes
 int vcell_min, vcell_max;  // Cell min/max voltages (in millivolts)
 int bms_uvp;  // BMS Cell UVP value (read from BMS)
-bool bms_bal_on = false;  // BMS balancer switch setting
+bool bms_bal_on;  // BMS balancer switch setting
 int cbat;  // Batt DC current [cA]
 int vbat, vbat_idle;  // Total batt voltage [mV] (vbat_idle for voltage at cbat=0)
 int bat_level;  // Battery state of charge, as number between 0 and BAT_SOC_LEVELS-1
