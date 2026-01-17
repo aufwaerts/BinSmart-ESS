@@ -223,7 +223,7 @@ bool BMSCommand(const byte BMS_command[]) {
         error_msg = "BMS BLE command 0x";
         if (BMS_command[BLE_COMMAND_POS] < 0x10) error_msg += "0";
         error_msg += String(BMS_command[BLE_COMMAND_POS],HEX);
-        error_msg += " ";
+        error_msg += " 0x";
         if (BMS_command[BLE_SETTING_POS] < 0x10) error_msg += "0";
         error_msg += String(BMS_command[BLE_SETTING_POS],HEX);
         error_msg += " failed";
@@ -367,7 +367,7 @@ bool BMSCommand(const byte BMS_command[]) {
     error_msg = "BMS RS485 command 0x";
     if (BMS_command[RS485_COMMAND_POS] < 0x10) error_msg += "0";
     error_msg += String(BMS_command[RS485_COMMAND_POS],HEX);
-    error_msg += " ";
+    error_msg += " 0x";
     if (BMS_command[DATA_ID_POS] < 0x10) error_msg += "0";
     error_msg += String(BMS_command[DATA_ID_POS],HEX);
     error_msg += " failed";
