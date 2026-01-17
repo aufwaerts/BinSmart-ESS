@@ -490,7 +490,7 @@ void SetNewPower() {
     if ((power_new > HM_MIN_POWER) && (power_new < MW_MIN_POWER)) power_new = 0;
 
     // Auto recharge power overrides calculation and manual power setting
-    if (auto_recharge && !power_new) power_new = MW_RECHARGE_POWER;
+    if (auto_recharge) power_new = MW_RECHARGE_POWER;
 
     // Apply new power setting
     if (power_new == 0) {  // turn charging or discharging off
