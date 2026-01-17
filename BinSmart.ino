@@ -285,7 +285,7 @@ bool BMSCommand(const byte BMS_command[]) {
                         }
                         // Turn on/off automatic recharge feature (prevents BMS turnoff)
                         if (vcell_min <= (bms_uvp + ESS_UVP)/2) auto_recharge = true;
-                        if (vcell_min >= ESS_UVP) auto_recharge = false;
+                        if (vcell_min >= ESS_UVP-1) auto_recharge = false;
                         return true;
                     }
                     
