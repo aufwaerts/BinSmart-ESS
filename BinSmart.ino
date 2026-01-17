@@ -196,6 +196,8 @@ void loop() {
 
 bool BMSCommand(const byte BMS_command[]) {
 
+    while (millis()-ts_BMS < 100);  // minimum delay between BMS commands: 100 ms
+
     if (BMS_command[0] == BLE_1) {
         // Send command to BMS via BLE
         if (!pClient) {
@@ -214,12 +216,14 @@ bool BMSCommand(const byte BMS_command[]) {
                     delay(500);
                     if (pChar->writeValue(BMS_command, BLE_COMMAND_LEN, false)) {
                         pClient->disconnect();
+                        ts_BMS = millis();
                         return true;
                     }
                 }
             }
             pClient->disconnect();
         }
+        ts_BMS = millis();
         error_msg = "BMS BLE command 0x";
         if (BMS_command[BLE_COMMAND_POS] < 0x10) error_msg += "0";
         error_msg += String(BMS_command[BLE_COMMAND_POS],HEX);
@@ -231,7 +235,6 @@ bool BMSCommand(const byte BMS_command[]) {
     }
 
     // Send command to BMS via RS485
-    while (millis()-ts_BMS < 100);  // minimum delay between RS485 packets: 100 ms
     Serial2.write(BMS_command, RS485_COMMAND_LEN);
     Serial2.flush();
 
