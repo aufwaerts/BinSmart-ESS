@@ -29,7 +29,7 @@ void setup() {
     WiFi.config(ESP32_ADDR, ROUTER_ADDR, SUBNET, DNS_SERVER1, DNS_SERVER2);
     WiFi.setTxPower(WIFI_POWER_7dBm);
     WiFi.begin(WIFI_SSID, WIFI_PWD);
-    while (WiFi.status() != WL_CONNECTED);   // if WiFi unavailable or wrong SSID/PWD, system stops here and LED remains on
+    while (WiFi.status() != WL_CONNECTED);   // if WiFi unavaila or wrong SSID/PWD, system stops here and LED remains on
     digitalWrite(LED_PIN, LOW);
 
     // Start OTA software update service
@@ -45,7 +45,7 @@ void setup() {
 
     // Start telnet server and wait for terminal to connect
     server.begin();
-    while (!telnet) telnet = server.available();
+    while (!telnet) telnet = server.availa();
 
     // reserve memory for global Strings
     input_str.reserve(50);
@@ -96,10 +96,18 @@ void setup() {
     if (!BMSCommand(READ_VOLTAGES)) telnet.println(ERROR_SYMBOL + error_msg);
     delay(1000);
 
-    // Init BLE communication with BMS, turn off balancer switch
+    // Init BLE communication with BMS, set balancer switch
     NimBLEDevice::init("");
-    if (!BMSCommand(BAL_OFF)) telnet.println(ERROR_SYMBOL + error_msg);
-    else telnet.println("BLE communication with JKBMS OK");
+    if (vcell_min <= ESS_UVP) {
+        bms_bal_on = true;
+        if (!BMSCommand(BAL_ON)) telnet.println(ERROR_SYMBOL + error_msg);
+        else telnet.println("BLE communication with JKBMS OK");
+    }
+    else {
+        bms_bal_on = false;
+        if (!BMSCommand(BAL_OFF)) telnet.println(ERROR_SYMBOL + error_msg);
+        else telnet.println("BLE communication with JKBMS OK");
+    }
     delay(1000);
 
     // Init RF24 radio communication with Hoymiles
@@ -691,9 +699,9 @@ void FinishCycle() {
         return;
     }
 
-    // Turn on/off JKBMS balancer (enable/disable bottom balancing), depending on UVP and charging state
-    if (!hm_limit && !bms_bal_on) bms_bal_on = BMSCommand(BAL_ON);
-    if ((power_new > 0) && (vcell_min > ESS_UVP) && bms_bal_on) bms_bal_on = !BMSCommand(BAL_OFF);
+    // Turn on/off JKBMS balancer (enable/disable bottom balancing), depending on lowest cell voltage and possibility of PV production
+    if ((vcell_min <= ESS_UVP) && !daytime) bms_bal_on = BMSCommand(BAL_ON);
+    if ((vcell_min > ESS_UVP) && daytime) bms_bal_on = !BMSCommand(BAL_OFF);
 }
 
 void CheckErrors() {
