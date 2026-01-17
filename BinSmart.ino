@@ -1205,7 +1205,7 @@ bool UpdateDDNS() {
         return false;
     }
 
-    // read public IP from server (with shorter timeout)
+    // read public IP from server
     http.setTimeout(HTTP_DDNS_TIMEOUT);
     http.begin(PUBLIC_IP_SERVER);
     http_resp_code = http.GET();
