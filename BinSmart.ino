@@ -1,4 +1,4 @@
-const String SW_VERSION = "v2.34";
+const String SW_VERSION = "v2.35";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <HTTPClient.h>  // standard Arduino/ESP32
