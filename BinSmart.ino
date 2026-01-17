@@ -1233,9 +1233,7 @@ bool UpdateDDNS() {
         return false;
     }
     http.end();
-    error_msg = "DDNS read IP command failed (code ";
-    error_msg += http_resp_code;
-    error_msg += ")";
+    // Read IP command frequently fails, no big deal, so don't report
     return false;
 }
 
