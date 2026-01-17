@@ -698,8 +698,8 @@ void FinishCycle() {
     }
 
     // Turn on/off JKBMS balancer (enable/disable bottom balancing), depending on lowest cell voltage and possibility of PV production
-    if ((vcell_min <= ESS_UVP) && !daytime) bms_bal_on = BMSCommand(BAL_ON);
-    if ((vcell_min > ESS_UVP) && daytime) bms_bal_on = !BMSCommand(BAL_OFF);
+    if ((vcell_min <= ESS_UVP) && !daytime && !bms_bal_on) bms_bal_on = BMSCommand(BAL_ON);
+    if ((vcell_min > ESS_UVP) && daytime && bms_bal_on) bms_bal_on = !BMSCommand(BAL_OFF);
 }
 
 void CheckErrors() {
