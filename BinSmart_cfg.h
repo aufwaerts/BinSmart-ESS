@@ -53,7 +53,7 @@ const int MW_MAX_POWER = 300;  // max power output at minimum voltage (24V)
 #define MW_POWER_LIMIT_FORMULA vbat/77.057*(0.9636-1.0/PWM_DUTY_CYCLE_MAX)
 const int MW_MIN_POWER = 15;  // Meanwell turned off below min_power (power output would be unstable and very inefficient)
 const int MW_LOW_POWER_THRESHOLD = 25;  // power output below this threshold is non-linear
-const int MW_RECHARGE_POWER = 150;  // power setting for automatic recharging (prevents BMS UVP)
+const int MW_RECHARGE_POWER = 200;  // power setting for automatic recharging (prevents BMS UVP)
 // the following formulas are the results of Meanwell HLG-320 power output tests
 // PWM signal controls Meanwell charging current; charging power also depends on vbat
 // higher PWM value means less power
