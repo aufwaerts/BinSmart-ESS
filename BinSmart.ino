@@ -1,4 +1,4 @@
-const String SW_VERSION = "v2.36";
+const String SW_VERSION = "v2.37";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <HTTPClient.h>  // standard Arduino/ESP32
@@ -139,9 +139,6 @@ void setup() {
     if (!HoymilesCommand(HM_OFF)) telnet.println(ERROR_SYMBOL + error_msg);
     else telnet.println("RF24 communication with Hoymiles OK");
     delay(1000);
-
-    // Set timeout for http requests
-    http.setTimeout(HTTP_TIMEOUT);
 
     // Shelly 1PM: Turn off eco mode
     if (!ShellyCommand(PM1_ADDR, PM_ECO_OFF)) telnet.println(ERROR_SYMBOL + error_msg);
@@ -390,6 +387,7 @@ bool ShellyCommand(IPAddress shelly_addr, const String shelly_command) {
     http_command += shelly_command;
 
     // Send http command to Shelly
+    http.setTimeout(HTTP_SHELLY_TIMEOUT);
     http.begin(http_command);
     http_resp_code = http.GET();
     if (http_resp_code == HTTP_CODE_OK) {
@@ -1208,10 +1206,9 @@ bool UpdateDDNS() {
     }
 
     // read public IP from server (with shorter timeout)
-    http.setTimeout(HTTP_TIMEOUT_READIP);
+    http.setTimeout(HTTP_DDNS_TIMEOUT);
     http.begin(PUBLIC_IP_SERVER);
     http_resp_code = http.GET();
-    http.setTimeout(HTTP_TIMEOUT);
     if (http_resp_code == HTTP_CODE_OK) {
         public_IP = http.getString();
         http.end();
