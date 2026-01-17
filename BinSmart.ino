@@ -1,4 +1,4 @@
-const String SW_VERSION = "v2.35";
+const String SW_VERSION = "v2.36";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <HTTPClient.h>  // standard Arduino/ESP32
@@ -1207,9 +1207,11 @@ bool UpdateDDNS() {
         return false;
     }
 
-    // read public IP from server
+    // read public IP from server (with shorter timeout)
+    http.setTimeout(HTTP_TIMEOUT_READIP);
     http.begin(PUBLIC_IP_SERVER);
     http_resp_code = http.GET();
+    http.setTimeout(HTTP_TIMEOUT);
     if (http_resp_code == HTTP_CODE_OK) {
         public_IP = http.getString();
         http.end();
