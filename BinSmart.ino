@@ -1,4 +1,4 @@
-const String SW_VERSION = "v2.38";
+const String SW_VERSION = "v2.39";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <HTTPClient.h>  // standard Arduino/ESP32
@@ -666,47 +666,47 @@ void FinishCycle() {
         minpower_time = local_unixtime;
     }
 
-    // Keep alive Hoymiles RF24 interface
+     // Keep alive Hoymiles RF24 interface
     if (millis()-ts_HM >= RF24_KEEPALIVE) {
         HoymilesCommand(power_new < 0);
-        return;
+        if (millis()-ts_power > PROCESSING_DELAY-200) return;  // avoids overrun of standard cycle duration
     }
 
     // Keep alive Meanwell relay (if Meanwell is turned on)
     if (mw_on && (millis()-ts_MW >= MW_TIMER-10*PROCESSING_DELAY)) {
         ShellyCommand(PM2_ADDR, PM_CH0_ON);
-        return;
+        if (millis()-ts_power > PROCESSING_DELAY-200) return;  // avoids overrun of standard cycle duration
     }
 
     // Set Shelly 1PM eco mode (turn off at daytime, turn on at nighttime)
     if (daytime && pm1_eco_mode) {
         pm1_eco_mode = !ShellyCommand(PM1_ADDR, PM_ECO_OFF);
-        return;
+        if (millis()-ts_power > PROCESSING_DELAY-200) return;  // avoids overrun of standard cycle duration
     }
     if (!daytime && !pm1_eco_mode) {
         pm1_eco_mode = ShellyCommand(PM1_ADDR, PM_ECO_ON);
         power_pv = 0;
         ShellyCommand(EM_ADDR, EM_RESET);  // Reset Shelly 3EM energy data (prevents HTTP timeouts during data reorgs)
-        return;
+        if (millis()-ts_power > PROCESSING_DELAY-200) return;  // avoids overrun of standard cycle duration
     }
 
     // Set Shelly 2PM eco mode (turn off when charging/discharging active or possible, turn on when charging/discharging inactive and impossible)
-    if (((power_pv > MW_MIN_POWER) || power_new) && pm2_eco_mode) {
+    if (((power_pv > MW_MIN_POWER+power_target) || power_new) && pm2_eco_mode) {
         pm2_eco_mode = !ShellyCommand(PM2_ADDR, PM_ECO_OFF);
-        return;
+        if (millis()-ts_power > PROCESSING_DELAY-200) return;  // avoids overrun of standard cycle duration
     }
     if (!hm_limit && (!int(round(power_pv))) && !power_old && !pm2_eco_mode) {
         pm2_eco_mode = ShellyCommand(PM2_ADDR, PM_ECO_ON);
-        return;
+        if (millis()-ts_power > PROCESSING_DELAY-200) return;  // avoids overrun of standard cycle duration
     }
 
-    // Check if public IP address was changed, and if yes, update DDNS server entry
+    // Check if public IP address was changed, if yes, update DDNS server entry
     if (millis()-ts_pubip >= DDNS_UPDATE_INTERVAL) {
         UpdateDDNS();
-        return;
+        if (millis()-ts_power > PROCESSING_DELAY-200) return;  // avoids overrun of standard cycle duration
     }
 
-    // Turn on/off JKBMS balancer (enable/disable bottom balancing), depending on lowest cell voltage and possibility of PV production
+    // Turn on/off JKBMS balancer (enable/disable bottom balancing), depending on lowest cell voltage and daytime/nighttime
     if ((vcell_min <= ESS_UVP) && !daytime && !bms_bal_on) bms_bal_on = BMSCommand(BAL_ON);
     if ((vcell_min > ESS_UVP) && daytime && bms_bal_on) bms_bal_on = !BMSCommand(BAL_OFF);
 }
