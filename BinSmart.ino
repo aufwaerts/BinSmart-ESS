@@ -691,7 +691,7 @@ void FinishCycle() {
     }
 
     // Set Shelly 2PM eco mode (turn off when charging/discharging active or possible, turn on when charging/discharging inactive and impossible)
-    if (((power_pv > MW_MIN_POWER+power_target) || power_new) && pm2_eco_mode) {
+    if (((power_pv > MW_MIN_POWER) || power_new) && pm2_eco_mode) {
         pm2_eco_mode = !ShellyCommand(PM2_ADDR, PM_ECO_OFF);
         if (millis()-ts_power > PROCESSING_DELAY-200) return;  // avoids overrun of standard cycle duration
     }
