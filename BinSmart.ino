@@ -492,6 +492,7 @@ void SetNewPower() {
     // Turn on/off automatic battery recharge power (to prevent BMS turnoff)
     if ((vcell_min <= (bms_uvp + ESS_UVP)/2)) auto_recharge = true;
     if (auto_recharge) {
+        manual_mode = false;
         if (vcell_min >= ESS_UVP) {
             power_new = 0;
             auto_recharge = false;
