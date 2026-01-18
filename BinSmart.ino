@@ -489,10 +489,10 @@ void SetNewPower() {
     // Turn ESS off if power is between MW and HM operating ranges
     if ((power_new > HM_MIN_POWER) && (power_new < MW_MIN_POWER)) power_new = 0;
 
-    // Turn on/off automatic battery recharge power (to prevent BMS turnoff)
-    if ((vcell_min <= (bms_uvp + ESS_UVP)/2)) auto_recharge = true;
+    // Set automatic battery recharge power (to prevent BMS turnoff)
     if (auto_recharge) {
         manual_mode = false;
+        filter_cycles = POWER_FILTER_CYCLES;
         if (vcell_min >= ESS_UVP) {
             power_new = 0;
             auto_recharge = false;
@@ -500,6 +500,7 @@ void SetNewPower() {
         }
         else power_new = MW_MAX_POWER/2;
     }
+    if ((vcell_min <= (bms_uvp + ESS_UVP)/2)) auto_recharge = true;
 
     // Apply new power setting
     if (power_new == 0) {  // turn charging or discharging off
@@ -680,7 +681,7 @@ void FinishCycle() {
     }
 
     // Set Shelly 2PM eco mode (turn off when charging/discharging active or possible, turn on when charging/discharging inactive and impossible)
-    if (((power_pv > MW_MIN_POWER) || power_new) && pm2_eco_mode) pm2_eco_mode = !ShellyCommand(PM2_ADDR, PM_ECO_OFF);
+    if (((power_pv > MW_MIN_POWER) || power_new || auto_recharge) && pm2_eco_mode) pm2_eco_mode = !ShellyCommand(PM2_ADDR, PM_ECO_OFF);
     if (!hm_limit && (!int(round(power_pv))) && !power_old && !power_new && !pm2_eco_mode) pm2_eco_mode = ShellyCommand(PM2_ADDR, PM_ECO_ON);
 
     // Check if public IP address was changed, if yes, update DDNS server entry
