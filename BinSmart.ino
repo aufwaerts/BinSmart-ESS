@@ -674,10 +674,9 @@ void FinishCycle() {
 
     // Set Shelly 1PM eco mode (turn off at daytime, turn on at nighttime)
     if (daytime && pm1_eco_mode) pm1_eco_mode = !ShellyCommand(PM1_ADDR, PM_ECO_OFF);
-    if (!daytime && !pm1_eco_mode) {
+    if (!daytime && !power_pv && !pm1_eco_mode) {
         pm1_eco_mode = ShellyCommand(PM1_ADDR, PM_ECO_ON);
-        power_pv = 0;
-        ShellyCommand(EM_ADDR, EM_RESET);  // Reset Shelly 3EM energy data (prevents HTTP timeouts during data reorgs)
+        if (pm1_eco_mode) ShellyCommand(EM_ADDR, EM_RESET);  // Reset Shelly 3EM energy data (prevents HTTP timeouts during data reorgs)
     }
 
     // Set Shelly 2PM eco mode (turn off when charging/discharging active or possible, turn on when charging/discharging inactive and impossible)
