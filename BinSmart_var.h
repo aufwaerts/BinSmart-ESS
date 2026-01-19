@@ -53,7 +53,7 @@ int vbat, vbat_idle;  // Total batt voltage [mV] (vbat_idle for voltage at cbat=
 int bat_level;  // Battery state of charge, as number between 0 and BAT_SOC_LEVELS-1
 float pbat;  // Batt DC power [W]
 unsigned long mw_counter = 0;  // counter for Meanwell relay operations
-bool pm1_eco_mode = false, pm2_eco_mode = false;  // eco mode of Shelly PMs
+bool pm1_eco_mode, pm2_eco_mode;  // eco mode of Shelly PMs
 bool mw_on = false;  // state of Meanwell relay
 float en_from_pv = 0, en_pv_to_cons = 0, en_pv_to_ess = 0, en_pv_to_grid = 0, en_pv_consumed = 0, en_pv_wasted = 0;  // PV energy counters [Wh]
 float en_from_grid = 0, en_to_grid = 0, en_grid_to_cons = 0, en_grid_to_ess = 0;  // Grid energy counters [Wh]
