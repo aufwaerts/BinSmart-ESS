@@ -473,8 +473,8 @@ void SetNewPower() {
 
     // Filter out power spikes and ramp down ESS power (reduces power loss to grid when consumer is quickly switched on and off)
     if (max(power_new, hm_limit) - power_old < POWER_RAMPDOWN_RATE) {
-        if (power_old > 0) filter_cycles = 0;  // charging: start ramping down immediately
-        else filter_cycles = max(filter_cycles-1, 0);  // countdown filter cycles
+        if (power_old > 0) filter_cycles = max(filter_cycles-3, 0);  // charging: countdown filter cycles fast
+        else filter_cycles = max(filter_cycles-1, 0);  // countdown filter cycles at normal speed
         if (filter_cycles) power_new = power_old;  // filter out power spikes
         else {
             power_new = power_old + POWER_RAMPDOWN_RATE;  // ramp down ESS power after filtering out power spikes
