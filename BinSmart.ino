@@ -145,7 +145,6 @@ void setup() {
     else telnet.println("Shelly 2PM found"); 
     if (!ShellyCommand(PM2_ADDR, PM_CH1_ON)) telnet.println(ERROR_SYMBOL + error_msg);
     if (!ShellyCommand(PM2_ADDR, PM_ECO_ON)) telnet.println(ERROR_SYMBOL + error_msg);
-    pm2_eco_mode = true;
 
     // Shelly 3EM: Erase energy data, read grid power and current time
     if (!ShellyCommand(EM_ADDR, EM_RESET)) telnet.println(ERROR_SYMBOL + error_msg);
@@ -154,14 +153,14 @@ void setup() {
 
     // Shelly 1PM: Set eco mode
     if (daytime) {
+        pm1_eco_mode = false;
         if (!ShellyCommand(PM1_ADDR, PM_ECO_OFF)) telnet.println(ERROR_SYMBOL + error_msg);
         else telnet.println("Shelly 1PM found");
-        pm1_eco_mode = false;
     }
     else {
+        pm1_eco_mode = true;
         if (!ShellyCommand(PM1_ADDR, PM_ECO_ON)) telnet.println(ERROR_SYMBOL + error_msg);
         else telnet.println("Shelly 1PM found");
-        pm1_eco_mode = true;
     }
 
     // No erros during setup: zero error counters, set timestamps, start polling cycle
