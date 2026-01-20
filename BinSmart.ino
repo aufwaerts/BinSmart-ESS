@@ -1,4 +1,4 @@
-const String SW_VERSION = "v2.41";
+const String SW_VERSION = "v2.42";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <HTTPClient.h>  // standard Arduino/ESP32
@@ -458,18 +458,12 @@ void SetNewPower() {
 
     // Save power settings from previous cycle as baseline for new power calculation
     power_old = power_new;
-
+    
     // Calculate new power setting
-    int deviation = round(power_grid - power_target);
-    if ((power_old >= 0) || (power_old <= HM_LOW_POWER_THRESHOLD)) {
-        // normal ESS operating range: normal target power tolerance (+/-) applies
-        if (abs(deviation) > POWER_TARGET_TOLERANCE) power_new = round(power_old - power_grid + power_target);
-    }
-    else {
-        // HM operating above HM_LOW_POWER_THRESHOLD: normal negative power tolerance, but higher positive power tolerance
-        if (deviation < -POWER_TARGET_TOLERANCE) power_new = round(power_old - power_grid + power_target);
-        if (deviation > HM_LOW_POWER_TOLERANCE) power_new = round(power_old - power_grid + power_target);
-    }
+    int target_deviation = round(power_grid - power_target);
+    int positive_tolerance = POWER_TARGET_TOLERANCE;
+    if ((power_old < 0) && (power_old > HM_LOW_POWER_THRESHOLD)) positive_tolerance = HM_LOW_POWER_TOLERANCE;  // HM operating with low power: higher positive tolerance
+    if ((target_deviation < -POWER_TARGET_TOLERANCE) || (target_deviation > positive_tolerance)) power_new = power_old - target_deviation;
 
     // Filter out power spikes and ramp down ESS power (reduces power loss to grid when consumer is quickly switched on and off)
     if (max(power_new, hm_limit) - power_old < POWER_RAMPDOWN_RATE) {
