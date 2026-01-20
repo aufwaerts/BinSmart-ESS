@@ -991,6 +991,12 @@ void ProcessUserCommand() {
                 sprintf(buf,"%.1f %%\r\n",en_from_ess/en_from_batt*100);
                 cmd_resp += buf;
             }
+            // ESS DC-to-DC efficiency
+            if ((en_from_batt > 0.1) && (en_from_batt < en_to_batt)) {
+                cmd_resp += "DC/DC efficiency: ";
+                sprintf(buf,"%.1f %%\r\n",en_from_batt/en_to_batt*100);
+                cmd_resp += buf;
+            }
             // ESS AC-to-AC total efficiency
             if ((en_from_ess > 0.1) && (en_from_ess < en_to_ess)) {
                 cmd_resp += "ESS efficiency  : ";
