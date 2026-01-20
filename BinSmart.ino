@@ -141,11 +141,11 @@ void setup() {
     else telnet.println("RF24 communication with Hoymiles OK");
     delay(1000);
 
-    // Shelly 2PM: Turn off Meanwell, turn on Hoymiles AC side, turn on eco mode
+    // Shelly 2PM: Turn off Meanwell, turn on Hoymiles AC side, turn off eco mode
     if (!ShellyCommand(PM2_ADDR, PM_CH0_OFF)) telnet.println(ERROR_SYMBOL + error_msg);
     else telnet.println("Shelly 2PM found"); 
     if (!ShellyCommand(PM2_ADDR, PM_CH1_ON)) telnet.println(ERROR_SYMBOL + error_msg);
-    if (!ShellyCommand(PM2_ADDR, PM_ECO_ON)) telnet.println(ERROR_SYMBOL + error_msg);
+    if (!ShellyCommand(PM2_ADDR, PM_ECO_OFF)) telnet.println(ERROR_SYMBOL + error_msg);
 
     // Shelly 3EM: Erase energy data, read grid power and current time
     if (!ShellyCommand(EM_ADDR, EM_RESET)) telnet.println(ERROR_SYMBOL + error_msg);
