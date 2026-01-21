@@ -1054,9 +1054,10 @@ void ProcessUserCommand() {
                         return;
                     }
                     if (input_str[0] == 'n') {
-                        en_from_pv = en_pv_to_cons = en_pv_to_ess = en_pv_to_grid = 0, en_pv_consumed = 0;  // Reset PV energy counters
+                        en_from_pv = en_pv_to_cons = en_pv_to_ess = en_pv_to_grid = en_pv_consumed = en_pv_wasted = 0;  // Reset PV energy counters
                         en_from_grid = en_to_grid = en_grid_to_cons = en_grid_to_ess = 0;  // Reset grid energy counters
                         en_from_ess = en_to_ess = en_ess_to_cons = en_ess_to_grid = 0;  // Reset ESS energy counters
+                        en_from_batt = en_to_batt = 0;  // Reset ESS DC energy counters
                         resettime_energy = local_unixtime;
                         cmd_resp = "Energy stats reset to zero\r\n\n";
                         return;
