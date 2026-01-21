@@ -32,6 +32,7 @@ CRC16 crc16;
 Dusk2Dawn ess_location(ESS_LATITUDE, ESS_LONGITUDE, ESS_TIMEZONE);  // will be used for calculating sunrise, sunset etc.
 String sunrise = "00:00", sunset = "00:00";  // will be replaced by calculation
 bool dst, daytime;  // flags for daylight saving time and daytime/nighttime
+bool first_wakeup = false;  // indicates first system wakeup at sunrise
 unsigned long local_unixtime = 0, starttime = 0, resettime_errors = 0, resettime_energy = 0; // epoch times (will be read from Shelly 3EM)
 unsigned long minpower_time = 0;  // unixtime of last lowest power consumption reading
 unsigned long pubip_time = 0, DDNS_time = 0;  // unixtime of last public IP address check and last DDNS update
