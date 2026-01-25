@@ -24,7 +24,7 @@ IPAddress PM2_ADDR(*,*,*,*);  // Shelly 2PM Gen3, connecting Meanwell charger an
 const char* JKBMS_MAC_ADDR = "*:*:*:*:*:*";  // MAC (= BLE) address of JKBMS
 
 // Power settings
-const int PV_MAX_POWER = 360;  // PV module/inverter max AC output
+const int PV_MAX_POWER = 359;  // PV module/inverter max AC output
 const int POWER_TARGET_DEFAULT = 5;  // System is aiming for this amount of watts to be drawn from grid
 const int POWER_TARGET_TOLERANCE = 5;  // Max tolerated deviation (+/-) from target power
 const int HM_LOW_POWER_TOLERANCE = 15;  // Max tolerated positive deviation when Hoymiles is below HM_LOW_POWER_THRESHOLD
@@ -38,13 +38,13 @@ const unsigned long DDNS_UPDATE_INTERVAL = 60000;  // DDNS IP address check inte
 const unsigned long READINPUT_TIMEOUT = 4000;  // max waiting time (in ms) for terminal input
 const unsigned int HTTP_SHELLY_TIMEOUT = 4000;  // max waiting time (in ms) for Shelly HTTP responses
 const unsigned int HTTP_DDNS_TIMEOUT = 1000;  // max waiting time (in ms) for DDNS/public IP responses
-const unsigned long RF24_TIMEOUT = 4000;  // max waiting time (in ms) for RF24 responses
+const unsigned long RF24_TIMEOUT = 1000;  // max waiting time (in ms) for RF24 responses
 const unsigned long RF24_KEEPALIVE = 30000;  // number of ms after which Hoymiles RF24 interface receives "keep alive" message
 const unsigned long BLE_TIMEOUT = 2;  // max waiting time (in secs) for JKBMS BLE server connection
 const unsigned long MW_TIMER = 60000;  // number of ms after which Meanwell is automatically turned off (unless keep-alive message is received)
-const int ESS_TIMEZONE = +1;  // ESS is installed in this timezone (relative to UTC)
-const float ESS_LATITUDE = 46.***;  // geo coordinates of ESS
-const float ESS_LONGITUDE = 13.***;
+const float ESS_LATITUDE = **.***;  // geo coordinates of ESS
+const float ESS_LONGITUDE = **.***;
+const int ESS_TIMEZONE = (int)round(ESS_LONGITUDE/15);
 const String GET_ASTRO_TIME = "03:30";  // time at which astro times (sunrise/sunset) will be calculated (after a possible DST change, before sunrise)
 
 // Meanwell (charging) power parameters
@@ -70,21 +70,22 @@ const int PWM_DUTY_CYCLE_MAX = pow(2,PWM_RESOLUTION)-1;
 const int HM_MAX_POWER = -180;  // Limit of linear power output range
 const int HM_LOW_POWER_THRESHOLD = -61;  // Hoymiles power output above this threshold is unstable
 const int HM_MIN_POWER = -15;  // Hoymiles turned off above min_power (power would be too unstable)
-#define HM_OFF false
-#define HM_ON true
 
-// Hoymiles/RF24 comms
+// Hoymiles/RF24 comms parameters
 const byte RF24_CHANNEL = 03; // Possible RF24 channles for Hoymiles comms are 03, 23, 40, 61, 75; frequency in MHz is 2400 + channel
 const byte RF24_PALEVEL = RF24_PA_MIN; // Possible RF24 PA levels are RF24_PA_MIN, RF24_PA_LOW, RF24_PA_HIGH, RF24_PA_MAX
-const byte HM_SN[] = {0x**, 0x**, 0x**, 0x**, 0x**, 0x**};  // serial number of Hoymiles inverter
+const byte HM_SN[6] = {0x**, 0x**, 0x**, 0x**, 0x**, 0x**};  // serial number of Hoymiles inverter
 const byte HM_RADIO_ID[5] = {0x01, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5]};
-byte hm_turnon[15] =  {0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17, 0x41, 0x72, 0x81, 0x00, 0x00, 0xB0, 0x01, 0x00};
-byte hm_turnoff[15] = {0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17, 0x41, 0x72, 0x81, 0x01, 0x00, 0x20, 0x00, 0x00};
+#define HM_OFF 0
+#define HM_ON 1
+const byte HM_SWITCH[2][15] = {{0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17, 0x41, 0x72, 0x81, 0x01, 0x00, 0x20, 0x00, 0xD4},
+                               {0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17, 0x41, 0x72, 0x81, 0x00, 0x00, 0xB0, 0x01, 0x44}};
 byte hm_power[19] =   {0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17, 0x41, 0x72, 0x81, 0x0B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 // Shelly http commands
 const String EM_STATUS = "/status";
 const String EM_RESET = "/reset_data";
+const String PM_CONFIG = "/rpc/Shelly.GetConfig";
 const String PM_CH0_STATUS = "/rpc/Switch.GetStatus?id=0";
 const String PM_CH1_STATUS = "/rpc/Switch.GetStatus?id=1";
 const String PM_ECO_ON = "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
@@ -110,7 +111,9 @@ const int BAT_FULL = 27600;  // voltage at which battery is considered full
 const int BAT_EMPTY = 8*ESS_UVP;  // voltage at which battery is considered empty
 
 // BMS definitions and commands
-#define RS485_COMMAND_LEN 21
+#define RS485_1 0x4E
+#define RS485_2 0x57
+#define RS485_LEN_POS 3
 #define RS485_COMMAND_POS 8
 #define WRITE_DATA 0x02
 #define READ_DATA 0x03
@@ -118,37 +121,31 @@ const int BAT_EMPTY = 8*ESS_UVP;  // voltage at which battery is considered empt
 #define DATA_ID_POS 11
 #define VCELLS_ID 0x79
 #define CURRENT_ID 0x84
-#define WARNINGS_POS 67
-#define WARNINGS_ID 0x8B
-#define OVP_POS 79
-#define OVP_ID 0x90
-#define UVP_POS 88
-#define UVP_ID 0x93
-#define SBAL_POS 112
-#define SBAL_ID 0x9B
-#define TBAL_POS 115
-#define TBAL_ID 0x9C
-#define RS485_1 0x4E
-#define RS485_2 0x57
-const byte READ_SETTINGS[RS485_COMMAND_LEN] = {RS485_1, RS485_2, 0x00, 0x13, 0x00, 0x00, 0x00, 0x00, READ_ALL, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0x29};
-const byte READ_VOLTAGES[RS485_COMMAND_LEN] = {RS485_1, RS485_2, 0x00, 0x13, 0x00, 0x00, 0x00, 0x00, READ_DATA, 0x03, 0x00, VCELLS_ID, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0x9F};
-const byte READ_CURRENT[RS485_COMMAND_LEN] = {RS485_1, RS485_2, 0x00, 0x13, 0x00, 0x00, 0x00, 0x00, READ_DATA, 0x03, 0x00, CURRENT_ID, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0xAA};
+#define WARNINGS_POS 68
+#define OVP_POS 80
+#define UVP_POS 89
+#define BAL_ST_POS 113
+#define BAL_TR_POS 116
+#define BAL_SW_POS 119
+const byte READ_SETTINGS[] = {RS485_1, RS485_2, 0x00, 0x13, 0x00, 0x00, 0x00, 0x00, READ_ALL, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0x29};
+const byte READ_VOLTAGES[] = {RS485_1, RS485_2, 0x00, 0x13, 0x00, 0x00, 0x00, 0x00, READ_DATA, 0x03, 0x00, VCELLS_ID, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0x9F};
+const byte READ_CURRENT[] = {RS485_1, RS485_2, 0x00, 0x13, 0x00, 0x00, 0x00, 0x00, READ_DATA, 0x03, 0x00, CURRENT_ID, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0xAA};
+#define BLE_1 0xAA
+#define BLE_2 0x55
+#define BLE_3 0x90
+#define BLE_4 0xEB
 #define BLE_COMMAND_LEN 20
 #define BLE_COMMAND_POS 4
 #define BLE_SETTING_POS 6
 #define BLE_INFO 0x97
 #define BLE_DATA 0x96
 #define BLE_BAL_SWITCH 0x1F
-#define BLE_1 0xAA
-#define BLE_2 0x55
-#define BLE_3 0x90
-#define BLE_4 0xEB
 const byte GET_INFO[BLE_COMMAND_LEN] = {BLE_1, BLE_2, BLE_3, BLE_4, BLE_INFO, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11};
 const byte GET_DATA[BLE_COMMAND_LEN] = {BLE_1, BLE_2, BLE_3, BLE_4, BLE_DATA, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10};
 const byte BAL_OFF[BLE_COMMAND_LEN] = {BLE_1, BLE_2, BLE_3, BLE_4, BLE_BAL_SWITCH, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x9D};
 const byte BAL_ON[BLE_COMMAND_LEN] = {BLE_1, BLE_2, BLE_3, BLE_4, BLE_BAL_SWITCH, 0x04, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x9E};
 
-// Errors
+// Error settings
 const String ERROR_TYPE[] = {"WIFI", "DDNS", "BMS", "RF24", "3EM", "1PM", "2PM"};  // error messages correspond with these types! changes here also need changed error messages
 const int ERROR_TYPES = sizeof(ERROR_TYPE)/sizeof(ERROR_TYPE[0]);
 const int ERROR_LIMIT = 20;  // number of consecutive erroneous cycles before error is considered persistent and system is halted
@@ -161,20 +158,21 @@ const String MW_FLOW_SYMBOL[3][2] = {{"─╴\033[33m▶\033[0m╶", "─╴\033
 const String HM_FLOW_SYMBOL[3] = {"─╴\033[32m◀\033[0m╶", "─╏\033[32m◀\033[0m╶", "╴\033[32m◀◀\033[0m╶"};
 const String GRID_FLOW_SYMBOL[3][2] = {{"────", "────"}, {"╴\033[31m▶\033[0m╶─", "╴\033[31m▶\033[0m╶─"}, {"╴\033[33m◀\033[0m╶─", "╴\033[32m◀\033[0m╶─"}};
 const String CONS_FLOW_SYMBOL[3] = {"─╴\033[31m▶\033[0m╶", "─╴\033[32m▶\033[0m╶", "─╴\033[33m▶\033[0m╶"};
-const String DIFF_SYMBOL[] = {" ▲"," ▼"," ▼🪜"};
+const String DIFF_SYMBOL[3] = {" ▲"," ▼"," ▼🪜"};
 const String BAT_LEVEL_SYMBOL[] = {"─🔋\033[33m⡀\033[0m ","─🔋\033[32m⡀\033[0m ","─🔋\033[32m⣀\033[0m ","─🔋\033[32m⣄\033[0m ","─🔋\033[32m⣤\033[0m ","─🔋\033[32m⣦\033[0m ","─🔋\033[32m⣶\033[0m ","─🔋\033[32m⣷\033[0m ","─🔋\033[32m⣿\033[0m "};
 const int BAT_LEVELS = sizeof(BAT_LEVEL_SYMBOL)/sizeof(BAT_LEVEL_SYMBOL[0]);
 const String BAT_OVP_SYMBOL[3] = {" ", "                     ▁ ▁", "                     ▁▁▁"};
 const String BAT_UVP_SYMBOL[3] = {" ", "      ▔ ▔", "      ▔▔▔"};
-const String NIGHT_DAY_SYMBOL[2] = {" 🌙╶"," 🌞╶"};
-const String PV_CABLE_SYMBOL = "─┐";
-const String ESS_CABLE_SYMBOL = "┌─";
-const String ESS_SYMBOL = "─🔋 ";
+const String NIGHT_DAY_SYMBOL[2] = {"🌙╶","🌞╶"};
+const String CABLE_SYMBOL = "─";
+const String PV_CABLE_SYMBOL = "┐";
+const String ESS_CABLE_SYMBOL = "┌";
+const String ESS_SYMBOL = "─🔋";
 const String HOUSE_SYMBOL = "             🏠";
-const String GRID_SYMBOL = " 🏭╶";
-const String GRID_CABLE_SYMBOL = "─┘";
-const String CONS_CABLE_SYMBOL = "└─";
-const String CONS_SYMBOL = "╴📺 ";
+const String GRID_SYMBOL = "🏭╶";
+const String GRID_CABLE_SYMBOL = "┘";
+const String CONS_CABLE_SYMBOL = "└";
+const String CONS_SYMBOL = "╴📺";
 const String OPS_SYMBOL[3] = {" 🏃"," 🧍"," 💤🛌"};
 const String POWERFILTER_SYMBOL = " ⏳";
 const String MANUAL_MODE_SYMBOL = " 👈";
