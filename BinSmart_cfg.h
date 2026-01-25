@@ -38,7 +38,6 @@ const unsigned long DDNS_UPDATE_INTERVAL = 60000;  // DDNS IP address check inte
 const unsigned long READINPUT_TIMEOUT = 4000;  // max waiting time (in ms) for terminal input
 const unsigned int HTTP_SHELLY_TIMEOUT = 4000;  // max waiting time (in ms) for Shelly HTTP responses
 const unsigned int HTTP_DDNS_TIMEOUT = 1000;  // max waiting time (in ms) for DDNS/public IP responses
-const unsigned long RF24_TIMEOUT = 1000;  // max waiting time (in ms) for RF24 responses
 const unsigned long RF24_KEEPALIVE = 30000;  // number of ms after which Hoymiles RF24 interface receives "keep alive" message
 const unsigned long BLE_TIMEOUT = 2;  // max waiting time (in secs) for JKBMS BLE server connection
 const unsigned long MW_TIMER = 60000;  // number of ms after which Meanwell is automatically turned off (unless keep-alive message is received)
