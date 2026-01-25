@@ -95,7 +95,6 @@ void setup() {
     radio.setDataRate(RF24_250KBPS);
     radio.setCRCLength(RF24_CRC_16);
     radio.setAddressWidth(sizeof(HM_RADIO_ID));
-    radio.setRetries(15,15);
     radio.enableDynamicPayloads();
     radio.openWritingPipe(HM_RADIO_ID);
     radio.stopListening();  // radio will only be used in TX mode
@@ -491,7 +490,12 @@ bool HoymilesCommand(int power) {
     ts_HM = millis();
 
     if (power >= 0) {  // turnon or turnoff command
-        if (radio.write(HM_SWITCH[power], sizeof(HM_SWITCH[power]))) return true;
+        if (radio.writeFast(HM_SWITCH[power], sizeof(HM_SWITCH[power])))
+            if (radio.txStandby(RF24_TIMEOUT)) {
+                ts_HM = millis();
+                return true;
+            }
+        ts_HM = millis();
         error_msg = "Hoymiles RF24 switch command ";
         error_msg += power;
         error_msg += " failed";
@@ -511,7 +515,12 @@ bool HoymilesCommand(int power) {
     crc8.add(hm_power, 18);
     hm_power[18] = crc8.getCRC();
 
-    if (radio.write(hm_power, sizeof(hm_power))) return true;
+    if (radio.writeFast(hm_power, sizeof(hm_power)))
+        if (radio.txStandby(RF24_TIMEOUT)) {
+                ts_HM = millis();
+                return true;
+        }
+    ts_HM = millis();
     error_msg = "Hoymiles RF24 power command failed";
     return false;
 }
