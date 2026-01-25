@@ -484,26 +484,26 @@ bool ShellyCommand(IPAddress shelly_addr, const String shelly_command) {
     return false;
 }
 
-bool HoymilesCommand(int power) {
+bool HoymilesCommand(int hm_command) {
 
-    while (millis()-ts_HM < 100);  // minimum delay between two consecutive HM commands
+    while (millis()-ts_HM < 50);  // minimum delay between two consecutive HM commands
     ts_HM = millis();
 
-    if (power >= 0) {  // turnon or turnoff command
-        if (radio.writeFast(HM_SWITCH[power], sizeof(HM_SWITCH[power])))
+    if ((hm_command == HM_OFF) || (hm_command == HM_ON)) {  // switch command
+        if (radio.writeFast(HM_SWITCH[hm_command], sizeof(HM_SWITCH[hm_command])))
             if (radio.txStandby(RF24_TIMEOUT)) {
                 ts_HM = millis();
                 return true;
             }
         ts_HM = millis();
         error_msg = "Hoymiles RF24 switch command ";
-        error_msg += power;
+        error_msg += hm_command;
         error_msg += " failed";
         return false;
     }
 
-    // set Hoymiles power limit
-    unsigned int limit = -10*power;
+    // power limit command
+    unsigned int limit = -10 * hm_command;
     hm_power[12] = highByte(limit);
     hm_power[13] = lowByte(limit);
     crc16.restart();
