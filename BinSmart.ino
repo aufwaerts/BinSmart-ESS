@@ -1,4 +1,4 @@
-const String SW_VERSION = "v2.51";
+const String SW_VERSION = "v2.52";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <HTTPClient.h>  // standard Arduino/ESP32
@@ -95,6 +95,7 @@ void setup() {
     radio.setDataRate(RF24_250KBPS);
     radio.setCRCLength(RF24_CRC_16);
     radio.setAddressWidth(sizeof(HM_RADIO_ID));
+    radio.setRetries(15,15);
     radio.enableDynamicPayloads();
     radio.openWritingPipe(HM_RADIO_ID);
     radio.stopListening();  // radio will only be used in TX mode
