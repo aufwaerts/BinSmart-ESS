@@ -1,4 +1,4 @@
-const String SW_VERSION = "v2.50";
+const String SW_VERSION = "v2.51";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <HTTPClient.h>  // standard Arduino/ESP32
@@ -97,7 +97,7 @@ void setup() {
     radio.setAddressWidth(sizeof(HM_RADIO_ID));
     radio.enableDynamicPayloads();
     radio.openWritingPipe(HM_RADIO_ID);
-    radio.setAutoAck(true);
+    radio.stopListening();  // radio will only be used in TX mode
     crc16.setPolynome((uint16_t)0x18005);
     crc16.setStartXOR(0xFFFF);
     crc16.setEndXOR(0x0000);
@@ -486,17 +486,11 @@ bool ShellyCommand(IPAddress shelly_addr, const String shelly_command) {
 
 bool HoymilesCommand(int power) {
 
-    while (millis()-ts_HM < 50);  // minimum delay between two consecutive HM commands: 50 ms
-    radio.stopListening();  // switch to TX mode
+    while (millis()-ts_HM < 100);  // minimum delay between two consecutive HM commands
+    ts_HM = millis();
 
     if (power >= 0) {  // turnon or turnoff command
-        if (radio.writeFast(HM_SWITCH[power], sizeof(HM_SWITCH[power])))
-            if (radio.txStandBy(RF24_TIMEOUT)) {
-                ts_HM = millis();
-                return true;
-            }
-        // RF24 command failed
-        ts_HM = millis();
+        if (radio.write(HM_SWITCH[power], sizeof(HM_SWITCH[power]))) return true;
         error_msg = "Hoymiles RF24 switch command ";
         error_msg += power;
         error_msg += " failed";
@@ -516,13 +510,7 @@ bool HoymilesCommand(int power) {
     crc8.add(hm_power, 18);
     hm_power[18] = crc8.getCRC();
 
-    if (radio.writeFast(hm_power, sizeof(hm_power)))
-        if (radio.txStandBy(RF24_TIMEOUT)) {
-            ts_HM = millis();
-            return true;
-        }
-    // RF24 command failed
-    ts_HM = millis();
+    if (radio.write(hm_power, sizeof(hm_power))) return true;
     error_msg = "Hoymiles RF24 power command failed";
     return false;
 }
