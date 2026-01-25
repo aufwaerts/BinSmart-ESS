@@ -134,7 +134,7 @@ void setup() {
     telnet.println("Shelly 3EM found");
     delay(1000);
 
-    // No erros during setup: zero error counters, set timestamps, start polling cycle
+    // No erros during setup: set timestamps, start polling cycle
     telnet.print("\nNo errors during setup, start polling cycle ...");
     starttime = resettime_errors = resettime_energy = unixtime;
     delay(PROCESSING_DELAY);
