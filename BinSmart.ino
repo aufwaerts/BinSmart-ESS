@@ -487,7 +487,6 @@ bool ShellyCommand(IPAddress shelly_addr, const String shelly_command) {
 bool HoymilesCommand(int hm_command) {
 
     while (millis()-ts_HM < 50);  // minimum delay between two consecutive HM commands
-    ts_HM = millis();
 
     if ((hm_command == HM_OFF) || (hm_command == HM_ON)) {  // switch command
         if (radio.writeFast(HM_SWITCH[hm_command], sizeof(HM_SWITCH[hm_command])))
