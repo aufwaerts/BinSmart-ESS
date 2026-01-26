@@ -28,7 +28,7 @@ const int PV_MAX_POWER = 359;  // PV module/inverter max AC output
 const int POWER_TARGET_DEFAULT = 5;  // System is aiming for this amount of watts to be drawn from grid
 const int POWER_TARGET_TOLERANCE = 5;  // Max tolerated deviation (+/-) from target power
 const int HM_LOW_POWER_TOLERANCE = 15;  // Max tolerated positive deviation when Hoymiles is below HM_LOW_POWER_THRESHOLD
-const int POWER_RAMPDOWN_RATE = -30; // Max power decrease per cycle
+const int POWER_RAMPDOWN_RATE = -40; // Max power decrease per cycle
 const int POWER_FILTER_CYCLES = 12;  // Number of cycles during which power spikes are filtered out
 const float POWER_LIMIT_RAMPDOWN = 0.67;  // Power rampdown rate when ESS_OVP or ESS_UVP is reached
 
