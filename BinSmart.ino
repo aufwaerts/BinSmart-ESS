@@ -143,7 +143,7 @@ void setup() {
 
 void loop() {
 
-    if (daytime) ShellyCommand(PM1_ADDR, PM_CH0_STATUS);  // Read AC PV power from Shelly 1PM
+    if (!pm1_eco_mode) ShellyCommand(PM1_ADDR, PM_CH0_STATUS);  // Read AC PV power from Shelly 1PM
     BMSCommand(READ_VOLTAGES);  // Read cell voltages from BMS, set charging/discharging power limits
     if (power_new > 0) ShellyCommand(PM2_ADDR, PM_CH0_STATUS); // Read Meanwell AC charging power from Shelly 2PM
     if (power_new < 0) ShellyCommand(PM2_ADDR, PM_CH1_STATUS); // Read Hoymiles AC discharging power from Shelly 2PM
