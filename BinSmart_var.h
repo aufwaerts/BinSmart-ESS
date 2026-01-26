@@ -37,7 +37,7 @@ unsigned long unixtime = 0, starttime = 0, resettime_errors = 0, resettime_energ
 unsigned long minpower_time = 0;  // unixtime of last lowest power consumption reading
 unsigned long pubip_time = 0, DDNS_time = 0;  // unixtime of last public IP address check and last DDNS update
 unsigned long ts_power = 0, ts_pubip = 0, ts_MW = 0, ts_HM = 0, ts_BMS = 0, ts_input = 0;  // various timestamps
-float secs_cycle;  // duration of one polling cycle in secs
+unsigned long secs_cycle;  // duration of one polling cycle in msecs
 
 // Power and energy variables ([W] and [Wh])
 int power_target = POWER_TARGET_DEFAULT;  // Systems aims for this grid power target
@@ -46,10 +46,10 @@ int mw_limit = MW_MAX_POWER, mw_limit_old = MW_MAX_POWER;  // Meanwell power lim
 int hm_limit = HM_MAX_POWER, hm_limit_old = HM_MAX_POWER;  // Hoymiles power limit settings
 float power_grid = 0, power_grid_min = 10000, power_pv = 0, power_ess = 0;  // actual AC power measured by Shellies
 float pbat;  // actual DC power measured by BMS
-float en_from_pv = 0, en_pv_to_cons = 0, en_pv_to_ess = 0, en_pv_to_grid = 0, en_pv_consumed = 0, en_pv_wasted = 0;  // PV energy counters
-float en_from_grid = 0, en_to_grid = 0, en_grid_to_cons = 0, en_grid_to_ess = 0;  // Grid energy counters
-float en_from_ess = 0, en_to_ess = 0, en_ess_to_cons = 0, en_ess_to_grid = 0;  // ESS AC energy counters
-float en_from_batt = 0, en_to_batt = 0;  // ESS DC energy counters
+double en_from_pv = 0, en_pv_to_cons = 0, en_pv_to_ess = 0, en_pv_to_grid = 0, en_pv_consumed = 0, en_pv_wasted = 0;  // PV energy counters
+double en_from_grid = 0, en_to_grid = 0, en_grid_to_cons = 0, en_grid_to_ess = 0;  // Grid energy counters
+double en_from_ess = 0, en_to_ess = 0, en_ess_to_cons = 0, en_ess_to_grid = 0;  // ESS AC energy counters
+double en_from_batt = 0, en_to_batt = 0;  // ESS DC energy counters
 
 // Other global variables
 int filter_cycles = POWER_FILTER_CYCLES;  // number of cycles where power spikes are filtered out
