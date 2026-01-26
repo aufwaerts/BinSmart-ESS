@@ -46,10 +46,10 @@ int mw_limit = MW_MAX_POWER, mw_limit_old = MW_MAX_POWER;  // Meanwell power lim
 int hm_limit = HM_MAX_POWER, hm_limit_old = HM_MAX_POWER;  // Hoymiles power limit settings
 float power_grid = 0, power_grid_min = 10000, power_pv = 0, power_ess = 0;  // actual AC power measured by Shellies
 float pbat;  // actual DC power measured by BMS
-double en_from_pv = 0, en_pv_to_cons = 0, en_pv_to_ess = 0, en_pv_to_grid = 0, en_pv_consumed = 0, en_pv_wasted = 0;  // PV energy counters
-double en_from_grid = 0, en_to_grid = 0, en_grid_to_cons = 0, en_grid_to_ess = 0;  // Grid energy counters
-double en_from_ess = 0, en_to_ess = 0, en_ess_to_cons = 0, en_ess_to_grid = 0;  // ESS AC energy counters
-double en_from_batt = 0, en_to_batt = 0;  // ESS DC energy counters
+float en_from_pv = 0, en_pv_to_cons = 0, en_pv_to_ess = 0, en_pv_to_grid = 0, en_pv_consumed = 0, en_pv_wasted = 0;  // PV energy counters
+float en_from_grid = 0, en_to_grid = 0, en_grid_to_cons = 0, en_grid_to_ess = 0;  // Grid energy counters
+float en_from_ess = 0, en_to_ess = 0, en_ess_to_cons = 0, en_ess_to_grid = 0;  // ESS AC energy counters
+float en_from_batt = 0, en_to_batt = 0;  // ESS DC energy counters
 
 // Other global variables
 int filter_cycles = POWER_FILTER_CYCLES;  // number of cycles where power spikes are filtered out
