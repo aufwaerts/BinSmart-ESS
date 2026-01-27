@@ -33,19 +33,15 @@ const int POWER_FILTER_CYCLES = 12;  // Number of cycles during which power spik
 const float POWER_LIMIT_RAMPDOWN = 0.67;  // Power rampdown rate when ESS_OVP or ESS_UVP is reached
 
 // Time/Timer settings
-const unsigned long PROCESSING_DELAY = 2000;  // minimum delay (in ms) for power changes to take effect
-const unsigned long DDNS_UPDATE_INTERVAL = 60000;  // DDNS IP address check interval (in ms)
-const unsigned long READINPUT_TIMEOUT = 4000;  // max waiting time (in ms) for terminal input
-const unsigned int HTTP_SHELLY_TIMEOUT = 4000;  // max waiting time (in ms) for Shelly HTTP responses
-const unsigned int HTTP_DDNS_TIMEOUT = 1000;  // max waiting time (in ms) for DDNS/public IP responses
-const unsigned int RF24_TIMEOUT = 1000;  // max waiting time for RF24 ACKs after writeFast()
-const unsigned long RF24_KEEPALIVE = 30000;  // number of ms after which Hoymiles RF24 interface receives "keep alive" message
-const unsigned long BLE_TIMEOUT = 2;  // max waiting time (in secs) for JKBMS BLE server connection
-const unsigned long MW_TIMER = 60000;  // number of ms after which Meanwell is automatically turned off (unless keep-alive message is received)
-const float ESS_LATITUDE = **.***;  // geo coordinates of ESS
-const float ESS_LONGITUDE = **.***;
-const int ESS_TIMEZONE = (int)round(ESS_LONGITUDE/15);
-const String GET_ASTRO_TIME = "03:30";  // time at which astro times (sunrise/sunset) will be calculated (after a possible DST change, before sunrise)
+const int PROCESSING_DELAY = 2;  // minimum delay (in secs) for power changes to take effect
+const int DDNS_UPDATE_INTERVAL = 60;  // DDNS IP address check interval (in secs)
+const int READINPUT_TIMEOUT = 4;  // max waiting time (in secs) for terminal input
+const int HTTP_SHELLY_TIMEOUT = 4;  // max waiting time (in secs) for Shelly HTTP responses
+const int HTTP_DDNS_TIMEOUT = 1;  // max waiting time (in secs) for DDNS/public IP responses
+const int RF24_TIMEOUT = 1;  // max waiting time (in secs) for RF24 ACKs after writeFast()
+const int RF24_KEEPALIVE = 30;  // number of secs after which Hoymiles RF24 interface receives "keep alive" message
+const int BLE_TIMEOUT = 2;  // max waiting time (in secs) for JKBMS BLE server connection
+const int MW_TIMER = 60;  // number of secs after which Meanwell is automatically turned off (unless keep-alive message is received)
 
 // Meanwell (charging) power parameters
 const int MW_MAX_POWER = 300;  // max power output at minimum voltage (24V)
@@ -80,23 +76,22 @@ const byte HM_RADIO_ID[5] = {0x01, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5]};
 #define HM_ON 1
 const byte HM_SWITCH[2][15] = {{0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17, 0x41, 0x72, 0x81, 0x01, 0x00, 0x20, 0x00, 0xD4},
                                {0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17, 0x41, 0x72, 0x81, 0x00, 0x00, 0xB0, 0x01, 0x44}};
-byte hm_power[19] =   {0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17, 0x41, 0x72, 0x81, 0x0B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 // Shelly http commands
+const String EM_SETTINGS = "/settings";
 const String EM_STATUS = "/status";
 const String EM_RESET = "/reset_data";
 const String PM_CONFIG = "/rpc/Shelly.GetConfig";
-const String PM_CH0_STATUS = "/rpc/Switch.GetStatus?id=0";
-const String PM_CH1_STATUS = "/rpc/Switch.GetStatus?id=1";
+const String PM_STATUS = "/rpc/Switch.GetStatus?id=";
 const String PM_ECO_ON = "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
 const String PM_ECO_OFF = "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":false}}";
-const String PM_CH0_ON = "/relay/0?turn=on&timer=" + String(MW_TIMER/1000);
+const String PM_CH0_ON = "/relay/0?turn=on&timer=";
 const String PM_CH0_OFF = "/relay/0?turn=off";
 const String PM_CH1_ON = "/relay/1?turn=on";
 const String PM_CH1_OFF = "/relay/1?turn=off";
 
 // URLs
-const String PUBLIC_IP_SERVER = "http://api.ipify.org";  // public service for obtaining WiFi routers public IP address
+const String PUBLIC_IP_SERVER = "http://api.ipify.org";  // public service for obtaining WiFi router public IP address
 // const String PUBLIC_IP_SERVER = "http://ifconfig.me/ip";  // alternative service
 const String DDNS_SERVER_UPDATE = "http://***:***@dynupdate.no-ip.com/nic/update?hostname=***.ddns.net&myip=";  // public DDNS service
 
@@ -148,7 +143,7 @@ const byte BAL_ON[BLE_COMMAND_LEN] = {BLE_1, BLE_2, BLE_3, BLE_4, BLE_BAL_SWITCH
 // Error settings
 const String ERROR_TYPE[] = {"WIFI", "DDNS", "BMS", "RF24", "3EM", "1PM", "2PM"};  // error messages correspond with these types! changes here also need changed error messages
 const int ERROR_TYPES = sizeof(ERROR_TYPE)/sizeof(ERROR_TYPE[0]);
-const int ERROR_LIMIT = 20;  // number of consecutive erroneous cycles before error is considered persistent and system is halted
+const int ERROR_LIMIT = 10;  // number of consecutive erroneous cycles before error is considered persistent and system is halted
 const int UNCRITICAL_ERROR_TYPES = 2;  // ERROR_LIMIT doesn't apply to first ... error types
 
 // Symbols for a nice telnet frontend
