@@ -82,13 +82,11 @@ const String EM_SETTINGS = "/settings";
 const String EM_STATUS = "/status";
 const String EM_RESET = "/reset_data";
 const String PM_CONFIG = "/rpc/Shelly.GetConfig";
-const String PM_STATUS = "/rpc/Switch.GetStatus?id=";
+const String PM_STATUS[2] = {"/rpc/Switch.GetStatus?id=0", "/rpc/Switch.GetStatus?id=1"};
+const String PM_ON[2] = {"/relay/0?turn=on&timer=" + MW_TIMER, "/relay/1?turn=on"};
+const String PM_OFF[2] = {"/relay/0?turn=off", "/relay/1?turn=off"};
 const String PM_ECO_ON = "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
 const String PM_ECO_OFF = "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":false}}";
-const String PM_CH0_ON = "/relay/0?turn=on&timer=";
-const String PM_CH0_OFF = "/relay/0?turn=off";
-const String PM_CH1_ON = "/relay/1?turn=on";
-const String PM_CH1_OFF = "/relay/1?turn=off";
 
 // URLs
 const String PUBLIC_IP_SERVER = "http://api.ipify.org";  // public service for obtaining WiFi router public IP address
