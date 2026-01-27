@@ -5,7 +5,7 @@ AsyncWebServer OTAserver(80);
 WiFiServer server(TELNET_PORT);
 WiFiClient telnet;
 HTTPClient http;
-String http_resp;
+String http_command;
 String public_IP = "000.000.000.000", DDNS_address = "000.000.000.000";
 
 // BMS
@@ -28,16 +28,19 @@ bool error_flag = false;  // errors occured and not yet read by user?
 RF24 radio(RF24_CE_PIN, RF24_CSN_PIN);
 CRC8 crc8;
 CRC16 crc16;
+byte hm_power[19] = {0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17, 0x41, 0x72, 0x81, 0x0B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 // Time variables
-Dusk2Dawn ess_location(ESS_LATITUDE, ESS_LONGITUDE, ESS_TIMEZONE);  // will be used for calculating sunrise, sunset etc.
-String sunrise = "00:00", sunset = "00:00";  // will be replaced by calculation
+float latitude, longitude;  // geo coordinates of ESS (will be read from Shelly 3EM)
+int timezone;  // timezone of ESS (UTC+..., will be read from Shelly 3EM)
+int min_of_day;  // local time (minutes after midnight)
+int sunrise, sunset;  // current day's sunrise and sunset (minutes after midnight)
 bool dst, daytime;  // flags for daylight saving time and daytime/nighttime
-unsigned long unixtime = 0, starttime = 0, resettime_errors = 0, resettime_energy = 0; // epoch times (will be read from Shelly 3EM)
-unsigned long minpower_time = 0;  // unixtime of last lowest power consumption reading
-unsigned long pubip_time = 0, DDNS_time = 0;  // unixtime of last public IP address check and last DDNS update
-unsigned long ts_power = 0, ts_pubip = 0, ts_MW = 0, ts_HM = 0, ts_BMS = 0, ts_input = 0;  // various timestamps
-unsigned long secs_cycle;  // duration of one polling cycle in msecs
+long local_unixtime = 0; // epoch time of local time (will be read from Shelly 3EM)
+long minpower_time = 0, starttime = 0, resettime_errors = 0, resettime_energy = 0;  // local_unixtime of certain events
+long pubip_time = 0, DDNS_time = 0;  // local_unixtime of last public IP address check and last DDNS update
+unsigned long ts_power = 0, ts_pubip = 0, ts_MW = 0, ts_HM = 0, ts_BMS = 0, ts_input = 0, ts_test = 0;  // various millis() timestamps
+float secs_cycle;  // duration of one polling cycle in secs
 
 // Power and energy variables ([W] and [Wh])
 int power_target = POWER_TARGET_DEFAULT;  // Systems aims for this grid power target
