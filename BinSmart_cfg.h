@@ -83,7 +83,7 @@ const String EM_STATUS = "/status";
 const String EM_RESET = "/reset_data";
 const String PM_CONFIG = "/rpc/Shelly.GetConfig";
 const String PM_STATUS[2] = {"/rpc/Switch.GetStatus?id=0", "/rpc/Switch.GetStatus?id=1"};
-const String PM_ON[2] = {"/relay/0?turn=on&timer=" + MW_TIMER, "/relay/1?turn=on"};
+const String PM_ON[2] = {"/relay/0?turn=on&timer="+String(MW_TIMER), "/relay/1?turn=on"};
 const String PM_OFF[2] = {"/relay/0?turn=off", "/relay/1?turn=off"};
 const String PM_ECO_ON = "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
 const String PM_ECO_OFF = "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":false}}";
