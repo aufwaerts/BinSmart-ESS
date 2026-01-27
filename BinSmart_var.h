@@ -1,7 +1,7 @@
 // Global variables
 
 // Networking
-AsyncWebServer OTAserver(80);
+AsyncWebServer OTAserver(HTTP_PORT);
 WiFiServer server(TELNET_PORT);
 WiFiClient telnet;
 HTTPClient http;
