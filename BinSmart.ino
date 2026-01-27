@@ -457,13 +457,13 @@ bool ShellyCommand(IPAddress shelly_addr, const String shelly_command, int value
             else power_ess = power_reading;
         }
         if (shelly_command == PM_CH0_ON) {
-            // turn Meanwell on
+            // Meanwell turned on
             ts_MW = millis();
             if (!mw_on) mw_counter++;
             mw_on = true;
         }
         if (shelly_command == PM_CH0_OFF) {
-            // turn Meanwell off
+            // Meanwell turned off
             ts_MW = millis();
             if (mw_on) mw_counter++;
             mw_on = false;
