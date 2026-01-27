@@ -9,10 +9,12 @@
 #define UART_TX_PIN 17
 
 // Networking
-const String WIFI_SSID = "***";
-const String WIFI_PWD = "***";
-const int GOOD_WIFI_RSSI = -70;  // RSSI above this value is considered "good enough"
-const int TELNET_PORT = ***;  // TCP port for communication with terminal
+#define WIFI_SSID "***"
+#define WIFI_PWD "***"
+#define GOOD_WIFI_RSSI -70  // RSSI above this value is considered "good enough"
+#define HTTP_PORT 80  // standard HTTP port
+#define TELNET_PORT ***  // TCP port for communication with terminal
+#define JKBMS_MAC_ADDR "*:*:*:*:*:*"  // MAC (= BLE) address of JKBMS
 IPAddress ESP32_ADDR(*,*,*,*);  // Local IP address of ESS
 IPAddress ROUTER_ADDR(*,*,*,*);   // Local WiFi router
 IPAddress SUBNET(*,*,*,*);   // WiFi subnet
@@ -21,7 +23,6 @@ IPAddress DNS_SERVER2(9,9,9,9);  // Quad9 DNS server
 IPAddress EM_ADDR(*,*,*,*);  // Shelly 3EM
 IPAddress PM1_ADDR(*,*,*,*);  // Shelly Plus 1PM, connecting Maxeon solar panel to AC
 IPAddress PM2_ADDR(*,*,*,*);  // Shelly 2PM Gen3, connecting Meanwell charger and Hoymiles inverter to AC
-const char* JKBMS_MAC_ADDR = "*:*:*:*:*:*";  // MAC (= BLE) address of JKBMS
 
 // Power settings
 const int PV_MAX_POWER = 359;  // PV module/inverter max AC output
