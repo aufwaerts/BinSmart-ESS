@@ -73,10 +73,10 @@ const byte RF24_CHANNEL = 03; // Possible RF24 channles for Hoymiles comms are 0
 const byte RF24_PALEVEL = RF24_PA_MIN; // Possible RF24 PA levels are RF24_PA_MIN, RF24_PA_LOW, RF24_PA_HIGH, RF24_PA_MAX
 const byte HM_SN[6] = {0x**, 0x**, 0x**, 0x**, 0x**, 0x**};  // serial number of Hoymiles inverter
 const byte HM_RADIO_ID[5] = {0x01, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5]};
-#define HM_OFF 0
-#define HM_ON 1
-const byte HM_SWITCH[2][15] = {{0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17, 0x41, 0x72, 0x81, 0x01, 0x00, 0x20, 0x00, 0xD4},
-                               {0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17, 0x41, 0x72, 0x81, 0x00, 0x00, 0xB0, 0x01, 0x44}};
+const byte HM_ON = 0x00;
+const byte HM_OFF = 0x01;
+const byte HM_SWITCH[2][15] = {{0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17, 0x41, 0x72, 0x81, HM_ON, 0x00, 0xB0, 0x01, 0x44},
+                               {0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17, 0x41, 0x72, 0x81, HM_OFF, 0x00, 0x20, 0x00, 0xD4}};
 
 // Shelly http commands
 const char EM_SETTINGS[] = "/settings";
