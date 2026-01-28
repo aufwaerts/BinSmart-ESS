@@ -652,7 +652,7 @@ void FinishCycle() {
     }
 
     // No ESS power output for at least two cycles: check for new min grid power (min household consumption)
-    if (!power_new && !power_old && (power_grid < power_grid_min)) {
+    if (!power_old && !power_pv && (power_grid < power_grid_min)) {
         power_grid_min = power_grid;
         minpower_time = local_unixtime;
     }
