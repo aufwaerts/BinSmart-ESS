@@ -39,18 +39,10 @@ void setup() {
     // Start telnet server and wait for terminal to connect
     server.begin();
     while (!telnet) telnet = server.available();
-
+    
     // Print startup message
-    telnet.print(CLEAR_SCREEN);
-    telnet.print(HIDE_CURSOR);
-    telnet.print("BinSmart ESS ");
-    telnet.print(SW_VERSION);
-    telnet.print("\r\n\nWiFi connected to ");
-    telnet.print(WIFI_SSID);
-    telnet.print("   RSSI: ");
-    telnet.print(WiFi.RSSI());
-    telnet.print("   TxPower: ");
-    telnet.println(WiFi.getTxPower());
+    sprintf(cycle_msg, "%s%sBinSmart ESS %s\r\n\nWiFi connected to %s   RSSI: %d   TxPower: %d\r\n", CLEAR_SCREEN, HIDE_CURSOR, SW_VERSION, WIFI_SSID, WiFi.RSSI(), WiFi.getTxPower());
+    telnet.println(cycle_msg);
     delay(3000);
 
     // Init PWM generator (for adjusting Meanwell power)
