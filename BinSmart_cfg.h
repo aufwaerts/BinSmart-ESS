@@ -42,7 +42,7 @@ const int HTTP_DDNS_TIMEOUT = 1;  // max waiting time (in secs) for DDNS/public 
 const int RF24_TIMEOUT = 1;  // max waiting time (in secs) for RF24 ACKs after writeFast()
 const int RF24_KEEPALIVE = 30;  // number of secs after which Hoymiles RF24 interface receives "keep alive" message
 const int BLE_TIMEOUT = 2;  // max waiting time (in secs) for JKBMS BLE server connection
-const int MW_TIMER = 60;  // number of secs after which Meanwell is automatically turned off (unless keep-alive message is received)
+const int MW_KEEPALIVE = 40; // number of secs after which Meanwell receives "keep alive" message (must be less than corresponding Shelly 2PM timer)
 
 // Meanwell (charging) power parameters
 const int MW_MAX_POWER = 300;  // max power output at minimum voltage (24V)
@@ -79,30 +79,31 @@ const byte HM_SWITCH[2][15] = {{0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x
                                {0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17, 0x41, 0x72, 0x81, 0x00, 0x00, 0xB0, 0x01, 0x44}};
 
 // Shelly http commands
-const String EM_SETTINGS = "/settings";
-const String EM_STATUS = "/status";
-const String EM_RESET = "/reset_data";
-const String PM_CONFIG = "/rpc/Shelly.GetConfig";
-const String PM_STATUS[2] = {"/rpc/Switch.GetStatus?id=0", "/rpc/Switch.GetStatus?id=1"};
-const String PM_ON[2] = {"/relay/0?turn=on&timer="+String(MW_TIMER), "/relay/1?turn=on"};
-const String PM_OFF[2] = {"/relay/0?turn=off", "/relay/1?turn=off"};
-const String PM_ECO_ON = "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
-const String PM_ECO_OFF = "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":false}}";
+const char EM_SETTINGS[] = "/settings";
+const char EM_STATUS[] = "/status";
+const char EM_RESET[] = "/reset_data";
+const char PM_CONFIG[] = "/rpc/Shelly.GetConfig";
+const char PM_STATUS[2][30] = {"/rpc/Switch.GetStatus?id=0", "/rpc/Switch.GetStatus?id=1"};
+const char PM_ON[2][30] = {"/relay/0?turn=on&timer=60", "/relay/1?turn=on"};
+const char PM_OFF[2][20] = {"/relay/0?turn=off", "/relay/1?turn=off"};
+const char PM_ECO_ON[] = "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
+const char PM_ECO_OFF[] = "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":false}}";
 
 // URLs
-const String PUBLIC_IP_SERVER = "http://api.ipify.org";  // public service for obtaining WiFi router public IP address
-// const String PUBLIC_IP_SERVER = "http://ifconfig.me/ip";  // alternative service
-const String DDNS_SERVER_UPDATE = "http://***:***@dynupdate.no-ip.com/nic/update?hostname=***.ddns.net&myip=";  // public DDNS service
+const char PUBLIC_IP_URL[] = "http://api.ipify.org";  // public service for obtaining WiFi router public IP address
+// const char PUBLIC_IP_URL[] = "http://ifconfig.me/ip";  // alternative service
+const char DDNS_SERVER_URL[] = "http://kf2ack1:MaoHei1evvit@dynupdate.no-ip.com/nic/update?hostname=binsmart987128.ddns.net&myip=";  // public DDNS service
 
 // BMS/ESS voltage protection settings in millivolts
 const int ESS_OVP = 3500;  // one cell above this voltage: ramp down charging power
 const int ESS_OVPR = 3450;  // all cells below this voltage: re-enable charging (should be the same as BMS Balancer Start Voltage)
 const int ESS_UVP = 3150;  // one cell below this voltage: ramp down discharging power
 const int ESS_UVPR = 3200;  // all cells above this voltage: re-enable discharging
-const int ESS_BMS_OVP_DIFF = 100;  // min difference between ESS and BMS OVP settings (bms_ovp - ESS_OVP >= ESS_BMS_OVP_DIFF)
-const int ESS_BMS_UVP_DIFF = 100;  // min difference between ESS and BMS UVP settings (ESS_UVP - bms_uvp >= ESS_BMS_UVP_DIFF)
+const int ESS_BMS_OVP_DIFF = 100;  // min difference between ESS and BMS OVP settings (BMS_OVP - ESS_OVP >= ESS_BMS_OVP_DIFF)
+const int ESS_BMS_UVP_DIFF = 100;  // min difference between ESS and BMS UVP settings (ESS_UVP - BMS_UVP >= ESS_BMS_UVP_DIFF)
 const int BAT_FULL = 27600;  // voltage at which battery is considered full
 const int BAT_EMPTY = 8*ESS_UVP;  // voltage at which battery is considered empty
+const int BAT_LEVELS = 9;  // number of different battery levels that can be visualized
 
 // BMS definitions and commands
 #define RS485_1 0x4E
@@ -140,40 +141,39 @@ const byte BAL_OFF[BLE_COMMAND_LEN] = {BLE_1, BLE_2, BLE_3, BLE_4, BLE_BAL_SWITC
 const byte BAL_ON[BLE_COMMAND_LEN] = {BLE_1, BLE_2, BLE_3, BLE_4, BLE_BAL_SWITCH, 0x04, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x9E};
 
 // Error settings
-const String ERROR_TYPE[] = {"WIFI", "DDNS", "BMS", "RF24", "3EM", "1PM", "2PM"};  // error messages correspond with these types! changes here also need changed error messages
-const int ERROR_TYPES = sizeof(ERROR_TYPE)/sizeof(ERROR_TYPE[0]);
-const int ERROR_LIMIT = 10;  // number of consecutive erroneous cycles before error is considered persistent and system is halted
+const int ERROR_TYPES = 7;
 const int UNCRITICAL_ERROR_TYPES = 2;  // ERROR_LIMIT doesn't apply to first ... error types
+const String ERROR_TYPE[ERROR_TYPES][5] = {"WIFI", "DDNS", "BMS", "RF24", "3EM", "1PM", "2PM"};  // error messages correspond with these types! changes here also need changed error messages
+const int ERROR_LIMIT = 10;  // number of consecutive erroneous cycles before error is considered persistent and system is halted
 
 // Symbols for a nice telnet frontend
-const String PV_FLOW_SYMBOL[3] = {"────", "╴\033[33m▶\033[0m╶─", "╴\033[33m▶▶\033[0m╶"};
-const String ESS_FLOW_SYMBOL[3] = {"────", "─╴▷┃", "─┃◁╶"};
-const String MW_FLOW_SYMBOL[3][2] = {{"─╴\033[33m▶\033[0m╶", "─╴\033[31m▶\033[0m╶"}, {"─╴\033[33m▶\033[0m╏", "─╴\033[31m▶\033[0m╏"}, {"╴\033[33m▶▶\033[0m╶", "╴\033[31m▶▶\033[0m╶"}};
-const String HM_FLOW_SYMBOL[3] = {"─╴\033[32m◀\033[0m╶", "─╏\033[32m◀\033[0m╶", "╴\033[32m◀◀\033[0m╶"};
-const String GRID_FLOW_SYMBOL[3][2] = {{"────", "────"}, {"╴\033[31m▶\033[0m╶─", "╴\033[31m▶\033[0m╶─"}, {"╴\033[33m◀\033[0m╶─", "╴\033[32m◀\033[0m╶─"}};
-const String CONS_FLOW_SYMBOL[3] = {"─╴\033[31m▶\033[0m╶", "─╴\033[32m▶\033[0m╶", "─╴\033[33m▶\033[0m╶"};
-const String DIFF_SYMBOL[3] = {" ▲"," ▼"," ▼🪜"};
-const String BAT_LEVEL_SYMBOL[] = {"─🔋\033[33m⡀\033[0m ","─🔋\033[32m⡀\033[0m ","─🔋\033[32m⣀\033[0m ","─🔋\033[32m⣄\033[0m ","─🔋\033[32m⣤\033[0m ","─🔋\033[32m⣦\033[0m ","─🔋\033[32m⣶\033[0m ","─🔋\033[32m⣷\033[0m ","─🔋\033[32m⣿\033[0m "};
-const int BAT_LEVELS = sizeof(BAT_LEVEL_SYMBOL)/sizeof(BAT_LEVEL_SYMBOL[0]);
-const String BAT_OVP_SYMBOL[3] = {" ", "                     ▁ ▁", "                     ▁▁▁"};
-const String BAT_UVP_SYMBOL[3] = {" ", "      ▔ ▔", "      ▔▔▔"};
-const String NIGHT_DAY_SYMBOL[2] = {"🌙╶","🌞╶"};
-const String CABLE_SYMBOL = "─";
-const String PV_CABLE_SYMBOL = "┐";
-const String ESS_CABLE_SYMBOL = "┌";
-const String ESS_SYMBOL = "─🔋";
-const String HOUSE_SYMBOL = "             🏠";
-const String GRID_SYMBOL = "🏭╶";
-const String GRID_CABLE_SYMBOL = "┘";
-const String CONS_CABLE_SYMBOL = "└";
-const String CONS_SYMBOL = "╴📺";
-const String OPS_SYMBOL[3] = {" 🏃"," 🧍"," 💤🛌"};
-const String POWERFILTER_SYMBOL = " ⏳";
-const String MANUAL_MODE_SYMBOL = " 👈";
-const String AUTO_RECHARGE_SYMBOL = " ⚡";
-const String WIFI_SYMBOL[2] = {"⚠️­","📶"};
-const String ERROR_SYMBOL = "❌ ";
-const String BALANCER_SYMBOL = " 🔄";
-const String CLEAR_SCREEN = "\033[0H\033[0J";
-const String SHOW_CURSOR = "\033[?25h";
-const String HIDE_CURSOR = "\033[?25l";
+const char PV_FLOW_SYMBOL[3][30] = {"────", "╴\033[33m▶\033[0m╶─", "╴\033[33m▶▶\033[0m╶"};
+const char ESS_FLOW_SYMBOL[3][15] = {"────", "─╴▷┃", "─┃◁╶"};
+const char MW_FLOW_SYMBOL[3][2][30] = {{"─╴\033[33m▶\033[0m╶", "─╴\033[31m▶\033[0m╶"}, {"─╴\033[33m▶\033[0m╏", "─╴\033[31m▶\033[0m╏"}, {"╴\033[33m▶▶\033[0m╶", "╴\033[31m▶▶\033[0m╶"}};
+const char HM_FLOW_SYMBOL[3][30] = {"─╴\033[32m◀\033[0m╶", "─╏\033[32m◀\033[0m╶", "╴\033[32m◀◀\033[0m╶"};
+const char GRID_FLOW_SYMBOL[3][2][30] = {{"────", "────"}, {"╴\033[31m▶\033[0m╶─", "╴\033[31m▶\033[0m╶─"}, {"╴\033[33m◀\033[0m╶─", "╴\033[32m◀\033[0m╶─"}};
+const char CONS_FLOW_SYMBOL[3][30] = {"─╴\033[31m▶\033[0m╶", "─╴\033[32m▶\033[0m╶", "─╴\033[33m▶\033[0m╶"};
+const char DIFF_SYMBOL[3][10] = {" ▲"," ▼"," ▼🪜"};
+const char BAT_LEVEL_SYMBOL[BAT_LEVELS][30] = {"─🔋\033[33m⡀\033[0m ","─🔋\033[32m⡀\033[0m ","─🔋\033[32m⣀\033[0m ","─🔋\033[32m⣄\033[0m ","─🔋\033[32m⣤\033[0m ","─🔋\033[32m⣦\033[0m ","─🔋\033[32m⣶\033[0m ","─🔋\033[32m⣷\033[0m ","─🔋\033[32m⣿\033[0m "};
+const char BAT_OVP_SYMBOL[3][32] = {"", "                     ▁ ▁", "                     ▁▁▁"};
+const char BAT_UVP_SYMBOL[3][20] = {"", "      ▔ ▔", "      ▔▔▔"};
+const char NIGHT_DAY_SYMBOL[2][8] = {"🌙╶","🌞╶"};
+const char CABLE_SYMBOL[] = "─";
+const char PV_CABLE_SYMBOL[] = "┐";
+const char ESS_CABLE_SYMBOL[] = "┌";
+const char ESS_SYMBOL[] = "─🔋";
+const char HOUSE_SYMBOL[] = "             🏠";
+const char GRID_SYMBOL[] = "🏭╶";
+const char GRID_CABLE_SYMBOL[] = "┘";
+const char CONS_CABLE_SYMBOL[] = "└";
+const char CONS_SYMBOL[] = "╴📺";
+const char OPS_SYMBOL[3][10] = {" 🏃"," 🧍"," 💤🛌"};
+const char POWERFILTER_SYMBOL[] = " ⏳";
+const char MANUAL_MODE_SYMBOL[] = " 👈";
+const char AUTO_RECHARGE_SYMBOL[] = " ⚡";
+const char WIFI_SYMBOL[2][10] = {"⚠️­","📶"};
+const char ERROR_SYMBOL[] = "❌ ";
+const char BALANCER_SYMBOL[] = " 🔄";
+const char CLEAR_SCREEN[] = "\033[0H\033[0J";
+const char SHOW_CURSOR[] = "\033[?25h";
+const char HIDE_CURSOR[] = "\033[?25l";
