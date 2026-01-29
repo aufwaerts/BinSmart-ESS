@@ -634,7 +634,7 @@ void FinishCycle() {
     if ((vcell_min < ESS_UVP) && !power_old && !bms_bal_on) bms_bal_on = BMSCommand(BAL_ON);
 
     // (if time left) Check if public IP address was changed, if yes: update DDNS server entry
-    if (((millis()-ts_power)/1000 < PROCESSING_DELAY-1) && ((millis()-ts_pubip)/1000 >= DDNS_UPDATE_INTERVAL)) UpdateDDNS();
+    if (((millis()-ts_power)/1000 < PROCESSING_DELAY-HTTP_DDNS_TIMEOUT) && ((millis()-ts_pubip)/1000 >= DDNS_UPDATE_INTERVAL)) UpdateDDNS();
 }
 
 void CheckErrors() {
