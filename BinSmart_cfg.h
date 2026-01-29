@@ -92,7 +92,7 @@ const char PM_ECO_OFF[] = "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":f
 // URLs
 const char PUBLIC_IP_URL[] = "http://api.ipify.org";  // public service for obtaining WiFi router public IP address
 // const char PUBLIC_IP_URL[] = "http://ifconfig.me/ip";  // alternative service
-const char DDNS_SERVER_URL[] = "http://***:***@dynupdate.no-ip.com/nic/update?hostname=***.ddns.net&myip=";  // public DDNS service
+const char DDNS_SERVER_URL[] = "http://***:***@dynupdate.no-ip.com/nic/update?hostname=***.***.***&myip=";  // public DDNS service
 
 // BMS/ESS voltage protection settings in millivolts
 const int ESS_OVP = 3500;  // one cell above this voltage: ramp down charging power
