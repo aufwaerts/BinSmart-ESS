@@ -1,4 +1,4 @@
-#define SW_VERSION "v2.60"
+#define SW_VERSION "v2.61"
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <HTTPClient.h>  // standard Arduino/ESP32
@@ -371,8 +371,10 @@ bool ShellyCommand(IPAddress shelly_addr, const char shelly_command[]) {
     }
 
     // Prepare Shelly http command
-    sprintf(http_command, "http://%d.%d.%d.%d%s", shelly_addr[0], shelly_addr[1], shelly_addr[2], shelly_addr[3], shelly_command);
-
+    strcpy(http_command, "http://");
+    strcat(http_command, shelly_addr.toString().c_str());
+    strcat(http_command, shelly_command);
+    
     // Send http command to Shelly
     http.setTimeout(HTTP_SHELLY_TIMEOUT*1000);
     http.begin(http_command);
