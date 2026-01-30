@@ -83,11 +83,13 @@ const char EM_SETTINGS[] = "/settings";
 const char EM_STATUS[] = "/status";
 const char EM_RESET[] = "/reset_data";
 const char PM_CONFIG[] = "/rpc/Shelly.GetConfig";
-const char PM_STATUS[2][30] = {"/rpc/Switch.GetStatus?id=0", "/rpc/Switch.GetStatus?id=1"};
-const char PM_ON[2][30] = {"/relay/0?turn=on&timer=60", "/relay/1?turn=on"};
-const char PM_OFF[2][20] = {"/relay/0?turn=off", "/relay/1?turn=off"};
-const char PM_ECO_ON[] = "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
-const char PM_ECO_OFF[] = "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":false}}";
+const char PM_STATUS[] = "/rpc/Switch.GetStatus?id=0";
+const char MW_ON[] = "/relay/0?turn=on&timer=60";
+const char MW_OFF[] = "/relay/0?turn=off";
+const char HM_AC_ON[] = "/relay/1?turn=on";
+const char HM_AC_OFF[] = "/relay/1?turn=off";
+const char ECO_ON[] = "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
+const char ECO_OFF[] = "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":false}}";
 
 // URLs
 const char PUBLIC_IP_URL[] = "http://api.ipify.org";  // public service for obtaining WiFi router public IP address
@@ -144,7 +146,7 @@ const byte BAL_ON[BLE_COMMAND_LEN] = {BLE_1, BLE_2, BLE_3, BLE_4, BLE_BAL_SWITCH
 const int ERROR_TYPES = 7;
 const int UNCRITICAL_ERROR_TYPES = 2;  // ERROR_LIMIT doesn't apply to first ... error types
 const String ERROR_TYPE[ERROR_TYPES][5] = {"WIFI", "DDNS", "BMS", "RF24", "3EM", "1PM", "2PM"};  // error messages correspond with these types! changes here also need changed error messages
-const int ERROR_LIMIT = 10;  // number of consecutive erroneous cycles before error is considered persistent and system is halted
+const int ERROR_LIMIT = 20;  // number of consecutive erroneous cycles before error is considered persistent and system is halted
 
 // Symbols for a nice telnet frontend
 const char PV_FLOW_SYMBOL[3][30] = {"────", "╴\033[33m▶\033[0m╶─", "╴\033[33m▶▶\033[0m╶"};
