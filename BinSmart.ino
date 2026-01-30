@@ -743,7 +743,7 @@ void ProcessUserCommand() {
     switch (command) {
         case 'm':
             command = '\0';  // respond to command only once
-            telnet.printf("%s%s", cycle_msg, "Enter ESS power (negative for discharging): ");
+            telnet.printf("%s%s", cycle_msg, "Enter ESS power: ");
             ts_input = millis();
             while (!telnet.available() && ((millis()-ts_input)/1000 < READINPUT_TIMEOUT));
             if (telnet.available()) {
