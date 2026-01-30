@@ -835,7 +835,7 @@ void ProcessUserCommand() {
             break;
         case 'z':
             command = '\0';  // respond to command only once
-            telnet.printf("%s%s", cycle_msg, "Enter [e] or [n] to reset error or energy stats: ");
+            telnet.printf("%s%s", cycle_msg, "Reset [e]rror or e[n]ergy stats: ");
             ts_input = millis();
             while (!telnet.available() && ((millis()-ts_input)/1000 < READINPUT_TIMEOUT));
             if (telnet.available()) {
