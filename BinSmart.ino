@@ -205,7 +205,7 @@ bool ShellyCommand(IPAddress shelly_addr, const char shelly_command[]) {
         if (!strcmp(shelly_command, PM_CONFIG)) {
             bool eco_mode = stream->findUntil("eco_mode\":true", "eco_mode\":false");
             if (shelly_addr == PM1_ADDR) pm1_eco_mode = eco_mode;
-            else pm2_eco_mode = eco_mode;
+            if (shelly_addr == PM2_ADDR) pm2_eco_mode = eco_mode;
         }
         http.end();
         return true;
