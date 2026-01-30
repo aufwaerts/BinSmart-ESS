@@ -396,7 +396,6 @@ void SetNewPower() {
         if (vcell_min >= ESS_UVP) {
             power_new = 0;
             auto_recharge = false;
-            vcell_min = ESS_UVP;  // keeps BMS balancer turned on
         }
         else power_new = MW_MAX_POWER/2;
     }
