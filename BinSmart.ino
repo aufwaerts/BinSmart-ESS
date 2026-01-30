@@ -597,7 +597,7 @@ void FinishCycle() {
         while ((millis()-ts_power)/1000 < PROCESSING_DELAY);  // wait for power changes to take effect
         telnet.print(HIDE_CURSOR);
         if (telnet.available()) command = telnet.read();  // read user command
-    }
+    } else while ((millis()-ts_power)/1000 < PROCESSING_DELAY);  // wait for power changes to take effect
 }
 
 void SetMWPower(int power) {
