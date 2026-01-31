@@ -472,11 +472,11 @@ void MaintenanceTasks() {
     en_from_grid += hrs_cycle*power_from_grid;
     en_pv_to_cons += hrs_cycle*power_pv_to_cons;
     en_pv_to_ess += hrs_cycle*power_pv_to_ess;
-    en_pv_to_grid = en_from_pv - en_pv_to_cons - en_pv_to_ess;
+    en_pv_to_grid += hrs_cycle*power_pv_to_grid;
     en_grid_to_cons += hrs_cycle*power_grid_to_cons;
-    en_grid_to_ess = en_to_ess - en_pv_to_ess;
+    en_grid_to_ess += hrs_cycle*power_grid_to_ess;
     en_ess_to_cons += hrs_cycle*power_ess_to_cons;
-    en_ess_to_grid = en_from_ess - en_ess_to_cons;
+    en_ess_to_grid += hrs_cycle*power_ess_to_grid;
     if (power_ess > 0) en_pv_wasted += hrs_cycle*(1-0.9*pbat/power_ess)*min(power_from_grid, power_pv_to_ess);  // PV energy wasted to ESS, due to AC/DC/AC conversion losses
     
     // Update DC energy counters
