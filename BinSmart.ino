@@ -511,9 +511,9 @@ void MaintenanceTasks() {
     if ((power_new || auto_recharge) && pm2_eco_mode) pm2_eco_mode = !ShellyCommand(PM2_ADDR, ECO_OFF);
     if ((power_pv < MW_MIN_POWER) && !power_old && !hm_limit && !auto_recharge && !pm2_eco_mode) pm2_eco_mode = ShellyCommand(PM2_ADDR, ECO_ON);
 
-    // Clear Shelly 3EM energy data at midnight (prevents HTTP timeouts at 00:00 UTC due to internal data reorgs)
-    if (!min_of_day && !em_data_cleared) em_data_cleared = ShellyCommand(EM_ADDR, EM_RESET);
-    if (min_of_day) em_data_cleared = false;
+    // Clear Shelly 3EM energy data at 23:00 UTC (prevents HTTP timeouts at 00:00 UTC due to internal data reorgs)
+    if ((min_of_day/60 == (23+timezone+dst)%24) && !em_data_cleared) em_data_cleared = ShellyCommand(EM_ADDR, EM_RESET);
+    if (min_of_day/60 == timezone+dst) em_data_cleared = false;
 
     // Turn off/on JKBMS balancer (disable/enable bottom balancing), depending on lowest cell voltage 
     if ((vcell_min >= ESS_UVPR) && bms_bal_on) bms_bal_on = !BMSCommand(BAL_OFF);
