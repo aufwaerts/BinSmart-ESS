@@ -60,7 +60,7 @@ const int MW_LOW_POWER_THRESHOLD = 25;  // power output below this threshold is 
 #define PWM_CHANNEL 0
 #define PWM_FREQ 250
 #define PWM_RESOLUTION 10
-#define PWM_DUTY_CYCLE_MIN 1
+#define PWM_DUTY_CYCLE_MIN 0
 const int PWM_DUTY_CYCLE_MAX = pow(2,PWM_RESOLUTION)-1;
 
 // Hoymiles (discharging) power parameters
@@ -177,5 +177,3 @@ const char WIFI_SYMBOL[2][10] = {"⚠️­","📶"};
 const char ERROR_SYMBOL[] = "❌ ";
 const char BALANCER_SYMBOL[] = " 🔄";
 const char CLEAR_SCREEN[] = "\033[0H\033[0J";
-const char SHOW_CURSOR[] = "\033[?25h";
-const char HIDE_CURSOR[] = "\033[?25l";
