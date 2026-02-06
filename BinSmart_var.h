@@ -39,9 +39,9 @@ int timezone;  // timezone of ESS (UTC+..., will be read from Shelly 3EM)
 int min_of_day;  // local time (minutes after midnight)
 int sunrise, sunset;  // current day's sunrise and sunset (minutes after midnight)
 bool dst, daytime;  // flags for daylight saving time and daytime/nighttime
-long unixtime = 0; // epoch time of local time (will be read from Shelly 3EM)
-long minpower_time = 0, starttime = 0, resettime_errors = 0, resettime_energy = 0;  // unixtime of certain events
-long pubip_time = 0, ddns_time = 0;  // unixtime of last public IP address check and last DDNS update
+unsigned long unixtime = 0; // epoch time of local time (will be read from Shelly 3EM)
+unsigned long minpower_time = 0, starttime = 0, resettime_errors = 0, resettime_energy = 0;  // unixtime of certain events
+unsigned long pubip_time = 0, ddns_time = 0;  // unixtime of last public IP address check and last DDNS update
 unsigned long ts_power = 0, ts_pubip = 0, ts_MW = 0, ts_HM = 0, ts_BMS = 0, ts_input = 0;  // various millis() timestamps
 float secs_cycle;  // duration of one polling cycle in secs
 
