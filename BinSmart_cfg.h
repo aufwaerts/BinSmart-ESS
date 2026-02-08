@@ -83,8 +83,8 @@ const char PM_CONFIG[] = "/rpc/Shelly.GetConfig";
 const char PM_STATUS[] = "/rpc/Switch.GetStatus?id=0";
 const char MW_ON[] = "/relay/0?turn=on&timer=60";
 const char MW_OFF[] = "/relay/0?turn=off";
-const char HM_AC_ON[] = "/relay/1?turn=on";
-const char HM_AC_OFF[] = "/relay/1?turn=off";
+const char HM_WAKEUP[] = "/relay/1?turn=on";
+const char HM_SHUTDOWN[] = "/relay/1?turn=off";
 const char ECO_ON[] = "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
 const char ECO_OFF[] = "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":false}}";
 
