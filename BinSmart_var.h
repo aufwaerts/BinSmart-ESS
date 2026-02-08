@@ -63,7 +63,7 @@ float en_from_batt = 0, en_to_batt = 0;  // ESS DC energy counters
 
 // Other global variables
 int filter_cycles = POWER_FILTER_CYCLES;  // number of cycles where power spikes are filtered out
-bool pm1_eco_mode, pm2_eco_mode = false;  // eco mode of Shelly PMs
+bool pm1_eco_mode, pm2_eco_mode;  // eco mode of Shelly PMs
 bool mw_on = false;  // state of Meanwell relay
 bool manual_mode = false, auto_recharge = false;  // special ESS operating modes
 bool em_data_cleared = false;  // indicates if Shelly 3EM energy data has been cleared
