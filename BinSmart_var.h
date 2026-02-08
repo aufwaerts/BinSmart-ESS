@@ -32,6 +32,7 @@ RF24 radio(RF24_CE_PIN, RF24_CSN_PIN);
 CRC8 crc8;
 CRC16 crc16;
 byte hm_power[19] = {0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17, 0x41, 0x72, 0x81, 0x0B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+bool hm_awake;  // does Hoymiles AC & DC side have power, i.e. is Hoymiles awake or asleep?
 
 // Time variables
 float latitude, longitude;  // geo coordinates of ESS (will be read from Shelly 3EM)
