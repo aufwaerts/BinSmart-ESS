@@ -1,4 +1,4 @@
-#define SW_VERSION "v2.69"
+#define SW_VERSION "v2.70"
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <HTTPClient.h>  // standard Arduino/ESP32
