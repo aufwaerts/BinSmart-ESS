@@ -530,7 +530,7 @@ void FinishCycle() {
     if (((min_of_day < sunrise) || (min_of_day > sunset)) && !pm1_eco_mode) pm1_eco_mode = ShellyCommand(PM1_ADDR, ECO_ON);
 
     // Set Shelly 2PM eco mode (turn off when charging/discharging active or possible, turn on when charging/discharging inactive and impossible)
-    if ((power_new || auto_recharge) && pm2_eco_mode) pm2_eco_mode = !ShellyCommand(PM2_ADDR, ECO_OFF);
+    if (((power_pv > MW_MIN_POWER) || power_new || auto_recharge) && pm2_eco_mode) pm2_eco_mode = !ShellyCommand(PM2_ADDR, ECO_OFF);
     if (!power_pv && !power_old && !auto_recharge && !hm_awake && !pm2_eco_mode) pm2_eco_mode = ShellyCommand(PM2_ADDR, ECO_ON);
 
     // Turn off/on BMS balancer (disable/enable bottom balancing), depending on lowest cell voltage 
