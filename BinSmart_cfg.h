@@ -43,6 +43,9 @@ const int RF24_TIMEOUT = 1;  // max waiting time (in secs) for RF24 ACKs after w
 const int RF24_KEEPALIVE = 30;  // number of secs after which Hoymiles RF24 interface receives "keep alive" message
 const int BLE_TIMEOUT = 2;  // max waiting time (in secs) for JKBMS BLE server connection
 const int MW_KEEPALIVE = 40; // number of secs after which Meanwell receives "keep alive" message (must be less than corresponding Shelly 2PM timer)
+const float LATITUDE = 46.***;  // latitude of ESS
+const float LONGITUDE = 13.***;  // longitude of ESS
+const int TIMEZONE = +1;  // timezone (relative to UTC) of ESS
 
 // PWM params for Meanwell power control
 #define PWM_CHANNEL 0
@@ -75,18 +78,14 @@ const int HM_MAX_POWER = -180;  // Limit of linear power output range
 #define HM_LOW_POWER_THRESHOLD 61  // Hoymiles power output above this threshold is unstable
 #define HM_LOW_POWER_TOLERANCE 15  // Max tolerated positive deviation from target power when Hoymiles is below HM_LOW_POWER_THRESHOLD
 
-// Shelly http commands
-const char EM_SETTINGS[] = "/settings";
+// Shelly webhooks
 const char EM_STATUS[] = "/status";
 const char EM_RESET[] = "/reset_data";
 const char PM_CONFIG[] = "/rpc/Shelly.GetConfig";
-const char PM_STATUS[] = "/rpc/Switch.GetStatus?id=0";
-const char MW_ON[] = "/relay/0?turn=on&timer=60";
-const char MW_OFF[] = "/relay/0?turn=off";
-const char HM_WAKEUP[] = "/relay/1?turn=on";
-const char HM_SHUTDOWN[] = "/relay/1?turn=off";
-const char ECO_ON[] = "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
-const char ECO_OFF[] = "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":false}}";
+const char PM_STATUS[] = "/rpc/Switch.GetStatus?id=";
+const char MW_RELAY[] = "/relay/0?turn=";
+const char HM_RELAY[] = "/relay/1?turn=";
+const char ECO_MODE[] = "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":";
 
 // URLs
 const char PUBLIC_IP_URL[] = "http://api.ipify.org";  // public service for obtaining WiFi router public IP address
@@ -97,7 +96,7 @@ const char DDNS_SERVER_URL[] = "http://***:***@dynupdate.no-ip.com/nic/update?ho
 const int ESS_OVP = 3500;  // one cell above this voltage: ramp down charging power
 const int ESS_OVPR = 3450;  // all cells below this voltage: re-enable charging (should be the same as BMS Balancer Start Voltage)
 const int ESS_UVP = 3150;  // one cell below this voltage: ramp down discharging power
-const int ESS_UVPR = 3200;  // all cells above this voltage: re-enable discharging
+const int ESS_UVPR = 3250;  // all cells above this voltage: re-enable discharging
 const int ESS_BMS_OVP_DIFF = 100;  // min difference between ESS and BMS OVP settings (BMS_OVP - ESS_OVP >= ESS_BMS_OVP_DIFF)
 const int ESS_BMS_UVP_DIFF = 100;  // min difference between ESS and BMS UVP settings (ESS_UVP - BMS_UVP >= ESS_BMS_UVP_DIFF)
 const int BMS_BAL_ON = 3145;  // one cell at or below this voltage: activate cell bottom balancing
