@@ -43,9 +43,9 @@ const int RF24_TIMEOUT = 1;  // max waiting time (in secs) for RF24 ACKs after w
 const int RF24_KEEPALIVE = 25;  // number of secs after which Hoymiles RF24 interface receives "keep alive" message
 const int BLE_TIMEOUT = 2;  // max waiting time (in secs) for JKBMS BLE server connection
 const int MW_KEEPALIVE = 40; // number of secs after which Meanwell receives "keep alive" message (must be less than corresponding Shelly 2PM timer)
-const float LATITUDE = 46.***;  // latitude of ESS
-const float LONGITUDE = 13.***;  // longitude of ESS
-const int TIMEZONE = +1;  // timezone (relative to UTC) of ESS
+const float LATITUDE = **.***;  // latitude of ESS
+const float LONGITUDE = **.***;  // longitude of ESS
+const int TIMEZONE = **;  // timezone (relative to UTC) of ESS
 
 // PWM params for Meanwell power control
 #define PWM_CHANNEL 0
