@@ -57,7 +57,7 @@ const int TIMEZONE = **;  // timezone (relative to UTC) of ESS
 // Meanwell power parameters
 const int MW_MIN_POWER = 15;  // Meanwell turned off below min_power (power output would be unstable and inefficient)
 const int MW_MAX_POWER = 300;  // theoretical max AC power at vbat < 24000
-#define MW_MAX_POWER_FORMULA vbat*0.977/76.9116  // actual max AC power is between 300 and 360W, depending on vbat
+#define MW_MAX_POWER_FORMULA vbat/76.9116*(0.978-1/DUTY_CYCLE_MAX)  // actual max AC power is between 300 and 360W, depending on vbat
 #define MW_POWER_FORMULA DUTY_CYCLE_MAX*(0.978-76.9116*mw_power/vbat)  // converts current to PWM duty cycle (result of Meanwell HLG-320 tests)
 #define MW_LOW_POWER_THRESHOLD 30  // power output below this threshold is non-linear (result of HLG-320 tests):
 #define MW_LOW_POWER_FORMULA DUTY_CYCLE_MAX*(49603.37086*mw_power/vbat*mw_power/vbat-178.7925*mw_power/vbat+1.028)
