@@ -36,11 +36,11 @@ const float PM2_MW_POWER_CORR = 1.007;  // Power correction factor for MW power 
 // Time/Timer settings
 const int PROCESSING_DELAY = 2;  // minimum delay (in secs) for power changes to take effect
 const int DDNS_UPDATE_INTERVAL = 60;  // DDNS IP address check interval (in secs)
-const int READINPUT_TIMEOUT = 4;  // max waiting time (in secs) for terminal input
+const int USERIO_TIMEOUT = 4;  // max waiting time (in secs) for terminal input
 const int HTTP_SHELLY_TIMEOUT = 4;  // max waiting time (in secs) for Shelly HTTP responses
 const int HTTP_DDNS_TIMEOUT = 1;  // max waiting time (in secs) for DDNS/public IP responses
 const int RF24_TIMEOUT = 1;  // max waiting time (in secs) for RF24 ACKs after writeFast()
-const int RF24_KEEPALIVE = 25;  // number of secs after which Hoymiles RF24 interface receives "keep alive" message
+const int RF24_KEEPALIVE = 30;  // number of secs after which Hoymiles RF24 interface receives "keep alive" message
 const int BLE_TIMEOUT = 2;  // max waiting time (in secs) for JKBMS BLE server connection
 const int MW_KEEPALIVE = 40; // number of secs after which Meanwell receives "keep alive" message (must be less than corresponding Shelly 2PM timer)
 const float LATITUDE = **.***;  // latitude of ESS
@@ -100,7 +100,7 @@ const int ESS_UVPR = 3250;  // all cells above this voltage: re-enable dischargi
 const int ESS_BMS_OVP_DIFF = 100;  // min difference between ESS and BMS OVP settings (BMS_OVP - ESS_OVP >= ESS_BMS_OVP_DIFF)
 const int ESS_BMS_UVP_DIFF = 100;  // min difference between ESS and BMS UVP settings (ESS_UVP - BMS_UVP >= ESS_BMS_UVP_DIFF)
 const int BMS_BAL_ON = 3145;  // one cell at or below this voltage: activate cell bottom balancing
-const int BMS_BAL_OFF = 3200;  // all cells at or above this voltage: deactivate cell balancing
+const int BMS_BAL_OFF = 3160;  // all cells at or above this voltage: deactivate cell balancing
 const int BAT_FULL = 27600;  // voltage at which battery is considered full
 const int BAT_EMPTY = 8*ESS_UVP;  // voltage at which battery is considered empty
 const int BAT_LEVELS = 9;  // number of different battery levels that can be visualized
@@ -179,3 +179,4 @@ const char WIFI_SYMBOL[2][10] = {"⚠️­","📶"};
 const char ERROR_SYMBOL[] = "❌ ";
 const char BALANCER_SYMBOL[] = " 🔄";
 const char CLEAR_SCREEN[] = "\033[0H\033[0J";
+const char CMD_PROMPT[] = "Enter command or [h] for help: ";
