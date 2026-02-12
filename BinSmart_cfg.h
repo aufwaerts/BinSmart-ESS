@@ -75,7 +75,7 @@ const byte HM_SWITCH[2][15] = {{0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x
 // Hoymiles power parameters
 const int HM_MIN_POWER = -15;  // Hoymiles turned off above min_power (power would be too unstable)
 const int HM_MAX_POWER = -180;  // Limit of linear power output range
-#define HM_LOW_POWER_THRESHOLD 61  // Hoymiles power output above this threshold is unstable
+#define HM_LOW_POWER_THRESHOLD -61  // Hoymiles power output above this threshold is unstable
 #define HM_LOW_POWER_TOLERANCE 15  // Max tolerated positive deviation from target power when Hoymiles is below HM_LOW_POWER_THRESHOLD
 
 // Shelly webhooks
