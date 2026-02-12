@@ -351,10 +351,6 @@ bool BMSCommand(const byte command[]) {
         } 
     }
     sprintf(error_str, "BMS RS485 command 0x%02X 0x%02X failed", command[RS485_COMMAND_POS], command[DATA_ID_POS]);
-    for (int i=0; i<len; i++) telnet.printf("0x%02X ", bms_resp[i]);
-    telnet.println();
-    while (!telnet.available());
-    telnet.read();
     return false;
 }
 
