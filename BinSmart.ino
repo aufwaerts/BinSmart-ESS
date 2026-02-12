@@ -1,4 +1,4 @@
-#define SW_VERSION "v2.76"
+#define SW_VERSION "v2.77"
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <HTTPClient.h>  // standard Arduino/ESP32
@@ -185,17 +185,18 @@ bool ShellyCommand(IPAddress ip_addr, const char command[], const char params[])
             http.end();
             return true;
         }
-        if (!strcmp(command, MW_RELAY)) {  // toggle Meanwell relay
+        if (!strcmp(command, MW_RELAY)) {  // turn Meanwell relay on or off
             http.end();
             ts_MW = millis();
             if (mw_on == !strcmp(params, "off")) {
                 mw_counter++;
                 mw_on = !mw_on;
             }
-            delay(200);  // allow a little more time for power change to stabilize
+            delay(400);  // allow a little more time for power change to stabilize
+            if (!mw_on) ledcWrite(PWM_OUTPUT_PIN, 0);  // if MW was turned off, also turn off optocoupler LED
             return true;
         }
-        if (!strcmp(command, HM_RELAY)) {  // toggle Hoymiles relay
+        if (!strcmp(command, HM_RELAY)) {  // turn Hoymiles relay on or off
             http.end();
             ts_HM = millis();
             // Hoymiles AC side turned on/ff: turn on/off DC side, too (after a short delay)
@@ -365,7 +366,7 @@ bool HoymilesCommand(int hm_command) {
         if (radio.writeFast(HM_SWITCH[hm_command], sizeof(HM_SWITCH[hm_command])))
             if (radio.txStandBy(RF24_TIMEOUT*1000)) {
                 ts_HM = millis();
-                delay(200);  // allow a little more time for power change to stabilize
+                delay(400);  // allow a little more time for power change to stabilize
                 return true;
             }
         ts_HM = millis();
@@ -546,9 +547,6 @@ void FinishCycle() {
     // Keep alive Meanwell relay (if Meanwell is turned on)
     if (mw_on && (millis()-ts_MW >= MW_KEEPALIVE*1000)) ShellyCommand(PM2_ADDR, MW_RELAY, "on&timer=60");
 
-    // Turn off Meanwell PWM optocoupler after two PROCESSING_DELAYS (if Meanwell is turned off)
-    if (!mw_on && (millis()-ts_MW >= PROCESSING_DELAY*2000)) ledcWrite(PWM_OUTPUT_PIN, 0);
-
     // Turn off/on BMS balancer (disable/enable bottom balancing), depending on lowest cell voltage 
     if ((vcell_min >= BMS_BAL_OFF) && bms_bal_on) bms_bal_on = !BMSCommand(BAL_OFF);
     if ((vcell_min <= BMS_BAL_ON) && !power_old && !bms_bal_on) bms_bal_on = BMSCommand(BAL_ON);
@@ -626,7 +624,6 @@ void CheckErrors() {
     if (!HoymilesCommand(HM_POWER_OFF)) ShellyCommand(PM2_ADDR, HM_RELAY, "off");
     SetMWPower(MW_MIN_POWER);
     ShellyCommand(PM2_ADDR, MW_RELAY, "off");
-    ledcWrite(PWM_OUTPUT_PIN, 0);  // turn off Meanwell PWM optocoupler
     
     // System halted: prepare continuous error message
     sprintf(tn_str, "%sBinSmart ESS %s\r\n\n%sSystem halted ", CLEAR_SCREEN, SW_VERSION, ERROR_SYMBOL);
