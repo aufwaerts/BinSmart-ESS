@@ -3,13 +3,13 @@
 This project is about a low-cost, high-efficiency energy storage solution (ESS) for small photovoltaic installations (German: "Balkonkraftwerke").
 
 Having used a small 435 Wp "Balkonkraftwerk" for a year, it showed that only a third of the energy was used by our household, two thirds were exported to the grid (with no financial compensation). I came up with the idea of retrofitting an ESS solution, which should at least double the household consumption. However, in 2023 I found nothing on the market that met my following criteria:
-- storage capacity: at least 2 kWh
-- total cost (including battery and energy meter): less than €600
-- charging/discharging power: min. 300 W
+- storage capacity: > 2 kWh
+- total cost (including battery and energy meter): < €500
+- charging/discharging power: > 300 W
 - indoor "AC-coupled" solution, no additional wiring to outdoor PV installation
-- zero export to grid (less than 1% when battery not fully charged)
+- zero export to grid (< 1% when battery not fully charged)
 - silent operation (no fans)
-- self-consumption of the entire system (including energy meter): less than 5 W
+- self-consumption of the entire system (including energy meter): < 5 W
 - total efficiency (AC-to-AC): > 80%
 
 Available AC-coupled solutions were either too expensive, inefficient, noisy or consumed a lot of energy themselves. I concluded that I had to build an ESS solution myself.
