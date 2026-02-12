@@ -7,7 +7,7 @@ Having used a small 435 Wp "Balkonkraftwerk" for a year, it showed that only a t
 - total cost (including battery and energy meter): less than €600
 - charging/discharging power: min. 300 W
 - indoor "AC-coupled" solution, no additional wiring to outdoor PV installation
-- "zero" export to grid (less than 1% when battery not fully charged)
+- zero export to grid (less than 1% when battery not fully charged)
 - silent operation (no fans)
 - self-consumption of the entire system (including energy meter): less than 5 W
 - total efficiency (AC-to-AC): > 80%
