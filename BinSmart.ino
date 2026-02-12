@@ -562,7 +562,7 @@ void FinishCycle() {
     if (!power_new && (power_pv < MW_MIN_POWER-power_grid_target) && !hm_awake && !pm2_eco_mode) pm2_eco_mode = ShellyCommand(PM2_ADDR, ECO_MODE, "true}}");
 
     // Make Hoymiles fall asleep or wake it up, depending on hm_limit and vcell_min
-    if ((vcell_min <= ESS_UVP) && !hm_limit && !power_old && hm_awake) hm_awake = !ShellyCommand(PM2_ADDR, HM_RELAY, "off");
+    if ((vcell_min <= ESS_UVP) && !hm_limit && hm_awake) hm_awake = !ShellyCommand(PM2_ADDR, HM_RELAY, "off");
     if ((vcell_min >= ESS_UVPR-10) && !hm_awake) hm_awake = ShellyCommand(PM2_ADDR, HM_RELAY, "on");  // wake up HM before reaching ESS_UVPR, to allow time for AC sync procedure
 
     // Clear Shelly 3EM energy data at 23:00 UTC (prevents HTTP timeouts at 00:00 UTC due to internal data reorgs)
