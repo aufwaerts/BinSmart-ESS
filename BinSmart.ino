@@ -262,7 +262,7 @@ bool BMSCommand(const byte command[]) {
         if (Serial2.available()) break;
         delay(1);
     }
-    delay(5);  // give BMS a little more time to prepare response
+    if (command[RS485_COMMAND_POS] == READ_ALL) delay(10);  // give BMS a little more time to fetch long response
     
     // fill response buffer with BMS response
     while (Serial2.available()) {
