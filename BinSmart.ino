@@ -1,4 +1,4 @@
-#define SW_VERSION "v2.77"
+#define SW_VERSION "v2.78"
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <HTTPClient.h>  // standard Arduino/ESP32
@@ -24,7 +24,7 @@ void setup() {
 
     // Init WiFi
     WiFi.config(ESP32_ADDR, ROUTER_ADDR, SUBNET, DNS_SERVER1, DNS_SERVER2);
-    WiFi.setTxPower(WIFI_POWER_7dBm);
+    WiFi.setTxPower(WIFI_POWER_5dBm);
     WiFi.setSleep(WIFI_PS_MAX_MODEM);
     WiFi.begin(WIFI_SSID, WIFI_PWD);
     while (WiFi.status() != WL_CONNECTED);   // if WiFi unavailable or wrong SSID/PWD, system stops here and LED remains on
@@ -238,14 +238,14 @@ bool BMSCommand(const byte command[]) {
                     delay(500);
                     if (pChar->writeValue(command, BLE_COMMAND_LEN, false)) {
                         pClient->disconnect();
-                        ts_BMS = millis();
+                        ts_BMS = millis();  // set "end of BMS response" timestamp
                         return true;
                     }
                 }
             }
             pClient->disconnect();
         }
-        ts_BMS = millis();
+        ts_BMS = millis();  // set "end of BMS response" timestamp
         sprintf(error_str, "BMS BLE command 0x%02X 0x%02X failed", command[BLE_COMMAND_POS], command[BLE_SETTING_POS]);
         return false;
     }
@@ -254,27 +254,28 @@ bool BMSCommand(const byte command[]) {
     Serial2.write(command, command[RS485_LEN_POS]+2);
     Serial2.flush();
 
-    bms_resp[0] = 0;  // will result in failed validity check if no response
-    int len = 0, sum = 0;
+    memset(bms_resp, 0, sizeof(bms_resp));  // will result in failed validity check if no response
 
-    // Wait for BMS response (max waiting time: 100 ms)
-    for (int i=0; i<100; i++) {
-        if (Serial2.available()) break;
-        delay(1);
-    }
-    if (command[RS485_COMMAND_POS] == READ_ALL) delay(10);  // give BMS a little more time to fetch long response
+    // Wait for BMS response (max waiting time: 50 ms)
+    ts_BMS = millis();
+    while ((millis()-ts_BMS < 50) && !Serial2.available());
     
     // fill response buffer with BMS response
+    int len = 0, sum = 0;
     while (Serial2.available()) {
         bms_resp[len] = Serial2.read();
         sum += bms_resp[len];
         len++;
+        if (!Serial2.available() && (len < (bms_resp[2]<<8|bms_resp[3])+2)) {
+            ts_BMS = millis();  // response not complete yet: wait for next response byte to arrive
+            while ((millis()-ts_BMS < 50) && !Serial2.available());
+        }
     }
-    ts_BMS = millis();
+    ts_BMS = millis();  // set "end of BMS response" timestamp
 
     // check validity of BMS response
     if ((bms_resp[0] == RS485_1) && (bms_resp[1] == RS485_2)) {  // start of response frame
-         if ((bms_resp[2]<<8|bms_resp[3]) == len-2) {  // response length
+         if ((bms_resp[2]<<8|bms_resp[3])+2 == len) {  // response length
              if ((bms_resp[len-2]<<8|bms_resp[len-1]) == sum-bms_resp[len-2]-bms_resp[len-1]) {  // response checksum
                 if (bms_resp[RS485_COMMAND_POS] == WRITE_DATA) return true;  // no need to inspect the response to a write command
 
@@ -536,9 +537,6 @@ void FinishCycle() {
         minpower_time = unixtime;
     }
 
-    // check for OTA software update
-    OTA_server.handleClient();
-
     // Keep alive Hoymiles RF24 interface
     if ((millis()-ts_HM >= RF24_KEEPALIVE*1000) && hm_awake)
         if (power_new < 0) HoymilesCommand(HM_POWER_ON);
@@ -576,13 +574,17 @@ void FinishCycle() {
     // Handle user input/output
     if (telnet) {
         UserIO();  // active telnet session: print cycle info, handle user command
-        while (millis()-ts_power < cycle_delay-100)  // check for user input until power changes are almost stable
-            if (telnet.available()) UserIO();
+        while (millis()-ts_power < cycle_delay-100) {  // loop until power changes are almost stable
+            OTA_server.handleClient();  // check for OTA software update
+            if (telnet.available()) UserIO();  // check for user input
+        }
     }
     else {
         command = '\0';  // no telnet session: clear user command response
-        while (millis()-ts_power < cycle_delay-100)  // check for new telnet session until power changes are almost stable
-            if (!telnet) if (telnet = telnet_server.available()) UserIO();  // new telnet session: print cycle info, handle user command
+        while (millis()-ts_power < cycle_delay-100) {  // loop until power changes are almost stable
+            OTA_server.handleClient();  // check for OTA software update
+            if (!telnet) if (telnet = telnet_server.available()) UserIO();  // check for new telnet session
+        }
     }
 
     // daytime: read PV power from Shelly 1PM (should take less than 100 ms)
