@@ -46,9 +46,9 @@ const int BMS_WAIT = 50;  // min waiting time (in msecs) for BMS to be ready
 const int BMS_TIMEOUT = 20;  // max waiting time (in msecs) for BMS response
 const int BLE_TIMEOUT = 2;  // max waiting time (in secs) for JKBMS BLE server connection
 const int USERIO_TIMEOUT = 4000;  // max waiting time (in msecs) for terminal input/output
-const float LATITUDE = 46.817;  // latitude of ESS
-const float LONGITUDE = 13.52;  // longitude of ESS
-const int TIMEZONE = +1;  // timezone (relative to UTC) of ESS
+const float LATITUDE = **.***;  // latitude of ESS
+const float LONGITUDE = **.**;  // longitude of ESS
+const int TIMEZONE = *;  // timezone (relative to UTC) of ESS
 
 // PWM params for Meanwell power control
 #define PWM_CHANNEL 0
