@@ -33,19 +33,22 @@ const int POWER_FILTER_CYCLES = 12;  // Number of cycles during which power spik
 const float POWER_LIMIT_RAMPDOWN = 0.67;  // Power rampdown rate when ESS_OVP or ESS_UVP is reached
 const float PM2_MW_POWER_CORR = 1.007;  // Power correction factor for MW power readings with PM2
 
-// Time/Timer settings
-const int PROCESSING_DELAY = 2;  // minimum delay (in secs) for power changes to take effect
-const int DDNS_UPDATE_INTERVAL = 60;  // DDNS IP address check interval (in secs)
-const int USERIO_TIMEOUT = 4;  // max waiting time (in secs) for terminal input
-const int HTTP_SHELLY_TIMEOUT = 4;  // max waiting time (in secs) for Shelly HTTP responses
-const int HTTP_DDNS_TIMEOUT = 1;  // max waiting time (in secs) for DDNS/public IP responses
-const int RF24_TIMEOUT = 1;  // max waiting time (in secs) for RF24 ACKs after writeFast()
+// Time/timer/astro settings
+const int PROCESSING_DELAY = 2000;  // minimum delay (in msecs) for power changes to take effect
+const int HTTP_SHELLY_TIMEOUT = 4000;  // max waiting time (in msecs) for Shelly HTTP responses
+const int HTTP_DDNS_TIMEOUT = 1000;  // max waiting time (in msecs) for DDNS/public IP responses
+const int DDNS_UPDATE_INTERVAL = 120;  // DDNS IP address check interval (in secs)
+const int MW_KEEPALIVE = 40;  // number of secs after which Shelly 2PM receives "keep alive" message (must be less than corresponding Shelly timer)
+const int RF24_WAIT = 50;  // min waiting time (in msecs) for Hoymiles RF24 interface to be ready
+const int RF24_TIMEOUT = 1000;  // max waiting time (in msecs) for RF24 ACKs after writeFast()
 const int RF24_KEEPALIVE = 30;  // number of secs after which Hoymiles RF24 interface receives "keep alive" message
+const int BMS_WAIT = 50;  // min waiting time (in msecs) for BMS to be ready
+const int BMS_TIMEOUT = 20;  // max waiting time (in msecs) for BMS response
 const int BLE_TIMEOUT = 2;  // max waiting time (in secs) for JKBMS BLE server connection
-const int MW_KEEPALIVE = 40; // number of secs after which Meanwell receives "keep alive" message (must be less than corresponding Shelly 2PM timer)
-const float LATITUDE = **.***;  // latitude of ESS
-const float LONGITUDE = **.***;  // longitude of ESS
-const int TIMEZONE = **;  // timezone (relative to UTC) of ESS
+const int USERIO_TIMEOUT = 4000;  // max waiting time (in msecs) for terminal input/output
+const float LATITUDE = 46.817;  // latitude of ESS
+const float LONGITUDE = 13.52;  // longitude of ESS
+const int TIMEZONE = +1;  // timezone (relative to UTC) of ESS
 
 // PWM params for Meanwell power control
 #define PWM_CHANNEL 0
