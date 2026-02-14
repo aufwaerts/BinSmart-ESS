@@ -1,4 +1,4 @@
-#define SW_VERSION "v2.78"
+#define SW_VERSION "v2.79"
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <HTTPClient.h>  // standard Arduino/ESP32
@@ -122,7 +122,7 @@ void setup() {
     
     // no errors during setup: set timestamps, start polling cycle
     telnet.print("\nNo errors during setup, start polling cycle ...");
-    delay(PROCESSING_DELAY*1000);
+    delay(PROCESSING_DELAY);
     starttime = resettime_errors = resettime_energy = unixtime;
     ts_power = millis();
 }
@@ -152,7 +152,7 @@ bool ShellyCommand(IPAddress ip_addr, const char command[], const char params[])
     }
 
     // Send http command to Shelly
-    http.setTimeout(HTTP_SHELLY_TIMEOUT*1000);
+    http.setTimeout(HTTP_SHELLY_TIMEOUT);
     http.begin(http_command);
     if (http.GET() == HTTP_CODE_OK) {
         WiFiClient* stream = http.getStreamPtr();
@@ -224,7 +224,7 @@ bool ShellyCommand(IPAddress ip_addr, const char command[], const char params[])
 
 bool BMSCommand(const byte command[]) {
 
-    while (millis()-ts_BMS < 50);  // minimum delay after previous BMS response
+    while (millis()-ts_BMS < BMS_WAIT);  // minimum delay after previous BMS response
 
     if (command[0] == BLE_1) {
 
@@ -256,9 +256,9 @@ bool BMSCommand(const byte command[]) {
 
     memset(bms_resp, 0, sizeof(bms_resp));  // will result in failed validity check if no response
 
-    // Wait for BMS response (max waiting time: 50 ms)
+    // Wait for BMS response
     ts_BMS = millis();
-    while ((millis()-ts_BMS < 50) && !Serial2.available());
+    while ((millis()-ts_BMS < BMS_TIMEOUT) && !Serial2.available());
     
     // fill response buffer with BMS response
     int len = 0, sum = 0;
@@ -266,9 +266,13 @@ bool BMSCommand(const byte command[]) {
         bms_resp[len] = Serial2.read();
         sum += bms_resp[len];
         len++;
-        if (!Serial2.available() && (len < (bms_resp[2]<<8|bms_resp[3])+2)) {
-            ts_BMS = millis();  // response not complete yet: wait for next response byte to arrive
-            while ((millis()-ts_BMS < 50) && !Serial2.available());
+        if (!Serial2.available()) {
+            telnet.println("END OF BMS RESPONSE!!");
+            if (len < (bms_resp[2]<<8|bms_resp[3])+2) {
+                bms_resp_wait_counter++;  // response not complete yet: wait for next response byte to arrive
+                ts_BMS = millis();
+                while ((millis()-ts_BMS < BMS_TIMEOUT) && !Serial2.available());
+            }
         }
     }
     ts_BMS = millis();  // set "end of BMS response" timestamp
@@ -361,11 +365,11 @@ bool BMSCommand(const byte command[]) {
 
 bool HoymilesCommand(int hm_command) {
 
-    while (millis()-ts_HM < 50);  // minimum delay between two consecutive HM commands
+    while (millis()-ts_HM < RF24_WAIT);  // minimum delay between two consecutive Hoymiles RF24 commands
 
     if ((hm_command == HM_POWER_OFF) || (hm_command == HM_POWER_ON)) {  // switch command
         if (radio.writeFast(HM_SWITCH[hm_command], sizeof(HM_SWITCH[hm_command])))
-            if (radio.txStandBy(RF24_TIMEOUT*1000)) {
+            if (radio.txStandBy(RF24_TIMEOUT)) {
                 ts_HM = millis();
                 delay(400);  // allow a little more time for power change to stabilize
                 return true;
@@ -390,7 +394,7 @@ bool HoymilesCommand(int hm_command) {
     hm_power[18] = crc8.getCRC();
 
     if (radio.writeFast(hm_power, sizeof(hm_power)))
-        if (radio.txStandBy(RF24_TIMEOUT*1000)) {
+        if (radio.txStandBy(RF24_TIMEOUT)) {
                 ts_HM = millis();
                 return true;
         }
@@ -569,7 +573,7 @@ void FinishCycle() {
     if (millis()-ts_pubip >= DDNS_UPDATE_INTERVAL*1000) UpdateDDNS();
 
     // If ESS is asleep, double waiting time at end of cycle
-    int cycle_delay = PROCESSING_DELAY*1000*(1+(pm1_eco_mode && pm2_eco_mode));
+    int cycle_delay = PROCESSING_DELAY*(1+(pm1_eco_mode && pm2_eco_mode));
 
     // Handle user input/output
     if (telnet) {
@@ -644,7 +648,7 @@ void CheckErrors() {
         for (int i=0; i<10; i++) {
             digitalWrite(LED_PIN, HIGH);  delay(20); digitalWrite(LED_PIN, LOW); delay(40); // indicates halted system
         }
-        while (millis()-ts_power < PROCESSING_DELAY*2000);  // wait for two PROCESSING_DELAYS
+        while (millis()-ts_power < PROCESSING_DELAY*2);  // wait for two PROCESSING_DELAYS
         if (telnet.available()) {
             telnet.print("\r\nRestarting in 3 seconds, re-open terminal ...\r\n");
             delay(2000);
@@ -740,7 +744,7 @@ void UserIO() {
             command = '\0';  // ask for user input only once
             telnet.printf("%s%s", tn_str, "Enter ESS power: ");
             ts_userio = millis();
-            while (!telnet.available() && (millis()-ts_userio < USERIO_TIMEOUT*1000));
+            while (!telnet.available() && (millis()-ts_userio < USERIO_TIMEOUT));
             if (telnet.available()) {
                 power_manual = telnet.parseInt();
                 manual_mode = true;
@@ -762,7 +766,7 @@ void UserIO() {
             command = '\0';  // ask for user input only once
             telnet.printf("%s%s", tn_str, "Enter grid power target: ");
             ts_userio = millis();
-            while (!telnet.available() && (millis()-ts_userio < USERIO_TIMEOUT*1000));
+            while (!telnet.available() && (millis()-ts_userio < USERIO_TIMEOUT));
             if (telnet.available()) {
                 power_grid_target = telnet.parseInt();
                 sprintf(resp_str, "Grid power target set to %d W\r\n\n", power_grid_target);
@@ -771,12 +775,16 @@ void UserIO() {
             ts_userio = millis();
             break;
         case 'b':
-            sprintf(tn_str + strlen(tn_str), "Batt voltage    : %.3f V\r\nCell voltages   : %d - %d mV\r\nMax cell diff   : %d mV", vbat/1000.0, vcell_min, vcell_max, vcell_max-vcell_min);
+            // DC (batt) status
+            sprintf(tn_str + strlen(tn_str), "Cell voltages   : %d - %d mV\r\nMax cell diff   : %d mV", vcell_min, vcell_max, vcell_max-vcell_min);
             if ((vcell_max-vcell_min >= bms_balancer_trigger) && (vcell_max >= bms_balancer_start) && bms_bal_on) strcat(tn_str, BALANCER_SYMBOL);
-            sprintf(tn_str + strlen(tn_str), "\r\nBatt current    : %.2f A\r\nAC power setting: %d W\r\nAC power reading: %.1f W\r\nDC power reading: %.1f W\r\n", cbat/100.0, power_old, power_ess, pbat);
+            sprintf(tn_str + strlen(tn_str), "\r\nBatt voltage    : %.3f V\r\nBatt current    : %.2f A\r\nBatt power      : %.1f W\r\n", vbat/1000.0, cbat/100.0, pbat);
+            sprintf(tn_str + strlen(tn_str), "Waits for BMS   : %d\r\n\n", bms_resp_wait_counter);
+            // AC status
+            sprintf(tn_str + strlen(tn_str), "AC power setting: %d W\r\nAC power reading: %.1f W\r\n", power_old, power_ess);
             // AC/DC (or DC/AC) power conversion efficiency of Meanwell or Hoymiles
-            if (power_ess <= 0) sprintf(tn_str + strlen(tn_str), "HM DC▸AC eff.   : %.1f %%\r\n", power_ess/pbat*100);
-            else sprintf(tn_str + strlen(tn_str), "MW AC▸DC eff.   : %.1f %%\r\n", pbat/power_ess*100);
+            sprintf(tn_str + strlen(tn_str), "AC/DC conv. eff.: %.1f %%\r\n", (power_ess >= 0) ? pbat/power_ess*100 : power_ess/pbat*100);
+            // Meanwell/Hoymiles power limit settings
             sprintf(tn_str + strlen(tn_str), "MW power limit  : %d W\r\nHM power limit  : %d W\r\n\n", mw_limit, hm_limit);
             resp_str[0] = '\0';
             break;
@@ -843,7 +851,7 @@ void UserIO() {
             command = '\0';  // ask for user input only once
             telnet.printf("%s%s", tn_str, "Reset [e]rror or e[n]ergy stats: ");
             ts_userio = millis();
-            while (!telnet.available() && (millis()-ts_userio < USERIO_TIMEOUT*1000));
+            while (!telnet.available() && (millis()-ts_userio < USERIO_TIMEOUT));
             if (telnet.available()) {
                 char input = telnet.read();
                 if (input == 'n') {
@@ -877,7 +885,7 @@ void UserIO() {
             command = '\0';  // ask for user input only once
             telnet.printf("%s%s", tn_str, "Enter [y] to confirm system reboot: ");
             ts_userio = millis();
-            while (!telnet.available() && (millis()-ts_userio < USERIO_TIMEOUT*1000));
+            while (!telnet.available() && (millis()-ts_userio < USERIO_TIMEOUT));
             if (telnet.available()) {
                 if (telnet.read() == 'y') {
                     telnet.print("\r\nRestarting in 3 seconds, re-open terminal ...\r\n");
@@ -909,7 +917,7 @@ void UserIO() {
             resp_str[0] = '\0';
             break;
     }
-    if (millis()-ts_userio > USERIO_TIMEOUT*1000) resp_str[0] = '\0';  // clear command response if shown long enough
+    if (millis()-ts_userio > USERIO_TIMEOUT) resp_str[0] = '\0';  // clear command response if shown long enough
     telnet.printf("%s%s%s", tn_str, resp_str, CMD_PROMPT);  // print output message and user command response
 }
 
@@ -921,7 +929,7 @@ bool UpdateDDNS() {
     }
 
     // read public IP from server (with shorter timeout)
-    http.setTimeout(HTTP_DDNS_TIMEOUT*1000);
+    http.setTimeout(HTTP_DDNS_TIMEOUT);
     http.begin(PUBLIC_IP_URL);
     if (http.GET() == HTTP_CODE_OK) {
         pubip_addr.fromString(http.getString());
