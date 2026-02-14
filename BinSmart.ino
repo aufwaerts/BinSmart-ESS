@@ -532,7 +532,7 @@ void FinishCycle() {
     en_to_batt += hrs_cycle * (pbat > 0) * pbat;
 
     // No ESS power output and no PV production: check for new power_grid_min (i.e. min household consumption)
-    if (!power_old && !power_pv && (power_grid < power_grid_min)) {
+    if (!power_ess && !power_pv && (power_grid < power_grid_min)) {
         power_grid_min = power_grid;
         minpower_time = unixtime;
     }
