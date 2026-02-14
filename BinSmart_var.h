@@ -19,6 +19,7 @@ int bms_balancer_trigger;  // BMS balancer cell diff threshold [mV] (read from B
 bool bms_bal_on;  // BMS balancer switch setting (will be read and set)
 int bms_uvp;  // BMS cell UVP value
 byte bms_resp[300];  // buffer for BMS response
+int bms_resp_wait_counter;  // how often did system have to wait for BMS response bytes (indicates RS485 transmission problems)
 
 // Errors
 int error_counter[ERROR_TYPES];
