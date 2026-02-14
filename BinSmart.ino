@@ -267,7 +267,6 @@ bool BMSCommand(const byte command[]) {
         sum += bms_resp[len];
         len++;
         if (!Serial2.available()) {
-            telnet.println("END OF BMS RESPONSE!!");
             if (len < (bms_resp[2]<<8|bms_resp[3])+2) {
                 bms_resp_wait_counter++;  // response not complete yet: wait for next response byte to arrive
                 ts_BMS = millis();
