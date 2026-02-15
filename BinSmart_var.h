@@ -3,7 +3,7 @@
 // Networking
 WebServer OTA_server(HTTP_PORT);
 WiFiServer telnet_server(TELNET_PORT);
-WiFiClient telnet;
+WiFiClient telnet, shelly_resp;
 HTTPClient http;
 char http_command[150];
 IPAddress pubip_addr, ddns_addr;
@@ -16,7 +16,7 @@ int cbat, vbat;  // batt DC current [cA], total batt voltage [mV]
 int bat_level;  // batt state of charge, as number between 0 and BAT_SOC_LEVELS-1
 int bms_balancer_start;  // BMS balancer cell voltage threshold [mV] (read from BMS)
 int bms_balancer_trigger;  // BMS balancer cell diff threshold [mV] (read from BMS)
-bool bms_bal_on;  // BMS balancer switch setting (will be read and set)
+bool bms_bal_on, bms_bal_active;  // BMS balancer switch and balancing activity
 int bms_uvp;  // BMS cell UVP value
 byte bms_resp[300];  // buffer for BMS response
 int bms_resp_wait_counter;  // how often did system have to wait for BMS response bytes (indicates RS485 transmission problems)

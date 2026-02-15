@@ -1,4 +1,4 @@
-#define SW_VERSION "v2.79"
+#define SW_VERSION "v2.80"
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <HTTPClient.h>  // standard Arduino/ESP32
@@ -155,16 +155,16 @@ bool ShellyCommand(IPAddress ip_addr, const char command[], const char params[])
     http.setTimeout(HTTP_SHELLY_TIMEOUT);
     http.begin(http_command);
     if (http.GET() == HTTP_CODE_OK) {
-        WiFiClient* stream = http.getStreamPtr();
+        shelly_resp = http.getStream();
         if (!strcmp(command, EM_STATUS)) {
             // read time and grid power from Shelly 3EM
-            for (int i=0; i<140; i++) stream->read();  // fast forward to "time"
-            stream->find("time");
-            min_of_day = stream->parseInt()*60 + stream->parseInt();  // read local time (minutes after midnight)
-            unsigned long unixtime_utc = stream->parseInt();  // read epoch time (UTC)
-            for (int i=0; i<550; i++) stream->read();  // fast forward to "total_power"
-            stream->find("total_power");
-            power_grid = stream->parseFloat();  // read grid power from http response
+            for (int i=0; i<140; i++) shelly_resp.read();  // fast forward to "time"
+            shelly_resp.find("time");
+            min_of_day = shelly_resp.parseInt()*60 + shelly_resp.parseInt();  // read local time (minutes after midnight)
+            unsigned long unixtime_utc = shelly_resp.parseInt();  // read epoch time (UTC)
+            for (int i=0; i<550; i++) shelly_resp.read();  // fast forward to "total_power"
+            shelly_resp.find("total_power");
+            power_grid = shelly_resp.parseFloat();  // read grid power from http response
             http.end();
             utc_offset = (min_of_day/60+24-hour(unixtime_utc))%24;  // UTC offset = timezone + dst
             unixtime = unixtime_utc + utc_offset*3600;  // unixtime equals local time
@@ -176,10 +176,10 @@ bool ShellyCommand(IPAddress ip_addr, const char command[], const char params[])
         }
         if (!strcmp(command, PM_STATUS)) {
             // read power from Shelly 1PM or 2PM
-            stream->find("apower");
-            if (ip_addr == PM1_ADDR) power_pv = stream->parseFloat();
+            shelly_resp.find("apower");
+            if (ip_addr == PM1_ADDR) power_pv = shelly_resp.parseFloat();
             if (ip_addr == PM2_ADDR) {
-                power_ess = stream->parseFloat();
+                power_ess = shelly_resp.parseFloat();
                 if (power_new > 0) power_ess = power_ess*PM2_MW_POWER_CORR;  // power correction for positive (charging) power
             }
             http.end();
@@ -205,7 +205,7 @@ bool ShellyCommand(IPAddress ip_addr, const char command[], const char params[])
             else return BMSCommand(DISCH_ON);
         }
         if (!strcmp(command, PM_CONFIG)) {
-            bool eco_mode = stream->findUntil("eco_mode\":true", "eco_mode\":false");
+            bool eco_mode = shelly_resp.findUntil("eco_mode\":true", "eco_mode\":false");
             http.end();
             if (ip_addr == PM1_ADDR) pm1_eco_mode = eco_mode;
             if (ip_addr == PM2_ADDR) pm2_eco_mode = eco_mode;
@@ -293,6 +293,8 @@ bool BMSCommand(const byte command[]) {
                             if (vcell > vcell_max) vcell_max = vcell;
                             vbat += vcell;
                         }
+                        // determine if cell balancer is active
+                        bms_bal_active = bms_bal_on && (vcell_max-vcell_min >= bms_balancer_trigger) && (vcell_max >= bms_balancer_start);
                         // Save old charging power limit, update limit (depending on vcell_max)
                         mw_limit_old = mw_limit;
                         if ((vcell_max <= ESS_OVPR) || (mw_limit >= MW_MAX_POWER)) mw_limit = round(MW_MAX_POWER_FORMULA);  // exit OVP mode (update MW power limit)
@@ -775,10 +777,9 @@ void UserIO() {
             break;
         case 'b':
             // DC (batt) status
-            sprintf(tn_str + strlen(tn_str), "Cell voltages   : %d - %d mV\r\nMax cell diff   : %d mV", vcell_min, vcell_max, vcell_max-vcell_min);
-            if ((vcell_max-vcell_min >= bms_balancer_trigger) && (vcell_max >= bms_balancer_start) && bms_bal_on) strcat(tn_str, BALANCER_SYMBOL);
-            sprintf(tn_str + strlen(tn_str), "\r\nBatt voltage    : %.3f V\r\nBatt current    : %.2f A\r\nBatt power      : %.1f W\r\n", vbat/1000.0, cbat/100.0, pbat);
-            sprintf(tn_str + strlen(tn_str), "Waits for BMS   : %d\r\n\n", bms_resp_wait_counter);
+            sprintf(tn_str + strlen(tn_str), "Cell voltages: %d - %d mV\r\nMax cell diff: %d mV%s", vcell_min, vcell_max, vcell_max-vcell_min, (bms_bal_active) ? BALANCER_SYMBOL : "");
+            sprintf(tn_str + strlen(tn_str), "\r\nBatt voltage : %.3f V\r\nBatt current : %.2f A\r\nBatt power   : %.1f W\r\n", vbat/1000.0, cbat/100.0, pbat);
+            sprintf(tn_str + strlen(tn_str), "Waits for BMS: %d\r\n\n", bms_resp_wait_counter);
             // AC status
             sprintf(tn_str + strlen(tn_str), "AC power setting: %d W\r\nAC power reading: %.1f W\r\n", power_old, power_ess);
             // AC/DC (or DC/AC) power conversion efficiency of Meanwell or Hoymiles
