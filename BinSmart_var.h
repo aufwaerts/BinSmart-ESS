@@ -7,10 +7,10 @@ WiFiClient telnet, shelly_resp;
 HTTPClient http;
 char http_command[150];
 IPAddress pubip_addr, ddns_addr;
-
-// BMS
 NimBLEAddress serverAddress(JKBMS_MAC_ADDR);  // JKBMS BLE server address
 NimBLEClient* pClient;  // pointer to BLE client object
+
+// BMS
 int vcell_min, vcell_max;  // batt cell min/max voltages [mV]
 int cbat, vbat;  // batt DC current [cA], total batt voltage [mV]
 int bat_level;  // batt state of charge, as number between 0 and BAT_SOC_LEVELS-1
