@@ -63,10 +63,10 @@ float en_from_batt, en_to_batt;  // ESS DC energy counters
 // Other global variables
 int filter_cycles = POWER_FILTER_CYCLES;  // number of cycles where power spikes are filtered out
 bool pm1_eco_mode, pm2_eco_mode;  // eco mode of Shellies
-bool mw_on;  // state of Shelly 2PM Meanwell relay
 bool manual_mode, auto_recharge;  // special ESS operating modes
 bool em_data_cleared;  // indicates if Shelly 3EM energy data has been cleared
-unsigned long mw_counter;  // counter for Meanwell relay operations
+bool mw_on, hm_on;  // state of Shelly 2PM Meanwell/Hoymiles relays
+unsigned long mw_counter, hm_counter;  // counter for Meanwell and Hoymiles relay operations
 char tn_str[1000];  // output (telnet) message string
 char command;  // last user command (read via telnet)
 char resp_str[100];  // last user command response

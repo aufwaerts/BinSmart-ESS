@@ -1,4 +1,4 @@
-#define SW_VERSION "v2.80"
+#define SW_VERSION "v2.81"
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <HTTPClient.h>  // standard Arduino/ESP32
@@ -124,6 +124,7 @@ void setup() {
     telnet.print("\nNo errors during setup, start polling cycle ...");
     delay(PROCESSING_DELAY);
     starttime = resettime_errors = resettime_energy = unixtime;
+    mw_counter = hm_counter = 0;
     ts_power = millis();
 }
 
@@ -199,6 +200,10 @@ bool ShellyCommand(IPAddress ip_addr, const char command[], const char params[])
         if (!strcmp(command, HM_RELAY)) {  // Hoymiles relay turned on or off
             http.end();
             ts_HM = millis();
+            if (hm_on == !strcmp(params, "off")) {
+                hm_counter++;
+                hm_on = !hm_on;
+            }
             // Hoymiles AC side turned on/off: turn on/off DC side, too (after a short delay)
             delay(1000);
             if (!strcmp(params, "off")) return BMSCommand(DISCH_OFF);
@@ -843,8 +848,8 @@ void UserIO() {
             resp_str[0] = '\0';
             break;
         case 's':
-            sprintf(tn_str + strlen(tn_str), "MW relay ops since %02d/%02d/%04d %02d:%02d\r\n\n", day(starttime), month(starttime), year(starttime), hour(starttime), minute(starttime));
-            sprintf(tn_str + strlen(tn_str), "%d (%d/day)\r\n\n", mw_counter, mw_counter/((unixtime-starttime)/86400+1));
+            sprintf(tn_str + strlen(tn_str), "Shelly relay ops since %02d/%02d/%04d %02d:%02d\r\n\n", day(starttime), month(starttime), year(starttime), hour(starttime), minute(starttime));
+            sprintf(tn_str + strlen(tn_str), "Meanwell relay: %d (%d/day)\r\nHoymiles relay: %d (%d/day)\r\n\n", mw_counter, mw_counter/((unixtime-starttime)/86400+1), hm_counter, hm_counter/((unixtime-starttime)/86400+1));
             resp_str[0] = '\0';
             break;
         case 'z':
