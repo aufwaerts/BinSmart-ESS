@@ -185,7 +185,7 @@ bool ShellyCommand(IPAddress ip_addr, const char command[], const char params[])
             http.end();
             return true;
         }
-        if (!strcmp(command, MW_RELAY)) {  // turn Meanwell relay on or off
+        if (!strcmp(command, MW_RELAY)) {  // Meanwell relay turned on or off
             http.end();
             ts_MW = millis();
             if (mw_on == !strcmp(params, "off")) {
@@ -196,10 +196,10 @@ bool ShellyCommand(IPAddress ip_addr, const char command[], const char params[])
             if (!mw_on) ledcWrite(PWM_OUTPUT_PIN, 0);  // if MW was turned off, also turn off optocoupler LED
             return true;
         }
-        if (!strcmp(command, HM_RELAY)) {  // turn Hoymiles relay on or off
+        if (!strcmp(command, HM_RELAY)) {  // Hoymiles relay turned on or off
             http.end();
             ts_HM = millis();
-            // Hoymiles AC side turned on/ff: turn on/off DC side, too (after a short delay)
+            // Hoymiles AC side turned on/off: turn on/off DC side, too (after a short delay)
             delay(1000);
             if (!strcmp(params, "off")) return BMSCommand(DISCH_OFF);
             else return BMSCommand(DISCH_ON);
