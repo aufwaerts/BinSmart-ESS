@@ -31,7 +31,7 @@ const int POWER_TARGET_TOLERANCE = 5;  // Max tolerated deviation (+/-) from tar
 const int POWER_RAMPDOWN_RATE = -40; // Max power decrease per cycle
 const int POWER_FILTER_CYCLES = 12;  // Number of cycles during which power spikes are filtered out
 const float POWER_LIMIT_RAMPDOWN = 0.67;  // Power rampdown rate when ESS_OVP or ESS_UVP is reached
-const float PM2_MW_POWER_CORR = 1.007;  // Power correction factor for MW power readings with PM2
+const float PM2_MW_POWER_CORR = 1.006;  // Power correction factor for MW power readings with PM2
 
 // Time/timer/astro settings
 const int PROCESSING_DELAY = 2000;  // minimum delay (in msecs) for power changes to take effect
@@ -54,7 +54,7 @@ const int TIMEZONE = *;  // timezone (relative to UTC) of ESS
 #define PWM_CHANNEL 0
 #define PWM_FREQ 250
 #define PWM_RESOLUTION 10
-#define DUTY_CYCLE_MIN 3
+#define DUTY_CYCLE_MIN 4
 #define DUTY_CYCLE_MAX 1023
 
 // Meanwell power parameters
