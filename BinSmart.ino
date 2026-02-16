@@ -1,4 +1,4 @@
-#define SW_VERSION "v2.81"
+#define SW_VERSION "v2.82"
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <HTTPClient.h>  // standard Arduino/ESP32
@@ -189,7 +189,7 @@ bool ShellyCommand(IPAddress ip_addr, const char command[], const char params[])
         if (!strcmp(command, MW_RELAY)) {  // Meanwell relay turned on or off
             http.end();
             ts_MW = millis();
-            if (mw_on == !strcmp(params, "off")) {
+            if (mw_on == !strcmp(params, "off")) {  // relay state changed
                 mw_counter++;
                 mw_on = !mw_on;
             }
@@ -200,7 +200,7 @@ bool ShellyCommand(IPAddress ip_addr, const char command[], const char params[])
         if (!strcmp(command, HM_RELAY)) {  // Hoymiles relay turned on or off
             http.end();
             ts_HM = millis();
-            if (hm_on == !strcmp(params, "off")) {
+            if (hm_on == !strcmp(params, "off")) {  // relay state changed
                 hm_counter++;
                 hm_on = !hm_on;
             }
@@ -503,7 +503,7 @@ void SetNewPower() {
     }
     
     // Calculate cycle duration and reset power timestamp
-    secs_cycle = (millis()-ts_power)/1000.0;
+    msecs_cycle = millis()-ts_power;
     ts_power = millis();
 }
 
@@ -523,7 +523,7 @@ void FinishCycle() {
     power_grid_to_cons = power_from_grid - power_grid_to_ess;
 
     // Update AC energy counters
-    float hrs_cycle = secs_cycle/3600;
+    float hrs_cycle = msecs_cycle/3600000.0;
     en_from_pv += hrs_cycle*power_pv;
     en_from_ess += hrs_cycle*power_from_ess;
     en_to_ess += hrs_cycle*power_to_ess;
@@ -578,37 +578,31 @@ void FinishCycle() {
     // Check if public IP address was changed, if yes: update DDNS server entry
     if (millis()-ts_pubip >= DDNS_UPDATE_INTERVAL*1000) UpdateDDNS();
 
-    // If ESS is asleep, double waiting time at end of cycle
-    int cycle_delay = PROCESSING_DELAY*(1+(pm1_eco_mode && pm2_eco_mode));
+    // flash LED to indicate end of cycle
+    digitalWrite(LED_PIN, HIGH);  delay(20); digitalWrite(LED_PIN, LOW);
 
-    // Handle user input/output
-    if (telnet) {
-        UserIO();  // active telnet session: print cycle info, handle user command
-        while (millis()-ts_power < cycle_delay-100) {  // loop until power changes are almost stable
-            OTA_server.handleClient();  // check for OTA software update
-            if (telnet.available()) UserIO();  // check for user input
-        }
-    }
-    else {
-        command = '\0';  // no telnet session: clear user command response
-        while (millis()-ts_power < cycle_delay-100) {  // loop until power changes are almost stable
-            OTA_server.handleClient();  // check for OTA software update
-            if (!telnet) if (telnet = telnet_server.available()) UserIO();  // check for new telnet session
-        }
-    }
+    // calculate end-of-cycle waiting time (consider ESS sleep mode and time since power change, allow time for userIO and PV power reading)
+    int cycle_delay = PROCESSING_DELAY*(1+(pm1_eco_mode && pm2_eco_mode))-(millis()-ts_power)-100;
+    if (cycle_delay > 0) delay(cycle_delay);
+
+    // check for OTA software update
+    OTA_server.handleClient();
+
+    // check for telnet session
+    if (!telnet) telnet = telnet_server.available();
+    if (telnet) UserIO();  // if telnet session exists, print cycle info and handle user command
+    else command = '\0';  // no telnet session: clear user command response
 
     // daytime: read PV power from Shelly 1PM (should take less than 100 ms)
     if ((min_of_day >= sunrise) && (min_of_day < sunset)) ShellyCommand(PM1_ADDR, PM_STATUS, "0");
     else power_pv = 0;
 
+    // wait until power change has stabilized
+    cycle_delay = PROCESSING_DELAY*(1+(pm1_eco_mode && pm2_eco_mode))-(millis()-ts_power);
+    if (cycle_delay > 0) delay(cycle_delay);
+
     // assumption for next cycle: ESS power reading equals power setting
     power_ess = power_new;
-
-    // LED flash indicates end of cycle
-    digitalWrite(LED_PIN, HIGH);  delay(20); digitalWrite(LED_PIN, LOW);
-
-    // wait until power changes are completely stable
-    while (millis()-ts_power < cycle_delay);
 }
 
 void CheckErrors() {
@@ -690,7 +684,7 @@ void UserIO() {
     strcat(tn_str, WIFI_SYMBOL[WiFi.RSSI() >= GOOD_WIFI_RSSI]);
 
     // Time, cycle time, operations symbol
-    sprintf(tn_str + strlen(tn_str), "\r\n%02d:%02d:%02d %+.3f%s\r\n", hour(unixtime), minute(unixtime), second(unixtime), secs_cycle, OPS_SYMBOL[!power_new + (pm1_eco_mode && pm2_eco_mode)]);
+    sprintf(tn_str + strlen(tn_str), "\r\n%02d:%02d:%02d +%d.%03d%s\r\n", hour(unixtime), minute(unixtime), second(unixtime), msecs_cycle/1000, msecs_cycle%1000, OPS_SYMBOL[!power_new + (pm1_eco_mode && pm2_eco_mode)]);
 
     // OVP symbol above battery symbol
     strcat(tn_str, BAT_OVP_SYMBOL[(mw_limit_old < MW_MAX_POWER) + !mw_limit_old]);

@@ -44,7 +44,7 @@ unsigned long unixtime; // epoch time of local time (will be read from Shelly 3E
 unsigned long minpower_time, starttime, resettime_errors, resettime_energy;  // unixtime of certain events
 unsigned long pubip_time, ddns_time;  // unixtime of last public IP address check and last DDNS update
 unsigned long ts_power, ts_pubip, ts_MW, ts_HM, ts_BMS, ts_userio;  // various millis() timestamps
-float secs_cycle;  // duration of one polling cycle in secs
+unsigned long msecs_cycle;  // duration of one polling cycle in secs
 
 // Power and energy variables ([W] and [Wh])
 int power_grid_target = POWER_TARGET_DEFAULT;  // Systems aims for this grid power target
