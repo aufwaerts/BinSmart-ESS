@@ -784,7 +784,7 @@ void UserIO() {
             // DC (batt) status
             sprintf(tn_str + strlen(tn_str), "Cell voltages: %d - %d mV\r\nMax cell diff: %d mV%s", vcell_min, vcell_max, vcell_max-vcell_min, (bms_bal_active) ? BALANCER_SYMBOL : "");
             sprintf(tn_str + strlen(tn_str), "\r\nBatt voltage : %.3f V\r\nBatt current : %.2f A\r\nBatt power   : %.1f W\r\n", vbat/1000.0, cbat/100.0, pbat);
-            sprintf(tn_str + strlen(tn_str), "RS485 waits  : %d\r\n\n", bms_resp_wait_counter);
+            sprintf(tn_str + strlen(tn_str), "RS485 retries: %d\r\n\n", bms_resp_wait_counter);
             // AC status
             sprintf(tn_str + strlen(tn_str), "AC power setting: %d W\r\nAC power reading: %.1f W\r\n", power_old, power_ess);
             // AC/DC (or DC/AC) power conversion efficiency of Meanwell or Hoymiles
