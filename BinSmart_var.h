@@ -3,9 +3,9 @@
 // Networking
 WebServer OTA_server(HTTP_PORT);
 WiFiServer telnet_server(TELNET_PORT);
-WiFiClient telnet, shelly_resp;
-HTTPClient http;
-char http_command[150];
+WiFiClient telnet, http;
+char http_command[200];
+char http_resp[600];
 IPAddress pubip_addr, ddns_addr;
 NimBLEAddress serverAddress(JKBMS_MAC_ADDR);  // JKBMS BLE server address
 NimBLEClient* pClient;  // pointer to BLE client object
@@ -19,14 +19,7 @@ int bms_balancer_trigger;  // BMS balancer cell diff threshold [mV] (read from B
 bool bms_bal_on, bms_bal_active;  // BMS balancer switch and balancing activity
 int bms_uvp;  // BMS cell UVP value
 byte bms_resp[300];  // buffer for BMS response
-int bms_resp_wait_counter;  // how often did system have to wait for BMS response bytes (indicates RS485 transmission problems)
-
-// Errors
-int error_counter[ERROR_TYPES];
-unsigned long errortime[ERROR_TYPES];
-int errors_consecutive;
-char error_str[200], last_error_str[200];  // if error occured during polling cycle, type of error is written in here
-bool error_flag;  // errors occured and not yet read by user?
+int bms_retry_counter;  // how often did system have to wait for BMS response bytes (indicates RS485 transmission problems)
 
 // Hoymiles/RF24
 RF24 radio(RF24_CE_PIN, RF24_CSN_PIN);
@@ -59,6 +52,13 @@ float en_from_pv, en_pv_to_cons, en_pv_to_ess, en_pv_to_grid, en_pv_wasted;  // 
 float en_from_grid, en_grid_to_cons, en_grid_to_ess;  // Grid energy counters
 float en_from_ess, en_to_ess, en_ess_to_cons, en_ess_to_grid;  // ESS AC energy counters
 float en_from_batt, en_to_batt;  // ESS DC energy counters
+
+// Error handling
+int error_counter[ERROR_TYPES];
+unsigned long errortime[ERROR_TYPES];
+int errors_consecutive;
+char error_str[200], last_error_str[200];  // if error occured during polling cycle, type of error is written in here
+bool error_flag;  // errors occured and not yet read by user?
 
 // Other global variables
 int filter_cycles = POWER_FILTER_CYCLES;  // number of cycles where power spikes are filtered out

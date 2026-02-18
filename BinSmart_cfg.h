@@ -1,85 +1,16 @@
 // ESS configuration
 
-// ESP32 pin definitions
-#define LED_PIN 12
-#define PWM_OUTPUT_PIN 13
-#define RF24_CE_PIN 32
-#define RF24_CSN_PIN 33
-#define UART_RX_PIN 16
-#define UART_TX_PIN 17
-
 // Networking
-#define WIFI_SSID "***"
-#define WIFI_PWD "***"
-#define GOOD_WIFI_RSSI -70  // RSSI above this value is considered "good enough"
-#define HTTP_PORT 80  // standard HTTP port
-#define TELNET_PORT ***  // TCP port for communication with terminal
-#define JKBMS_MAC_ADDR "*:*:*:*:*:*"  // MAC (= BLE) address of JKBMS
-IPAddress ESP32_ADDR(*,*,*,*);  // Local IP address of ESS
-IPAddress ROUTER_ADDR(*,*,*,*);   // Local WiFi router
-IPAddress SUBNET(*,*,*,*);   // WiFi subnet
 IPAddress DNS_SERVER1(8,8,8,8);  // Google DNS resolver
 IPAddress DNS_SERVER2(9,9,9,9);  // Quad9 DNS server
-IPAddress EM_ADDR(*,*,*,*);  // Shelly 3EM
-IPAddress PM1_ADDR(*,*,*,*);  // Shelly Plus 1PM, connecting Maxeon solar panel to AC
-IPAddress PM2_ADDR(*,*,*,*);  // Shelly 2PM Gen3, connecting Meanwell charger and Hoymiles inverter to AC
-
-// Power settings
-const int PV_MAX_POWER = 359;  // PV module/inverter max AC output
-const int POWER_TARGET_DEFAULT = 5;  // System is aiming for this amount of watts to be drawn from grid
-const int POWER_TARGET_TOLERANCE = 5;  // Max tolerated deviation (+/-) from target power
-const int POWER_RAMPDOWN_RATE = -40; // Max power decrease per cycle
-const int POWER_FILTER_CYCLES = 12;  // Number of cycles during which power spikes are filtered out
-const float POWER_LIMIT_RAMPDOWN = 0.67;  // Power rampdown rate when ESS_OVP or ESS_UVP is reached
-const float PM2_MW_POWER_CORR = 1.006;  // Power correction factor for MW power readings with PM2
-
-// Time/timer/astro settings
-const int PROCESSING_DELAY = 2000;  // minimum delay (in msecs) for power changes to take effect
-const int HTTP_SHELLY_TIMEOUT = 4000;  // max waiting time (in msecs) for Shelly HTTP responses
-const int HTTP_DDNS_TIMEOUT = 1000;  // max waiting time (in msecs) for DDNS/public IP responses
-const int DDNS_UPDATE_INTERVAL = 120;  // DDNS IP address check interval (in secs)
-const int MW_KEEPALIVE = 40;  // number of secs after which Shelly 2PM receives "keep alive" message (must be less than corresponding Shelly timer)
-const int RF24_WAIT = 50;  // min waiting time (in msecs) for Hoymiles RF24 interface to be ready
-const int RF24_TIMEOUT = 1000;  // max waiting time (in msecs) for RF24 ACKs after writeFast()
-const int RF24_KEEPALIVE = 30;  // number of secs after which Hoymiles RF24 interface receives "keep alive" message
-const int BMS_WAIT = 50;  // min waiting time (in msecs) for BMS to be ready
-const int BMS_TIMEOUT = 20;  // max waiting time (in msecs) for BMS response
-const int BLE_TIMEOUT = 2;  // max waiting time (in secs) for JKBMS BLE server connection
-const int USERIO_TIMEOUT = 4000;  // max waiting time (in msecs) for terminal input/output
-const float LATITUDE = **.***;  // latitude of ESS
-const float LONGITUDE = **.**;  // longitude of ESS
-const int TIMEZONE = *;  // timezone (relative to UTC) of ESS
-
-// PWM params for Meanwell power control
-#define PWM_CHANNEL 0
-#define PWM_FREQ 250
-#define PWM_RESOLUTION 10
-#define DUTY_CYCLE_MIN 4
-#define DUTY_CYCLE_MAX 1023
-
-// Meanwell power parameters
-const int MW_MIN_POWER = 15;  // Meanwell turned off below min_power (power output would be unstable and inefficient)
-const int MW_MAX_POWER = 300;  // theoretical max AC power at vbat < 24000
-#define MW_MAX_POWER_FORMULA vbat/77.648*(0.984-float(DUTY_CYCLE_MIN)/DUTY_CYCLE_MAX)  // actual max AC power is between 300 and 360W, depending on vbat
-#define MW_POWER_FORMULA DUTY_CYCLE_MAX*(0.984-77.648*mw_power/vbat)  // converts current to PWM duty cycle (result of Meanwell HLG-320 tests)
-#define MW_LOW_POWER_THRESHOLD 31  // power output below this threshold is non-linear (result of HLG-320 tests):
-#define MW_LOW_POWER_FORMULA DUTY_CYCLE_MAX*(94523.2839*mw_power/vbat*mw_power/vbat-266.5076*mw_power/vbat+1.075)
-
-// Hoymiles/RF24 comms parameters
-const byte RF24_CHANNEL = 03; // Possible RF24 channles for Hoymiles comms are 03, 23, 40, 61, 75; frequency in MHz is 2400 + channel
-const byte RF24_PALEVEL = RF24_PA_MIN; // Possible RF24 PA levels are RF24_PA_MIN, RF24_PA_LOW, RF24_PA_HIGH, RF24_PA_MAX
-const byte HM_SN[6] = {0x11, 0x21, 0x83, 0x81, 0x95, 0x16};  // serial number of Hoymiles inverter
-const byte HM_RADIO_ID[5] = {0x01, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5]};
-const byte HM_POWER_ON = 0x00;
-const byte HM_POWER_OFF = 0x01;
-const byte HM_SWITCH[2][15] = {{0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17, 0x41, 0x72, 0x81, HM_POWER_ON, 0x00, 0xB0, 0x01, 0x44},
-                               {0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17, 0x41, 0x72, 0x81, HM_POWER_OFF, 0x00, 0x20, 0x00, 0xD4}};
-
-// Hoymiles power parameters
-const int HM_MIN_POWER = -15;  // Hoymiles turned off above min_power (power would be too unstable)
-const int HM_MAX_POWER = -180;  // Limit of linear power output range
-#define HM_LOW_POWER_THRESHOLD -61  // Hoymiles power output above this threshold is unstable
-#define HM_LOW_POWER_TOLERANCE 15  // Max tolerated positive deviation from target power when Hoymiles is below HM_LOW_POWER_THRESHOLD
+const int GOOD_WIFI_RSSI = -70;  // RSSI above this value is considered "good enough"
+const int HTTP_PORT = 80;  // standard HTTP port
+const char HTTP_OK[] = "200 OK";  // http success return code
+const char DDNS_SERVER[] = "dynupdate.no-ip.com";  // public DDNS service
+const char PUBLIC_IP_SERVER[] = "api.ipify.org";  // public service for obtaining public IP address
+const char PUBLIC_IP_SERVER_URL[] = "/";
+// const char PUBLIC_IP_SERVER[] = "ifconfig.me";  // alternative public IP service
+// const char PUBLIC_IP_SERVER_URL[] = "/ip";
 
 // Shelly webhooks
 const char EM_STATUS[] = "/status";
@@ -90,10 +21,65 @@ const char MW_RELAY[] = "/relay/0?turn=";
 const char HM_RELAY[] = "/relay/1?turn=";
 const char ECO_MODE[] = "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":";
 
-// URLs
-const char PUBLIC_IP_URL[] = "http://api.ipify.org";  // public service for obtaining WiFi router public IP address
-// const char PUBLIC_IP_URL[] = "http://ifconfig.me/ip";  // alternative service
-const char DDNS_SERVER_URL[] = "http://***:***@dynupdate.no-ip.com/nic/update?hostname=***.***.***&myip=";  // public DDNS service
+// ESP32 pin definitions
+const int LED_PIN = 12;
+const int PWM_OUTPUT_PIN = 13;
+const int RF24_CE_PIN = 32;
+const int RF24_CSN_PIN = 33;
+const int UART_RX_PIN = 16;
+const int UART_TX_PIN = 17;
+
+// Power settings
+const int PV_MAX_POWER = 359;  // PV module/inverter max AC output
+const int POWER_TARGET_DEFAULT = 5;  // System is aiming for this amount of watts to be drawn from grid
+const int POWER_TARGET_TOLERANCE = 5;  // Max tolerated deviation (+/-) from target power
+const int POWER_RAMPDOWN_RATE = -40; // Max power decrease per cycle
+const int POWER_FILTER_CYCLES = 12;  // Number of cycles during which power spikes are filtered out
+const float POWER_LIMIT_RAMPDOWN = 0.67;  // Power rampdown rate when ESS_OVP or ESS_UVP is reached
+const float PM2_MW_POWER_CORR = 1.006;  // Power correction factor for MW power readings with PM2
+
+// Time/timer settings
+const int PROCESSING_DELAY = 2000;  // minimum delay (in msecs) for power changes to take effect
+const int HTTP_TIMEOUT = 2000;  // max waiting time during http requests
+const int DDNS_UPDATE_INTERVAL = 60;  // DDNS IP address check interval (in secs)
+const int MW_KEEPALIVE = 40;  // number of secs after which Shelly 2PM receives "keep alive" message (must be less than corresponding Shelly timer)
+const int RF24_WAIT = 50;  // min Hoymiles RF24 waiting time (in msecs) after previous response
+const int RF24_TIMEOUT = 1000;  // max waiting time (in msecs) for RF24 ACKs after writeFast()
+const int RF24_KEEPALIVE = 30;  // number of secs after which Hoymiles RF24 interface receives "keep alive" message
+const int BMS_WAIT = 50;  // min BMS waiting time (in msecs) after previous response
+const int BMS_TIMEOUT = 20;  // max waiting time (in msecs) for BMS response
+const int BLE_TIMEOUT = 2;  // max waiting time (in secs) for JKBMS BLE server connection
+const int USERIO_TIMEOUT = 4000;  // max waiting time (in msecs) for terminal input/output
+
+// PWM params for Meanwell power control
+const int PWM_CHANNEL = 0;
+const int PWM_FREQ = 300;
+const int PWM_RESOLUTION = 10;
+const int DUTY_CYCLE_MIN = 4;
+const int DUTY_CYCLE_MAX = pow(2,PWM_RESOLUTION)-1;
+
+// Meanwell power parameters
+const int MW_MIN_POWER = 15;  // Meanwell turned off below min_power (power output would be unstable and inefficient)
+const int MW_MAX_POWER = 300;  // theoretical max AC power at vbat < 24000
+const int MW_LOW_POWER_THRESHOLD = 31;  // power output below MW_LOW_POWER_THRESHOLD is non-linear
+#define MW_MAX_POWER_FORMULA vbat/77.648*(0.984-float(DUTY_CYCLE_MIN)/DUTY_CYCLE_MAX)  // actual max AC power is between 300 and 360W, depending on vbat
+#define MW_POWER_FORMULA DUTY_CYCLE_MAX*(0.984-77.648*mw_power/vbat)  // converts current to PWM duty cycle (result of Meanwell HLG-320 tests)
+#define MW_LOW_POWER_FORMULA DUTY_CYCLE_MAX*(94523.2839*mw_power/vbat*mw_power/vbat-266.5076*mw_power/vbat+1.075)  // non-linear formula for low power
+
+// Hoymiles/RF24 comms parameters
+const byte RF24_CHANNEL = 03; // Possible RF24 channles for Hoymiles comms are 03, 23, 40, 61, 75; frequency in MHz is 2400 + channel
+const byte RF24_PALEVEL = RF24_PA_MIN; // Possible RF24 PA levels are RF24_PA_MIN, RF24_PA_LOW, RF24_PA_HIGH, RF24_PA_MAX
+const byte HM_RADIO_ID[] = {0x01, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5]};
+const byte HM_POWER_ON = 0x00;
+const byte HM_POWER_OFF = 0x01;
+const byte HM_SWITCH[2][15] = {{0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17, 0x41, 0x72, 0x81, HM_POWER_ON, 0x00, 0xB0, 0x01, 0x44},
+                               {0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17, 0x41, 0x72, 0x81, HM_POWER_OFF, 0x00, 0x20, 0x00, 0xD4}};
+
+// Hoymiles power parameters
+const int HM_MIN_POWER = -15;  // Hoymiles turned off above min_power (power would be too unstable)
+const int HM_MAX_POWER = -180;  // Limit of linear power output range
+const int HM_LOW_POWER_THRESHOLD = -61;  // Hoymiles power output above this threshold is unstable
+const int HM_LOW_POWER_TOLERANCE = 15;  // Max tolerated positive deviation from target power when Hoymiles is below HM_LOW_POWER_THRESHOLD
 
 // BMS/ESS voltage protection settings in millivolts
 const int ESS_OVP = 3500;  // one cell above this voltage: ramp down charging power
@@ -109,45 +95,45 @@ const int BAT_EMPTY = 8*ESS_UVP;  // voltage at which battery is considered empt
 const int BAT_LEVELS = 9;  // number of different battery levels that can be visualized
 
 // BMS definitions and commands
-#define RS485_1 0x4E
-#define RS485_2 0x57
-#define RS485_LEN_POS 3
-#define RS485_COMMAND_POS 8
-#define WRITE_DATA 0x02
-#define READ_DATA 0x03
-#define READ_ALL 0x06
-#define DATA_ID_POS 11
-#define VCELLS_ID 0x79
-#define CURRENT_ID 0x84
-#define DISCH_SW_ID 0xAC
-#define WARNINGS_POS 68
-#define OVP_POS 80
-#define UVP_POS 89
-#define BAL_ST_POS 113
-#define BAL_TR_POS 116
-#define BAL_SW_POS 119
-#define DISCH_SW_POS 163
-const byte READ_SETTINGS[] = {RS485_1, RS485_2, 0x00, 0x13, 0x00, 0x00, 0x00, 0x00, READ_ALL, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0x29};
-const byte READ_VOLTAGES[] = {RS485_1, RS485_2, 0x00, 0x13, 0x00, 0x00, 0x00, 0x00, READ_DATA, 0x03, 0x00, VCELLS_ID, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0x9F};
-const byte READ_CURRENT[] = {RS485_1, RS485_2, 0x00, 0x13, 0x00, 0x00, 0x00, 0x00, READ_DATA, 0x03, 0x00, CURRENT_ID, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0xAA};
-const byte DISCH_ON[] = {RS485_1, RS485_2, 0x00, 0x14, 0x00, 0x00, 0x00, 0x00, WRITE_DATA, 0x03, 0x00, DISCH_SW_ID, 0x01, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0xD3};
-const byte DISCH_OFF[] = {RS485_1, RS485_2, 0x00, 0x14, 0x00, 0x00, 0x00, 0x00, WRITE_DATA, 0x03, 0x00, DISCH_SW_ID, 0x00, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0xD2};
-#define BLE_1 0xAA
-#define BLE_2 0x55
-#define BLE_3 0x90
-#define BLE_4 0xEB
-#define BLE_COMMAND_LEN 20
-#define BLE_COMMAND_POS 4
-#define BLE_SETTING_POS 6
-#define BLE_INFO 0x97
-#define BLE_DATA 0x96
-#define BLE_BAL_SWITCH 0x1F
-const byte GET_INFO[BLE_COMMAND_LEN] = {BLE_1, BLE_2, BLE_3, BLE_4, BLE_INFO, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11};
-const byte GET_DATA[BLE_COMMAND_LEN] = {BLE_1, BLE_2, BLE_3, BLE_4, BLE_DATA, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10};
-const byte BAL_OFF[BLE_COMMAND_LEN] = {BLE_1, BLE_2, BLE_3, BLE_4, BLE_BAL_SWITCH, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x9D};
-const byte BAL_ON[BLE_COMMAND_LEN] = {BLE_1, BLE_2, BLE_3, BLE_4, BLE_BAL_SWITCH, 0x04, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x9E};
+const byte RS485_ID1 = 0x4E;
+const byte RS485_ID2 = 0x57;
+const byte RS485_WRITE_DATA = 0x02;
+const byte RS485_READ_DATA = 0x03;
+const byte RS485_READ_ALL = 0x06;
+const byte RS485_VCELLS_ID = 0x79;
+const byte RS485_CURRENT_ID = 0x84;
+const byte RS485_DISCH_SW_ID = 0xAC;
+const int RS485_LEN_POS = 3;
+const int RS485_COMMAND_POS = 8;
+const int RS485_DATA_ID_POS = 11;
+const int RS485_WARNINGS_POS = 68;
+const int RS485_OVP_POS = 80;
+const int RS485_UVP_POS = 89;
+const int RS485_BAL_ST_POS = 113;
+const int RS485_BAL_TR_POS = 116;
+const int RS485_BAL_SW_POS = 119;
+const int RS485_DISCH_SW_POS = 163;
+const byte RS485_READ_SETTINGS[] = {RS485_ID1, RS485_ID2, 0x00, 0x13, 0x00, 0x00, 0x00, 0x00, RS485_READ_ALL, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0x29};
+const byte RS485_READ_VOLTAGES[] = {RS485_ID1, RS485_ID2, 0x00, 0x13, 0x00, 0x00, 0x00, 0x00, RS485_READ_DATA, 0x03, 0x00, RS485_VCELLS_ID, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0x9F};
+const byte RS485_READ_CURRENT[] = {RS485_ID1, RS485_ID2, 0x00, 0x13, 0x00, 0x00, 0x00, 0x00, RS485_READ_DATA, 0x03, 0x00, RS485_CURRENT_ID, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0xAA};
+const byte RS485_DISCH_ON[] = {RS485_ID1, RS485_ID2, 0x00, 0x14, 0x00, 0x00, 0x00, 0x00, RS485_WRITE_DATA, 0x03, 0x00, RS485_DISCH_SW_ID, 0x01, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0xD3};
+const byte RS485_DISCH_OFF[] = {RS485_ID1, RS485_ID2, 0x00, 0x14, 0x00, 0x00, 0x00, 0x00, RS485_WRITE_DATA, 0x03, 0x00, RS485_DISCH_SW_ID, 0x00, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0xD2};
+const byte BLE_ID1 = 0xAA;
+const byte BLE_ID2 = 0x55;
+const byte BLE_ID3 = 0x90;
+const byte BLE_ID4 = 0xEB;
+const byte BLE_INFO = 0x97;
+const byte BLE_DATA = 0x96;
+const byte BLE_BAL_SWITCH = 0x1F;
+const int BLE_COMMAND_LEN = 20;
+const int BLE_COMMAND_POS = 4;
+const int BLE_SETTING_POS = 6;
+const byte BLE_GET_INFO[] = {BLE_ID1, BLE_ID2, BLE_ID3, BLE_ID4, BLE_INFO, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11};
+const byte BLE_GET_DATA[] = {BLE_ID1, BLE_ID2, BLE_ID3, BLE_ID4, BLE_DATA, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10};
+const byte BLE_BAL_OFF[] = {BLE_ID1, BLE_ID2, BLE_ID3, BLE_ID4, BLE_BAL_SWITCH, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x9D};
+const byte BLE_BAL_ON[] = {BLE_ID1, BLE_ID2, BLE_ID3, BLE_ID4, BLE_BAL_SWITCH, 0x04, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x9E};
 
-// Error settings
+// Error definitions
 const int ERROR_TYPES = 7;
 const int UNCRITICAL_ERROR_TYPES = 2;  // ERROR_LIMIT doesn't apply to first ... error types
 const char ERROR_TYPE[ERROR_TYPES][5] = {"WIFI", "DDNS", "BMS", "RF24", "3EM", "1PM", "2PM"};  // error messages correspond with these types! changes here also need changed error messages

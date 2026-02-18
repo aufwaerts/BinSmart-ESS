@@ -1,7 +1,6 @@
-#define SW_VERSION "v2.82"
+const char SW_VERSION[] = "v2.84";
 
 #include <WiFi.h>  // standard Arduino/ESP32
-#include <HTTPClient.h>  // standard Arduino/ESP32
 #include <WebServer.h>  // standard Arduino/ESP32
 #include <ElegantOTA.h>  // https://github.com/ayushsharma82/ElegantOTA (I prefer v2.2.9)
 #include <RF24.h>  // https://nrf24.github.io/RF24/
@@ -10,8 +9,9 @@
 #include <TimeLib.h>  // https://playground.arduino.cc/Code/Time/
 #include <Dusk2Dawn.h>  // https://github.com/dmkishi/Dusk2Dawn
 #include <NimBLEDevice.h>  // https://github.com/h2zero/NimBLE-Arduino
-#include "BinSmart_cfg.h"
-#include "BinSmart_var.h"
+#include "BinSmart_scfg.h"  // software configuration (sensitive data)
+#include "BinSmart_cfg.h"  // software and system configuration
+#include "BinSmart_var.h"  // global variables
 
 void setup() {
 
@@ -25,6 +25,7 @@ void setup() {
     // Init WiFi
     WiFi.config(ESP32_ADDR, ROUTER_ADDR, SUBNET, DNS_SERVER1, DNS_SERVER2);
     WiFi.setTxPower(WIFI_POWER_5dBm);
+    WiFi.setAutoReconnect(true);
     WiFi.begin(WIFI_SSID, WIFI_PWD);
     while (WiFi.status() != WL_CONNECTED);   // if WiFi unavailable or wrong SSID/PWD, system stops here and LED remains on
     digitalWrite(LED_PIN, LOW);
@@ -53,7 +54,7 @@ void setup() {
     
     // Init RS485 communication with BMS, read OVP/UVP/balancer/switch settings
     Serial2.begin(115200, SERIAL_8N1, UART_RX_PIN, UART_TX_PIN);
-    BMSCommand(READ_SETTINGS);
+    BMSCommand(RS485_READ_SETTINGS);
     CheckErrors();
     telnet.println("RS485 communication with JKBMS OK");
 
@@ -95,6 +96,9 @@ void setup() {
     }
     else telnet.println("Hoymiles is asleep");
 
+    // set max waiting time for all http requests
+    http.setTimeout(HTTP_TIMEOUT);
+
     // Shelly 1PM: Read eco mode setting and PV power
     if (ShellyCommand(PM1_ADDR, PM_CONFIG, "")) ShellyCommand(PM1_ADDR, PM_STATUS, "0");
     CheckErrors();
@@ -129,10 +133,10 @@ void setup() {
 
 void loop() {
 
-    BMSCommand(READ_VOLTAGES);  // read cell voltages from BMS, set charging/discharging power limits
-    if (power_new) ShellyCommand(PM2_ADDR, PM_STATUS, (power_new > 0) ? "0" : "1"); // read ESS power from Shelly 2PM
+    BMSCommand(RS485_READ_VOLTAGES);  // read cell voltages from BMS, set charging/discharging power limits
+    ShellyCommand(PM2_ADDR, PM_STATUS, (power_new > 0) ? "0" : "1"); // read ESS power from Shelly 2PM
     ShellyCommand(EM_ADDR, EM_STATUS, "");  // read time and grid power from Shelly 3EM
-    BMSCommand(READ_CURRENT);  // read DC charging/discharging current and power from BMS
+    BMSCommand(RS485_READ_CURRENT);  // read DC charging/discharging current and power from BMS
     SetNewPower();  // calculate and apply new charging/discharging power setting
     FinishCycle();  // update energy stats, do maintenance tasks, print status info, handle user command, read PV power, flash LED
     CheckErrors();  // check for comms errors, halt system if an error is persistent
@@ -140,86 +144,80 @@ void loop() {
 
 bool ShellyCommand(IPAddress ip_addr, const char command[], const char params[]) {
 
-    // Prepare Shelly http command
-    strcpy(http_command, "http://");
-    strcat(http_command, ip_addr.toString().c_str());
-    strcat(http_command, command);
-    strcat(http_command, params);
+    if ((ip_addr == PM2_ADDR) && !strcmp(command, PM_STATUS)) {  // read ESS power from Shelly 2PM
+        power_ess = power_new;  // assumption: ESS power reading equals power setting
+        if (!power_new) return true;  // no need to read ESS power if ESS is turned off
+    }
 
-    if (WiFi.status() != WL_CONNECTED) {
-        strcpy(error_str, "WIFI");
+    if (WiFi.status() != WL_CONNECTED) {  // no need to carry on if WiFi is disconnected
+        strcpy(error_str, "WIFI disconnected");
         return false;
     }
 
-    // Send http command to Shelly
-    http.setTimeout(HTTP_SHELLY_TIMEOUT);
-    http.begin(http_command);
-    if (http.GET() == HTTP_CODE_OK) {
-        shelly_resp = http.getStream();
-        if (!strcmp(command, EM_STATUS)) {
-            // read time and grid power from Shelly 3EM
-            for (int i=0; i<140; i++) shelly_resp.read();  // fast forward to "time"
-            shelly_resp.find("time");
-            min_of_day = shelly_resp.parseInt()*60 + shelly_resp.parseInt();  // read local time (minutes after midnight)
-            unsigned long unixtime_utc = shelly_resp.parseInt();  // read epoch time (UTC)
-            for (int i=0; i<550; i++) shelly_resp.read();  // fast forward to "total_power"
-            shelly_resp.find("total_power");
-            power_grid = shelly_resp.parseFloat();  // read grid power from http response
-            http.end();
-            utc_offset = (min_of_day/60+24-hour(unixtime_utc))%24;  // UTC offset = timezone + dst
-            unixtime = unixtime_utc + utc_offset*3600;  // unixtime equals local time
-            if (!starttime || min_of_day == 210) {  // calculate sunrise/sunset times during setup() or at 03:30 local time
-                sunrise = ess_location.sunrise(year(unixtime), month(unixtime), day(unixtime), utc_offset-TIMEZONE);
-                sunset = ess_location.sunset(year(unixtime), month(unixtime), day(unixtime), utc_offset-TIMEZONE);
+    // Prepare Shelly http command
+    sprintf(http_command, "GET %s%s HTTP/1.1\r\nHost: %s\r\n\r\n", command, params, ip_addr.toString().c_str());
+
+    // connect to Shelly and send command
+    if (http.connect(ip_addr, HTTP_PORT)) {
+        http.write(http_command, strlen(http_command));
+        if (http.find(HTTP_OK)) {
+            if (!strcmp(command, EM_STATUS)) {
+                // read time and grid power from Shelly 3EM
+                http.readBytes(http_resp, 220);  // fast forward to "time"
+                http.find("time");
+                min_of_day = http.parseInt()*60 + http.parseInt();  // read local time (minutes after midnight)
+                unsigned long unixtime_utc = http.parseInt();  // read epoch time (UTC)
+                http.readBytes(http_resp, 550);  // fast forward to "total_power"
+                http.find("total_power");
+                power_grid = http.parseFloat();  // read grid power from http response
+                utc_offset = (min_of_day/60+24-hour(unixtime_utc))%24;  // UTC offset = timezone + dst
+                unixtime = unixtime_utc + utc_offset*3600;  // unixtime equals local time
+                if (!starttime || min_of_day == 210) {  // calculate sunrise/sunset times during setup() or at 03:30 local time
+                    sunrise = ess_location.sunrise(year(unixtime), month(unixtime), day(unixtime), utc_offset-TIMEZONE);
+                    sunset = ess_location.sunset(year(unixtime), month(unixtime), day(unixtime), utc_offset-TIMEZONE);
+                }
             }
+            if (!strcmp(command, PM_STATUS)) {
+                // read power from Shelly 1PM or 2PM
+                http.find("apower");
+                if (ip_addr == PM1_ADDR) power_pv = http.parseFloat();
+                if (ip_addr == PM2_ADDR) {
+                    power_ess = http.parseFloat();
+                    if (power_new > 0) power_ess = power_ess*PM2_MW_POWER_CORR;  // power correction for positive (charging) power
+                }
+            }
+            if (!strcmp(command, MW_RELAY)) {  // Meanwell relay turned on or off
+                ts_MW = millis();
+                if (mw_on == !strcmp(params, "off")) {  // relay state changed
+                    mw_counter++;
+                    mw_on = !mw_on;
+                }
+                delay(400);  // allow a little more time for power change to stabilize
+                if (!mw_on) ledcWrite(PWM_OUTPUT_PIN, 0);  // if MW was turned off, also turn off optocoupler LED
+            }
+            if (!strcmp(command, HM_RELAY)) {  // Hoymiles relay turned on or off
+                ts_HM = millis();
+                if (hm_on == !strcmp(params, "off")) {  // relay state changed
+                    hm_counter++;
+                    hm_on = !hm_on;
+                }
+                // Hoymiles AC side turned on/off: turn on/off DC side, too (after a short delay)
+                delay(1000);
+                http.stop();
+                if (!strcmp(params, "off")) return BMSCommand(RS485_DISCH_OFF);
+                else return BMSCommand(RS485_DISCH_ON);
+            }
+            if (!strcmp(command, PM_CONFIG)) {
+                bool eco_mode = http.findUntil("eco_mode\":true", "eco_mode\":false");
+                if (ip_addr == PM1_ADDR) pm1_eco_mode = eco_mode;
+                if (ip_addr == PM2_ADDR) pm2_eco_mode = eco_mode;
+            }
+            http.stop();
             return true;
         }
-        if (!strcmp(command, PM_STATUS)) {
-            // read power from Shelly 1PM or 2PM
-            shelly_resp.find("apower");
-            if (ip_addr == PM1_ADDR) power_pv = shelly_resp.parseFloat();
-            if (ip_addr == PM2_ADDR) {
-                power_ess = shelly_resp.parseFloat();
-                if (power_new > 0) power_ess = power_ess*PM2_MW_POWER_CORR;  // power correction for positive (charging) power
-            }
-            http.end();
-            return true;
-        }
-        if (!strcmp(command, MW_RELAY)) {  // Meanwell relay turned on or off
-            http.end();
-            ts_MW = millis();
-            if (mw_on == !strcmp(params, "off")) {  // relay state changed
-                mw_counter++;
-                mw_on = !mw_on;
-            }
-            delay(400);  // allow a little more time for power change to stabilize
-            if (!mw_on) ledcWrite(PWM_OUTPUT_PIN, 0);  // if MW was turned off, also turn off optocoupler LED
-            return true;
-        }
-        if (!strcmp(command, HM_RELAY)) {  // Hoymiles relay turned on or off
-            http.end();
-            ts_HM = millis();
-            if (hm_on == !strcmp(params, "off")) {  // relay state changed
-                hm_counter++;
-                hm_on = !hm_on;
-            }
-            // Hoymiles AC side turned on/off: turn on/off DC side, too (after a short delay)
-            delay(1000);
-            if (!strcmp(params, "off")) return BMSCommand(DISCH_OFF);
-            else return BMSCommand(DISCH_ON);
-        }
-        if (!strcmp(command, PM_CONFIG)) {
-            bool eco_mode = shelly_resp.findUntil("eco_mode\":true", "eco_mode\":false");
-            http.end();
-            if (ip_addr == PM1_ADDR) pm1_eco_mode = eco_mode;
-            if (ip_addr == PM2_ADDR) pm2_eco_mode = eco_mode;
-            return true;
-        }
-        http.end();
-        return true;
     }
     // Shelly command failed
-    http.end();
+    http.stop();
     if (ip_addr == EM_ADDR) sprintf(error_str, "3EM cmd %s failed", http_command);
     if (ip_addr == PM1_ADDR) sprintf(error_str, "1PM cmd %s failed", http_command);
     if (ip_addr == PM2_ADDR) sprintf(error_str, "2PM cmd %s failed", http_command);
@@ -230,15 +228,15 @@ bool BMSCommand(const byte command[]) {
 
     while (millis()-ts_BMS < BMS_WAIT);  // minimum delay after previous BMS response
 
-    if (command[0] == BLE_1) {
+    if (command[0] == BLE_ID1) {
 
         // Send BMS command via BLE
         if (pClient->connect()) {
             NimBLERemoteService* pService = pClient->getService("FFE0");
             NimBLERemoteCharacteristic* pChar = pService->getCharacteristic("FFE1");
-            if (pChar->writeValue(GET_INFO, BLE_COMMAND_LEN, false)) {
+            if (pChar->writeValue(BLE_GET_INFO, BLE_COMMAND_LEN, false)) {
                 delay(500);
-                if (pChar->writeValue(GET_DATA, BLE_COMMAND_LEN, false)) {
+                if (pChar->writeValue(BLE_GET_DATA, BLE_COMMAND_LEN, false)) {
                     delay(500);
                     if (pChar->writeValue(command, BLE_COMMAND_LEN, false)) {
                         pClient->disconnect();
@@ -256,23 +254,24 @@ bool BMSCommand(const byte command[]) {
 
     // Send BMS command via RS485
     Serial2.write(command, command[RS485_LEN_POS]+2);
-    Serial2.flush();
+    Serial2.flush(false);  // wait until all tx bytes are sent, clear rx buffer
 
-    memset(bms_resp, 0, sizeof(bms_resp));  // will result in failed validity check if no response
+    memset(bms_resp, 0x00, sizeof(bms_resp));  // will result in failed validity check if no response
+    bms_resp[3] = RS485_LEN_POS;  // make sure "response incomplete" check doesn't terminate too early
+    int len = 0, checksum = 0;  // response length and checksum
 
     // Wait for BMS response
     ts_BMS = millis();
     while ((millis()-ts_BMS < BMS_TIMEOUT) && !Serial2.available());
     
     // fill response buffer with BMS response
-    int len = 0, sum = 0;
     while (Serial2.available()) {
         bms_resp[len] = Serial2.read();
-        sum += bms_resp[len];
+        checksum += bms_resp[len];
         len++;
         if (!Serial2.available()) {
             if (len < (bms_resp[2]<<8|bms_resp[3])+2) {
-                bms_resp_wait_counter++;  // response not complete yet: wait for next response byte to arrive
+                bms_retry_counter++;  // response not complete yet: wait for next response byte to arrive
                 ts_BMS = millis();
                 while ((millis()-ts_BMS < BMS_TIMEOUT) && !Serial2.available());
             }
@@ -281,18 +280,18 @@ bool BMSCommand(const byte command[]) {
     ts_BMS = millis();  // set "end of BMS response" timestamp
 
     // check validity of BMS response
-    if ((bms_resp[0] == RS485_1) && (bms_resp[1] == RS485_2)) {  // start of response frame
+    if ((bms_resp[0] == RS485_ID1) && (bms_resp[1] == RS485_ID2)) {  // start of response frame
          if ((bms_resp[2]<<8|bms_resp[3])+2 == len) {  // response length
-             if ((bms_resp[len-2]<<8|bms_resp[len-1]) == sum-bms_resp[len-2]-bms_resp[len-1]) {  // response checksum
-                if (bms_resp[RS485_COMMAND_POS] == WRITE_DATA) return true;  // no need to inspect the response to a write command
+             if ((bms_resp[len-2]<<8|bms_resp[len-1]) == checksum-bms_resp[len-2]-bms_resp[len-1]) {  // response checksum
+                if (bms_resp[RS485_COMMAND_POS] == RS485_WRITE_DATA) return true;  // no need to inspect the response to a write command
 
                 // process BMS response
-                if (bms_resp[RS485_COMMAND_POS] == READ_DATA) {
-                    if (bms_resp[DATA_ID_POS] == VCELLS_ID) {
+                if (bms_resp[RS485_COMMAND_POS] == RS485_READ_DATA) {
+                    if (bms_resp[RS485_DATA_ID_POS] == RS485_VCELLS_ID) {
                         // read voltages of battery cells, determine min and max voltages
                         vbat = vcell_max = 0; vcell_min = 4000;
-                        for (int vcells_pos = DATA_ID_POS+3; vcells_pos <= DATA_ID_POS+bms_resp[DATA_ID_POS+1]; vcells_pos+=3) {
-                            int vcell = bms_resp[vcells_pos]<<8|bms_resp[vcells_pos+1];
+                        for (int i=RS485_DATA_ID_POS+3; i<=RS485_DATA_ID_POS+bms_resp[RS485_DATA_ID_POS+1]; i+=3) {
+                            int vcell = bms_resp[i]<<8|bms_resp[i+1];
                             if (vcell < vcell_min) vcell_min = vcell;
                             if (vcell > vcell_max) vcell_max = vcell;
                             vbat += vcell;
@@ -316,10 +315,10 @@ bool BMSCommand(const byte command[]) {
                         return true;
                     }
                     
-                    if (bms_resp[DATA_ID_POS] == CURRENT_ID) {
+                    if (bms_resp[RS485_DATA_ID_POS] == RS485_CURRENT_ID) {
                         // Read charging/discharging DC current, calculate DC power
-                        cbat = (bms_resp[DATA_ID_POS+1]&0x7F)<<8|bms_resp[DATA_ID_POS+2];
-                        if (!(bms_resp[DATA_ID_POS+1]&0x80)) cbat = -cbat; // charging current is positive, discharging current is negative
+                        cbat = (bms_resp[RS485_DATA_ID_POS+1]&0x7F)<<8|bms_resp[RS485_DATA_ID_POS+2];
+                        if (!(bms_resp[RS485_DATA_ID_POS+1]&0x80)) cbat = -cbat; // charging current is positive, discharging current is negative
                         pbat = (vbat/1000.0)*(cbat/100.0);
                         // Update batt charge level
                         int vbat_idle = vbat-round(cbat/16.0);  // voltage at cbat=0
@@ -329,38 +328,39 @@ bool BMSCommand(const byte command[]) {
                     }
                 }
 
-                if (bms_resp[RS485_COMMAND_POS] == READ_ALL) {
+                if (bms_resp[RS485_COMMAND_POS] == RS485_READ_ALL) {
                     // check for BMS warnings
-                    if (bms_resp[WARNINGS_POS] || bms_resp[WARNINGS_POS+1]) {
-                        sprintf(error_str, "BMS has warnings 0x%02X 0x%02X", bms_resp[WARNINGS_POS], bms_resp[WARNINGS_POS+1]);
+                    if (bms_resp[RS485_WARNINGS_POS]|bms_resp[RS485_WARNINGS_POS+1]) {
+                        sprintf(error_str, "BMS has warnings 0x%02X 0x%02X", bms_resp[RS485_WARNINGS_POS], bms_resp[RS485_WARNINGS_POS+1]);
                         return false;
                     }
                     // check OVP and UVP setting
-                    if ((bms_resp[OVP_POS]<<8|bms_resp[OVP_POS+1]) - ESS_OVP < ESS_BMS_OVP_DIFF) {
-                        sprintf(error_str, "ESS_OVP less than %d mV below BMS_OVP (%d mV)", ESS_BMS_OVP_DIFF, bms_resp[OVP_POS]<<8|bms_resp[OVP_POS+1]);
+                    int bms_ovp = bms_resp[RS485_OVP_POS]<<8|bms_resp[RS485_OVP_POS+1];
+                    if (bms_ovp-ESS_OVP < ESS_BMS_OVP_DIFF) {
+                        sprintf(error_str, "ESS_OVP less than %d mV below BMS_OVP (%d mV)", ESS_BMS_OVP_DIFF, bms_ovp);
                         return false;
                     }
-                    bms_uvp = bms_resp[UVP_POS]<<8|bms_resp[UVP_POS+1];
-                    if (ESS_UVP - bms_uvp < ESS_BMS_UVP_DIFF) {
+                    bms_uvp = bms_resp[RS485_UVP_POS]<<8|bms_resp[RS485_UVP_POS+1];
+                    if (ESS_UVP-bms_uvp < ESS_BMS_UVP_DIFF) {
                         sprintf(error_str, "ESS_UVP less than %d mV above BMS_UVP (%d mV)", ESS_BMS_UVP_DIFF, bms_uvp);
                         return false;
                     }
                     // read balancer settings
-                    bms_balancer_start = bms_resp[BAL_ST_POS]<<8|bms_resp[BAL_ST_POS+1];
+                    bms_balancer_start = bms_resp[RS485_BAL_ST_POS]<<8|bms_resp[RS485_BAL_ST_POS+1];
                     if (ESS_UVP < bms_balancer_start) {
                         sprintf(error_str, "BMS Balancer Start Voltage higher than ESS_UVP (%d mV)", ESS_UVP);
                         return false;
                     }
-                    bms_balancer_trigger = bms_resp[BAL_TR_POS]<<8|bms_resp[BAL_TR_POS+1];
-                    bms_bal_on = bms_resp[BAL_SW_POS];
-                    hm_awake = bms_resp[DISCH_SW_POS];
+                    bms_balancer_trigger = bms_resp[RS485_BAL_TR_POS]<<8|bms_resp[RS485_BAL_TR_POS+1];
+                    bms_bal_on = bms_resp[RS485_BAL_SW_POS];
+                    hm_awake = bms_resp[RS485_DISCH_SW_POS];
                     if (!hm_awake) hm_limit = 0;  // if BMS discharging switch turned off, prevent any attempts to turn on Hoymiles
                     return true;
                 }
             }
         } 
     }
-    sprintf(error_str, "BMS RS485 command 0x%02X 0x%02X failed", command[RS485_COMMAND_POS], command[DATA_ID_POS]);
+    sprintf(error_str, "BMS RS485 command 0x%02X 0x%02X failed", command[RS485_COMMAND_POS], command[RS485_DATA_ID_POS]);
     // for (int i=0; i<len; i++) telnet.printf("0x%02X ", bms_resp[i]);
     // telnet.println();
     // while (!telnet.available());
@@ -373,7 +373,7 @@ bool HoymilesCommand(int hm_command) {
     while (millis()-ts_HM < RF24_WAIT);  // minimum delay between two consecutive Hoymiles RF24 commands
 
     if ((hm_command == HM_POWER_OFF) || (hm_command == HM_POWER_ON)) {  // switch command
-        if (radio.writeFast(HM_SWITCH[hm_command], sizeof(HM_SWITCH[hm_command])))
+        if (radio.writeFast(HM_SWITCH[hm_command], sizeof(HM_SWITCH[0])))
             if (radio.txStandBy(RF24_TIMEOUT)) {
                 ts_HM = millis();
                 delay(400);  // allow a little more time for power change to stabilize
@@ -541,7 +541,7 @@ void FinishCycle() {
     en_to_batt += hrs_cycle * (pbat > 0) * pbat;
 
     // No ESS power output and no PV production: check for new power_grid_min (i.e. min household consumption)
-    if (!power_ess && !power_pv && (power_grid < power_grid_min)) {
+    if (!power_ess && !hm_limit_old && !power_pv && (power_grid < power_grid_min)) {
         power_grid_min = power_grid;
         minpower_time = unixtime;
     }
@@ -555,8 +555,8 @@ void FinishCycle() {
     if (mw_on && (millis()-ts_MW >= MW_KEEPALIVE*1000)) ShellyCommand(PM2_ADDR, MW_RELAY, "on&timer=60");
 
     // Turn off/on BMS balancer (disable/enable bottom balancing), depending on lowest cell voltage 
-    if ((vcell_min >= BMS_BAL_OFF) && bms_bal_on) bms_bal_on = !BMSCommand(BAL_OFF);
-    if ((vcell_min <= BMS_BAL_ON) && !power_old && !bms_bal_on) bms_bal_on = BMSCommand(BAL_ON);
+    if ((vcell_min >= BMS_BAL_OFF) && bms_bal_on) bms_bal_on = !BMSCommand(BLE_BAL_OFF);
+    if ((vcell_min <= BMS_BAL_ON) && !power_old && !bms_bal_on) bms_bal_on = BMSCommand(BLE_BAL_ON);
 
     // Set Shelly 1PM eco mode (turn off just before sunrise, turn on at sunset)
     if ((min_of_day >= sunrise-1) && (min_of_day < sunset) && pm1_eco_mode) pm1_eco_mode = !ShellyCommand(PM1_ADDR, ECO_MODE, "false}}");
@@ -599,9 +599,6 @@ void FinishCycle() {
     // wait until power change has stabilized
     cycle_delay = PROCESSING_DELAY*(1+(pm1_eco_mode && pm2_eco_mode))-(millis()-ts_power);
     if (cycle_delay > 0) delay(cycle_delay);
-
-    // assumption for next cycle: ESS power reading equals power setting
-    power_ess = power_new;
 }
 
 void CheckErrors() {
@@ -777,7 +774,7 @@ void UserIO() {
             // DC (batt) status
             sprintf(tn_str + strlen(tn_str), "Cell voltages: %d - %d mV\r\nMax cell diff: %d mV%s", vcell_min, vcell_max, vcell_max-vcell_min, (bms_bal_active) ? BALANCER_SYMBOL : "");
             sprintf(tn_str + strlen(tn_str), "\r\nBatt voltage : %.3f V\r\nBatt current : %.2f A\r\nBatt power   : %.1f W\r\n", vbat/1000.0, cbat/100.0, pbat);
-            sprintf(tn_str + strlen(tn_str), "RS485 retries: %d\r\n\n", bms_resp_wait_counter);
+            sprintf(tn_str + strlen(tn_str), "RS485 retries: %d\r\n\n", bms_retry_counter);
             // AC status
             sprintf(tn_str + strlen(tn_str), "AC power setting: %d W\r\nAC power reading: %.1f W\r\n", power_old, power_ess);
             // AC/DC (or DC/AC) power conversion efficiency of Meanwell or Hoymiles
@@ -921,36 +918,43 @@ void UserIO() {
 
 bool UpdateDDNS() {
 
-    if (WiFi.status() != WL_CONNECTED) {
-        strcpy(error_str, "WIFI");
+    if (WiFi.status() != WL_CONNECTED) {  // no need to carry on if WiFi is disconnected
+        strcpy(error_str, "WIFI disconnected");
         return false;
     }
 
-    // read public IP from server (with shorter timeout)
-    http.setTimeout(HTTP_DDNS_TIMEOUT);
-    http.begin(PUBLIC_IP_URL);
-    if (http.GET() == HTTP_CODE_OK) {
-        pubip_addr.fromString(http.getString());
-        http.end();
-        ts_pubip = millis();
-        pubip_time = unixtime;
-        if (ddns_addr == pubip_addr) return true;  // public IP unchanged
+    // connect to server and request public IP address
+    if (http.connect(PUBLIC_IP_SERVER, HTTP_PORT)) {
+        sprintf(http_command, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", PUBLIC_IP_SERVER_URL, PUBLIC_IP_SERVER);
+        http.write(http_command, strlen(http_command));
+        if (http.find(HTTP_OK)) {
+            // read public IP address
+            http.find("\r\n\r\n");  // start of HTML body
+            http.setTimeout(10);  // waiting time max 10 ms if IP address is shorter than 15 bytes
+            http_resp[http.readBytes(http_resp, 15)] = '\0';  // read public IP address, append \0
+            http.stop();
+            http.setTimeout(HTTP_TIMEOUT);  // http timeout back to normal
+            pubip_addr.fromString(http_resp);
+            ts_pubip = millis();
+            pubip_time = unixtime;
+            if (ddns_addr == pubip_addr) return true;  // public IP unchanged
 
-        // update DDNS server entry
-        strcpy(http_command, DDNS_SERVER_URL);
-        strcat(http_command, pubip_addr.toString().c_str());
-        http.begin(http_command);
-        if (http.GET() == HTTP_CODE_OK) {
-            http.end();
-            ddns_addr = pubip_addr;
-            ddns_time = unixtime;
-            return true;
+            // connect to DDNS server and update public IP address
+            if (http.connect(DDNS_SERVER, HTTP_PORT)) {
+                sprintf(http_command, "GET %s%s HTTP/1.1\r\nHost: %s\r\nAuthorization: Basic %s\r\n\r\n", DDNS_SERVER_URL, http_resp, DDNS_SERVER, DDNS_SERVER_CREDS);
+                http.write(http_command, strlen(http_command));
+                if (http.find(HTTP_OK)) {
+                    if (http.find(http_resp)) {  // DDNS server confirmed updated (or unchanged) public IP address
+                        http.stop();
+                        ddns_addr = pubip_addr;
+                        ddns_time = unixtime;
+                        return true;
+                    }
+                }
+            }
+            strcpy(error_str, "DDNS update failed");
         }
-        http.end();
-        strcpy(error_str, "DDNS update failed");
-        return false;
     }
-    http.end();
-    // Read IP command frequently fails, no big deal, so don't report
+    http.stop();
     return false;
 }
