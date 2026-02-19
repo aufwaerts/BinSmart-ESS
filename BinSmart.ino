@@ -1,4 +1,4 @@
-const char SW_VERSION[] = "v2.84";
+const char SW_VERSION[] = "v2.85";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <WebServer.h>  // standard Arduino/ESP32
@@ -26,6 +26,7 @@ void setup() {
     WiFi.config(ESP32_ADDR, ROUTER_ADDR, SUBNET, DNS_SERVER1, DNS_SERVER2);
     WiFi.setTxPower(WIFI_POWER_5dBm);
     WiFi.setAutoReconnect(true);
+    WiFi.setSleep(true);
     WiFi.begin(WIFI_SSID, WIFI_PWD);
     while (WiFi.status() != WL_CONNECTED);   // if WiFi unavailable or wrong SSID/PWD, system stops here and LED remains on
     digitalWrite(LED_PIN, LOW);
@@ -218,13 +219,19 @@ bool ShellyCommand(IPAddress ip_addr, const char command[], const char params[])
     }
     // Shelly command failed
     http.stop();
-    if (ip_addr == EM_ADDR) sprintf(error_str, "3EM cmd %s failed", http_command);
-    if (ip_addr == PM1_ADDR) sprintf(error_str, "1PM cmd %s failed", http_command);
-    if (ip_addr == PM2_ADDR) sprintf(error_str, "2PM cmd %s failed", http_command);
+    if (ip_addr == EM_ADDR) sprintf(error_str, "3EM cmd %sfailed", http_command);
+    if (ip_addr == PM1_ADDR) sprintf(error_str, "1PM cmd %sfailed", http_command);
+    if (ip_addr == PM2_ADDR) sprintf(error_str, "2PM cmd %sfailed", http_command);
     return false;
 }
 
 bool BMSCommand(const byte command[]) {
+
+    if (command[RS485_DATA_ID_POS] == RS485_CURRENT_ID)
+        if (!power_new) {
+            cbat = pbat = 0;  // batt current and power is zero if ESS is turned off
+            return true;
+        }
 
     while (millis()-ts_BMS < BMS_WAIT);  // minimum delay after previous BMS response
 
@@ -256,26 +263,22 @@ bool BMSCommand(const byte command[]) {
     Serial2.write(command, command[RS485_LEN_POS]+2);
     Serial2.flush(false);  // wait until all tx bytes are sent, clear rx buffer
 
+    if (command[RS485_COMMAND_POS] == RS485_ACTIVATE) return true;  // no response expected after activation command
+
     memset(bms_resp, 0x00, sizeof(bms_resp));  // will result in failed validity check if no response
     bms_resp[3] = RS485_LEN_POS;  // make sure "response incomplete" check doesn't terminate too early
     int len = 0, checksum = 0;  // response length and checksum
 
     // Wait for BMS response
     ts_BMS = millis();
-    while ((millis()-ts_BMS < BMS_TIMEOUT) && !Serial2.available());
+    while ((millis()-ts_BMS < BMS_TIMEOUT1) && !Serial2.available());
     
     // fill response buffer with BMS response
     while (Serial2.available()) {
         bms_resp[len] = Serial2.read();
         checksum += bms_resp[len];
         len++;
-        if (!Serial2.available()) {
-            if (len < (bms_resp[2]<<8|bms_resp[3])+2) {
-                bms_retry_counter++;  // response not complete yet: wait for next response byte to arrive
-                ts_BMS = millis();
-                while ((millis()-ts_BMS < BMS_TIMEOUT) && !Serial2.available());
-            }
-        }
+        if (!Serial2.available() && (len < (bms_resp[2]<<8|bms_resp[3])+2)) delay(BMS_TIMEOUT2);  // response incomplete: wait for next response bytes to arrive
     }
     ts_BMS = millis();  // set "end of BMS response" timestamp
 
@@ -283,7 +286,7 @@ bool BMSCommand(const byte command[]) {
     if ((bms_resp[0] == RS485_ID1) && (bms_resp[1] == RS485_ID2)) {  // start of response frame
          if ((bms_resp[2]<<8|bms_resp[3])+2 == len) {  // response length
              if ((bms_resp[len-2]<<8|bms_resp[len-1]) == checksum-bms_resp[len-2]-bms_resp[len-1]) {  // response checksum
-                if (bms_resp[RS485_COMMAND_POS] == RS485_WRITE_DATA) return true;  // no need to inspect the response to a write command
+                if (bms_resp[RS485_COMMAND_POS] == RS485_WRITE_DATA) return true;  // no need to parse response to write or activate command
 
                 // process BMS response
                 if (bms_resp[RS485_COMMAND_POS] == RS485_READ_DATA) {
@@ -320,10 +323,6 @@ bool BMSCommand(const byte command[]) {
                         cbat = (bms_resp[RS485_DATA_ID_POS+1]&0x7F)<<8|bms_resp[RS485_DATA_ID_POS+2];
                         if (!(bms_resp[RS485_DATA_ID_POS+1]&0x80)) cbat = -cbat; // charging current is positive, discharging current is negative
                         pbat = (vbat/1000.0)*(cbat/100.0);
-                        // Update batt charge level
-                        int vbat_idle = vbat-round(cbat/16.0);  // voltage at cbat=0
-                        if (vbat_idle > BAT_EMPTY) bat_level = min(((vbat_idle-BAT_EMPTY)*(BAT_LEVELS-2))/(BAT_FULL-BAT_EMPTY) + 1, BAT_LEVELS-1);
-                        else bat_level = 0;
                         return true;               
                     }
                 }
@@ -556,7 +555,7 @@ void FinishCycle() {
 
     // Turn off/on BMS balancer (disable/enable bottom balancing), depending on lowest cell voltage 
     if ((vcell_min >= BMS_BAL_OFF) && bms_bal_on) bms_bal_on = !BMSCommand(BLE_BAL_OFF);
-    if ((vcell_min <= BMS_BAL_ON) && !power_old && !bms_bal_on) bms_bal_on = BMSCommand(BLE_BAL_ON);
+    if ((vcell_min <= BMS_BAL_ON) && !bms_bal_on) bms_bal_on = BMSCommand(BLE_BAL_ON);
 
     // Set Shelly 1PM eco mode (turn off just before sunrise, turn on at sunset)
     if ((min_of_day >= sunrise-1) && (min_of_day < sunset) && pm1_eco_mode) pm1_eco_mode = !ShellyCommand(PM1_ADDR, ECO_MODE, "false}}");
@@ -568,7 +567,7 @@ void FinishCycle() {
 
     // Make Hoymiles fall asleep or wake it up, depending on hm_limit and vcell_min
     if ((vcell_min <= ESS_UVP) && !hm_limit && hm_awake) hm_awake = !ShellyCommand(PM2_ADDR, HM_RELAY, "off");
-    if ((vcell_min >= ESS_UVPR-10) && !hm_awake) hm_awake = ShellyCommand(PM2_ADDR, HM_RELAY, "on");  // wake up HM before reaching ESS_UVPR, to allow time for AC sync procedure
+    if ((vcell_min >= ESS_UVPR-10) && !hm_awake) hm_awake = ShellyCommand(PM2_ADDR, HM_RELAY, "on");  // wake up HM before reaching ESS_UVPR, to have time for AC sync procedure
 
     // Clear Shelly 3EM energy data at 23:00 UTC (prevents HTTP timeouts at 00:00 UTC due to internal data reorgs)
     if ((min_of_day/60 == (23+utc_offset)%24) && !em_data_cleared) em_data_cleared = ShellyCommand(EM_ADDR, EM_RESET, "");
@@ -701,7 +700,8 @@ void UserIO() {
         strcat(tn_str, MW_FLOW_SYMBOL[(power_old == mw_limit_old) + ((power_old == mw_limit_old) && (mw_limit_old >= MW_MAX_POWER))][power_grid_to_ess > power_pv_to_ess]);
     if (power_old < 0)
         strcat(tn_str, HM_FLOW_SYMBOL[(power_old == hm_limit_old) + (power_old == HM_MAX_POWER)]);
-    strcat(tn_str, BAT_LEVEL_SYMBOL[bat_level]);
+    int vbat_idle = vbat-round(cbat/16.0);  // voltage at cbat=0 (needed for accurate battery charge level)
+    strcat(tn_str, BAT_LEVEL_SYMBOL[(vbat_idle > BAT_EMPTY) ? min(((vbat_idle-BAT_EMPTY)*(BAT_LEVELS-2))/(BAT_FULL-BAT_EMPTY) + 1, BAT_LEVELS-1) : 0]);
     sprintf(tn_str + strlen(tn_str), "%d", int(round(power_ess)));
     if (power_new != power_old) strcat(tn_str, DIFF_SYMBOL[(power_new < power_old) + !filter_cycles]);
     else if (filter_cycles && (filter_cycles < POWER_FILTER_CYCLES)) strcat(tn_str, POWERFILTER_SYMBOL);
@@ -773,8 +773,7 @@ void UserIO() {
         case 'b':
             // DC (batt) status
             sprintf(tn_str + strlen(tn_str), "Cell voltages: %d - %d mV\r\nMax cell diff: %d mV%s", vcell_min, vcell_max, vcell_max-vcell_min, (bms_bal_active) ? BALANCER_SYMBOL : "");
-            sprintf(tn_str + strlen(tn_str), "\r\nBatt voltage : %.3f V\r\nBatt current : %.2f A\r\nBatt power   : %.1f W\r\n", vbat/1000.0, cbat/100.0, pbat);
-            sprintf(tn_str + strlen(tn_str), "RS485 retries: %d\r\n\n", bms_retry_counter);
+            sprintf(tn_str + strlen(tn_str), "\r\nBatt voltage : %.3f V\r\nBatt current : %.2f A\r\nBatt power   : %.1f W\r\n\n", vbat/1000.0, cbat/100.0, pbat);
             // AC status
             sprintf(tn_str + strlen(tn_str), "AC power setting: %d W\r\nAC power reading: %.1f W\r\n", power_old, power_ess);
             // AC/DC (or DC/AC) power conversion efficiency of Meanwell or Hoymiles

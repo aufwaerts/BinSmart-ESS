@@ -47,13 +47,14 @@ const int RF24_WAIT = 50;  // min Hoymiles RF24 waiting time (in msecs) after pr
 const int RF24_TIMEOUT = 1000;  // max waiting time (in msecs) for RF24 ACKs after writeFast()
 const int RF24_KEEPALIVE = 30;  // number of secs after which Hoymiles RF24 interface receives "keep alive" message
 const int BMS_WAIT = 50;  // min BMS waiting time (in msecs) after previous response
-const int BMS_TIMEOUT = 20;  // max waiting time (in msecs) for BMS response
+const int BMS_TIMEOUT1 = 20;  // max waiting time (in msecs) for BMS response
+const int BMS_TIMEOUT2 = 3;  // max additional waiting time (in msecs) if response is incomplete
 const int BLE_TIMEOUT = 2;  // max waiting time (in secs) for JKBMS BLE server connection
 const int USERIO_TIMEOUT = 4000;  // max waiting time (in msecs) for terminal input/output
 
 // PWM params for Meanwell power control
 const int PWM_CHANNEL = 0;
-const int PWM_FREQ = 300;
+const int PWM_FREQ = 250;
 const int PWM_RESOLUTION = 10;
 const int DUTY_CYCLE_MIN = 4;
 const int DUTY_CYCLE_MAX = pow(2,PWM_RESOLUTION)-1;
@@ -88,8 +89,8 @@ const int ESS_UVP = 3150;  // one cell below this voltage: ramp down discharging
 const int ESS_UVPR = 3250;  // all cells above this voltage: re-enable discharging
 const int ESS_BMS_OVP_DIFF = 100;  // min difference between ESS and BMS OVP settings (BMS_OVP - ESS_OVP >= ESS_BMS_OVP_DIFF)
 const int ESS_BMS_UVP_DIFF = 100;  // min difference between ESS and BMS UVP settings (ESS_UVP - BMS_UVP >= ESS_BMS_UVP_DIFF)
-const int BMS_BAL_ON = 3145;  // one cell at or below this voltage: activate cell bottom balancing
-const int BMS_BAL_OFF = 3160;  // all cells at or above this voltage: deactivate cell balancing
+const int BMS_BAL_ON = 3150;  // one cell at or below this voltage: activate bottom balancing
+const int BMS_BAL_OFF = 3165;  // all cells at or above this voltage: deactivate bottom balancing
 const int BAT_FULL = 27600;  // voltage at which battery is considered full
 const int BAT_EMPTY = 8*ESS_UVP;  // voltage at which battery is considered empty
 const int BAT_LEVELS = 9;  // number of different battery levels that can be visualized
@@ -97,6 +98,7 @@ const int BAT_LEVELS = 9;  // number of different battery levels that can be vis
 // BMS definitions and commands
 const byte RS485_ID1 = 0x4E;
 const byte RS485_ID2 = 0x57;
+const byte RS485_ACTIVATE = 0x01;
 const byte RS485_WRITE_DATA = 0x02;
 const byte RS485_READ_DATA = 0x03;
 const byte RS485_READ_ALL = 0x06;
@@ -113,6 +115,7 @@ const int RS485_BAL_ST_POS = 113;
 const int RS485_BAL_TR_POS = 116;
 const int RS485_BAL_SW_POS = 119;
 const int RS485_DISCH_SW_POS = 163;
+const byte RS485_WAKEUP[] = {RS485_ID1, RS485_ID2, 0x00, 0x13, 0x00, 0x00, 0x00, 0x00, RS485_ACTIVATE, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0x24};
 const byte RS485_READ_SETTINGS[] = {RS485_ID1, RS485_ID2, 0x00, 0x13, 0x00, 0x00, 0x00, 0x00, RS485_READ_ALL, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0x29};
 const byte RS485_READ_VOLTAGES[] = {RS485_ID1, RS485_ID2, 0x00, 0x13, 0x00, 0x00, 0x00, 0x00, RS485_READ_DATA, 0x03, 0x00, RS485_VCELLS_ID, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0x9F};
 const byte RS485_READ_CURRENT[] = {RS485_ID1, RS485_ID2, 0x00, 0x13, 0x00, 0x00, 0x00, 0x00, RS485_READ_DATA, 0x03, 0x00, RS485_CURRENT_ID, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x01, 0xAA};
