@@ -7,8 +7,10 @@ const int GOOD_WIFI_RSSI = -70;  // RSSI above this value is considered "good en
 const int HTTP_PORT = 80;  // standard HTTP port
 const char HTTP_OK[] = "200 OK";  // http success return code
 const char DDNS_SERVER[] = "dynupdate.no-ip.com";  // public DDNS service
+const char DDNS_URL[] = "/nic/update?hostname=";
+const char DDNS_IP[] = "&myip=";
 const char PUBLIC_IP_SERVER[] = "api.ipify.org";  // public service for obtaining public IP address
-const char PUBLIC_IP_SERVER_URL[] = "/";
+const char PUBLIC_IP_URL[] = "/";
 // const char PUBLIC_IP_SERVER[] = "ifconfig.me";  // alternative public IP service
 // const char PUBLIC_IP_SERVER_URL[] = "/ip";
 
@@ -18,7 +20,6 @@ const char EM_RESET[] = "/reset_data";
 const char PM_CONFIG[] = "/rpc/Shelly.GetConfig";
 const char PM_STATUS[] = "/rpc/Switch.GetStatus?id=";
 const char MW_RELAY[] = "/relay/0?turn=";
-const char HM_RELAY[] = "/relay/1?turn=";
 const char ECO_MODE[] = "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":";
 
 // ESP32 pin definitions
@@ -40,7 +41,7 @@ const float PM2_MW_POWER_CORR = 1.006;  // Power correction factor for MW power 
 
 // Time/timer settings
 const int PROCESSING_DELAY = 2000;  // minimum delay (in msecs) for power changes to take effect
-const int HTTP_TIMEOUT = 2000;  // max waiting time during http requests
+const int HTTP_TIMEOUT = 3000;  // max waiting time (in msecs) during http requests
 const int DDNS_UPDATE_INTERVAL = 60;  // DDNS IP address check interval (in secs)
 const int MW_KEEPALIVE = 40;  // number of secs after which Shelly 2PM receives "keep alive" message (must be less than corresponding Shelly timer)
 const int RF24_WAIT = 50;  // min Hoymiles RF24 waiting time (in msecs) after previous response
@@ -51,6 +52,7 @@ const int BMS_TIMEOUT1 = 20;  // max waiting time (in msecs) for BMS response
 const int BMS_TIMEOUT2 = 3;  // max additional waiting time (in msecs) if response is incomplete
 const int BLE_TIMEOUT = 2;  // max waiting time (in secs) for JKBMS BLE server connection
 const int USERIO_TIMEOUT = 4000;  // max waiting time (in msecs) for terminal input/output
+const int BATT_RECHARGE_TIMEOUT = 96;  // number of hours in BMS UVP mode without charging, before auto recharge is activated
 
 // PWM params for Meanwell power control
 const int PWM_CHANNEL = 0;
@@ -82,18 +84,11 @@ const int HM_MAX_POWER = -180;  // Limit of linear power output range
 const int HM_LOW_POWER_THRESHOLD = -61;  // Hoymiles power output above this threshold is unstable
 const int HM_LOW_POWER_TOLERANCE = 15;  // Max tolerated positive deviation from target power when Hoymiles is below HM_LOW_POWER_THRESHOLD
 
-// BMS/ESS voltage protection settings in millivolts
-const int ESS_OVP = 3500;  // one cell above this voltage: ramp down charging power
-const int ESS_OVPR = 3450;  // all cells below this voltage: re-enable charging (should be the same as BMS Balancer Start Voltage)
-const int ESS_UVP = 3150;  // one cell below this voltage: ramp down discharging power
-const int ESS_UVPR = 3250;  // all cells above this voltage: re-enable discharging
-const int ESS_BMS_OVP_DIFF = 100;  // min difference between ESS and BMS OVP settings (BMS_OVP - ESS_OVP >= ESS_BMS_OVP_DIFF)
-const int ESS_BMS_UVP_DIFF = 100;  // min difference between ESS and BMS UVP settings (ESS_UVP - BMS_UVP >= ESS_BMS_UVP_DIFF)
+// BMS/ESS voltage settings in millivolts
+const int ESS_OVP_OFFSET = 10;  // vcell_ovp/vcell_ovpr set ESS_OVP_OFFSET below BMS OVP/OVPR
+const int ESS_UVP_OFFSET = 10;  // vcell_uvp/vcell_uvpr set ESS_UVP_OFFSET above BMS UVP/UVPR
 const int BMS_BAL_ON = 3150;  // one cell at or below this voltage: activate bottom balancing
-const int BMS_BAL_OFF = 3165;  // all cells at or above this voltage: deactivate bottom balancing
-const int BAT_FULL = 27600;  // voltage at which battery is considered full
-const int BAT_EMPTY = 8*ESS_UVP;  // voltage at which battery is considered empty
-const int BAT_LEVELS = 9;  // number of different battery levels that can be visualized
+const int BMS_BAL_OFF = 3170;  // all cells at or above this voltage: deactivate bottom balancing
 
 // BMS definitions and commands
 const byte RS485_ID1 = 0x4E;
@@ -110,7 +105,9 @@ const int RS485_COMMAND_POS = 8;
 const int RS485_DATA_ID_POS = 11;
 const int RS485_WARNINGS_POS = 68;
 const int RS485_OVP_POS = 80;
+const int RS485_OVPR_POS = 83;
 const int RS485_UVP_POS = 89;
+const int RS485_UVPR_POS = 92;
 const int RS485_BAL_ST_POS = 113;
 const int RS485_BAL_TR_POS = 116;
 const int RS485_BAL_SW_POS = 119;
@@ -150,6 +147,7 @@ const char HM_FLOW_SYMBOL[3][30] = {"─╴\033[32m◀\033[0m╶", "─╏\033[3
 const char GRID_FLOW_SYMBOL[3][2][30] = {{"────", "────"}, {"╴\033[31m▶\033[0m╶─", "╴\033[31m▶\033[0m╶─"}, {"╴\033[33m◀\033[0m╶─", "╴\033[32m◀\033[0m╶─"}};
 const char CONS_FLOW_SYMBOL[3][30] = {"─╴\033[31m▶\033[0m╶", "─╴\033[32m▶\033[0m╶", "─╴\033[33m▶\033[0m╶"};
 const char DIFF_SYMBOL[3][10] = {" ▲"," ▼"," ▼🪜"};
+const int  BAT_LEVELS = 9;  // number of different battery levels that can be visualized
 const char BAT_LEVEL_SYMBOL[BAT_LEVELS][30] = {"─🔋\033[33m⡀\033[0m ","─🔋\033[32m⡀\033[0m ","─🔋\033[32m⣀\033[0m ","─🔋\033[32m⣄\033[0m ","─🔋\033[32m⣤\033[0m ","─🔋\033[32m⣦\033[0m ","─🔋\033[32m⣶\033[0m ","─🔋\033[32m⣷\033[0m ","─🔋\033[32m⣿\033[0m "};
 const char BAT_OVP_SYMBOL[3][32] = {"", "                     ▁ ▁", "                     ▁▁▁"};
 const char BAT_UVP_SYMBOL[3][20] = {"", "      ▔ ▔", "      ▔▔▔"};

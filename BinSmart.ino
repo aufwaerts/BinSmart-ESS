@@ -1,4 +1,4 @@
-const char SW_VERSION[] = "v2.85";
+const char SW_VERSION[] = "v2.87";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <WebServer.h>  // standard Arduino/ESP32
@@ -55,6 +55,8 @@ void setup() {
     
     // Init RS485 communication with BMS, read OVP/UVP/balancer/switch settings
     Serial2.begin(115200, SERIAL_8N1, UART_RX_PIN, UART_TX_PIN);
+    BMSCommand(RS485_WAKEUP);
+    delay(500);
     BMSCommand(RS485_READ_SETTINGS);
     CheckErrors();
     telnet.println("RS485 communication with JKBMS OK");
@@ -89,56 +91,43 @@ void setup() {
     crc8.setEndXOR(0);
     telnet.println("RF24 radio initialized");
 
-    // Turn off Hoymiles power (if Hoymiles is awake)
-    if (hm_awake) {
-        HoymilesCommand(HM_POWER_OFF);
-        CheckErrors();
-        telnet.println("RF24 communication with Hoymiles OK");
-    }
-    else telnet.println("Hoymiles is asleep");
+    // Turn off Hoymiles power (if Hoymiles isn't asleep)
+    if (hm_asleep) telnet.println("Hoymiles is asleep");
+    else if (HoymilesCommand(HM_POWER_OFF)) telnet.println("RF24 communication with Hoymiles OK");
+    CheckErrors();
 
     // set max waiting time for all http requests
     http.setTimeout(HTTP_TIMEOUT);
 
     // Shelly 1PM: Read eco mode setting and PV power
-    if (ShellyCommand(PM1_ADDR, PM_CONFIG, "")) ShellyCommand(PM1_ADDR, PM_STATUS, "0");
+    if (ShellyCommand(PM1_ADDR, PM_CONFIG, "") && ShellyCommand(PM1_ADDR, PM_STATUS, "0")) telnet.println("Shelly 1PM found");
     CheckErrors();
-    telnet.println("Shelly 1PM found");
 
     // Shelly 2PM: Read eco mode setting, turn off Meanwell relay, make sure Hoymiles relay state matches BMS discharging switch
-    if (ShellyCommand(PM2_ADDR, PM_CONFIG, ""))
-        if (ShellyCommand(PM2_ADDR, MW_RELAY, "off")) {
-            if (hm_awake) ShellyCommand(PM2_ADDR, HM_RELAY, "on");
-            else ShellyCommand(PM2_ADDR, HM_RELAY, "off");
-        }
+    if (ShellyCommand(PM2_ADDR, PM_CONFIG, "") && ShellyCommand(PM2_ADDR, MW_RELAY, "off")) telnet.println("Shelly 2PM found");
     CheckErrors();
-    telnet.println("Shelly 2PM found");
     
-    // Shelly 3EM: Read grid power and current time
-    ShellyCommand(EM_ADDR, EM_STATUS, "");
+    // Shelly 3EM: Read local time and grid power, init timestamps
+    if (ShellyCommand(EM_ADDR, EM_STATUS, "")) telnet.println("Shelly 3EM found");
     CheckErrors();
-    telnet.println("Shelly 3EM found");
 
-    // Update DDNS address
-    if (!UpdateDDNS()) strcpy(error_str, "DDNS update failed");
+    // Check public IP address and update DDNS server entry
+    if (UpdateDDNS()) telnet.println("DDNS server updated");
     CheckErrors();
-    telnet.println("DDNS address updated");
-    
-    // no errors during setup: set timestamps, start polling cycle
+
     telnet.print("\nNo errors during setup, start polling cycle ...");
-    delay(PROCESSING_DELAY);
-    starttime = resettime_errors = resettime_energy = unixtime;
-    mw_counter = hm_counter = 0;
-    ts_power = millis();
+    delay(500);
+    start_uxt = errors_uxt = energy_uxt = unixtime;  // called by setup(): init timestamps
+    ts_cycle = millis();
 }
 
 void loop() {
 
-    BMSCommand(RS485_READ_VOLTAGES);  // read cell voltages from BMS, set charging/discharging power limits
-    ShellyCommand(PM2_ADDR, PM_STATUS, (power_new > 0) ? "0" : "1"); // read ESS power from Shelly 2PM
     ShellyCommand(EM_ADDR, EM_STATUS, "");  // read time and grid power from Shelly 3EM
-    BMSCommand(RS485_READ_CURRENT);  // read DC charging/discharging current and power from BMS
-    SetNewPower();  // calculate and apply new charging/discharging power setting
+    BMSCommand(RS485_READ_VOLTAGES);  // read cell voltages from BMS
+    ShellyCommand(PM2_ADDR, PM_STATUS, (power_new > 0) ? "0" : "1"); // read ESS AC power from Shelly 2PM
+    BMSCommand(RS485_READ_CURRENT);  // read charging/discharging current and DC power from BMS
+    SetNewPower();  // calculate charging/discharging power limits and setting, apply new power setting
     FinishCycle();  // update energy stats, do maintenance tasks, print status info, handle user command, read PV power, flash LED
     CheckErrors();  // check for comms errors, halt system if an error is persistent
 }
@@ -168,15 +157,11 @@ bool ShellyCommand(IPAddress ip_addr, const char command[], const char params[])
                 http.find("time");
                 min_of_day = http.parseInt()*60 + http.parseInt();  // read local time (minutes after midnight)
                 unsigned long unixtime_utc = http.parseInt();  // read epoch time (UTC)
+                utc_offset = (min_of_day/60+24-hour(unixtime_utc))%24;  // UTC offset = timezone + dst
+                unixtime = unixtime_utc + utc_offset*3600;  // unixtime equals local time
                 http.readBytes(http_resp, 550);  // fast forward to "total_power"
                 http.find("total_power");
                 power_grid = http.parseFloat();  // read grid power from http response
-                utc_offset = (min_of_day/60+24-hour(unixtime_utc))%24;  // UTC offset = timezone + dst
-                unixtime = unixtime_utc + utc_offset*3600;  // unixtime equals local time
-                if (!starttime || min_of_day == 210) {  // calculate sunrise/sunset times during setup() or at 03:30 local time
-                    sunrise = ess_location.sunrise(year(unixtime), month(unixtime), day(unixtime), utc_offset-TIMEZONE);
-                    sunset = ess_location.sunset(year(unixtime), month(unixtime), day(unixtime), utc_offset-TIMEZONE);
-                }
             }
             if (!strcmp(command, PM_STATUS)) {
                 // read power from Shelly 1PM or 2PM
@@ -195,18 +180,6 @@ bool ShellyCommand(IPAddress ip_addr, const char command[], const char params[])
                 }
                 delay(400);  // allow a little more time for power change to stabilize
                 if (!mw_on) ledcWrite(PWM_OUTPUT_PIN, 0);  // if MW was turned off, also turn off optocoupler LED
-            }
-            if (!strcmp(command, HM_RELAY)) {  // Hoymiles relay turned on or off
-                ts_HM = millis();
-                if (hm_on == !strcmp(params, "off")) {  // relay state changed
-                    hm_counter++;
-                    hm_on = !hm_on;
-                }
-                // Hoymiles AC side turned on/off: turn on/off DC side, too (after a short delay)
-                delay(1000);
-                http.stop();
-                if (!strcmp(params, "off")) return BMSCommand(RS485_DISCH_OFF);
-                else return BMSCommand(RS485_DISCH_ON);
             }
             if (!strcmp(command, PM_CONFIG)) {
                 bool eco_mode = http.findUntil("eco_mode\":true", "eco_mode\":false");
@@ -227,16 +200,16 @@ bool ShellyCommand(IPAddress ip_addr, const char command[], const char params[])
 
 bool BMSCommand(const byte command[]) {
 
-    if (command[RS485_DATA_ID_POS] == RS485_CURRENT_ID)
-        if (!power_new) {
-            cbat = pbat = 0;  // batt current and power is zero if ESS is turned off
-            return true;
-        }
+    if ((command[RS485_DATA_ID_POS] == RS485_VCELLS_ID) && (vcell_min <= vcell_uvp-ESS_UVP_OFFSET) && !power_new)
+        return true;  // stop reading cell voltages when vcell_min drops to BMS UVP voltage (before BMS powers off)
+    if ((command[RS485_DATA_ID_POS] == RS485_CURRENT_ID) && !power_new) {
+        cbat = pbat = 0;  // batt current and power is zero if ESS is turned off
+        return true;
+    }
 
     while (millis()-ts_BMS < BMS_WAIT);  // minimum delay after previous BMS response
 
     if (command[0] == BLE_ID1) {
-
         // Send BMS command via BLE
         if (pClient->connect()) {
             NimBLERemoteService* pService = pClient->getService("FFE0");
@@ -261,7 +234,7 @@ bool BMSCommand(const byte command[]) {
 
     // Send BMS command via RS485
     Serial2.write(command, command[RS485_LEN_POS]+2);
-    Serial2.flush(false);  // wait until all tx bytes are sent, clear rx buffer
+    Serial2.flush();  // wait until all tx bytes are sent
 
     if (command[RS485_COMMAND_POS] == RS485_ACTIVATE) return true;  // no response expected after activation command
 
@@ -278,7 +251,10 @@ bool BMSCommand(const byte command[]) {
         bms_resp[len] = Serial2.read();
         checksum += bms_resp[len];
         len++;
-        if (!Serial2.available() && (len < (bms_resp[2]<<8|bms_resp[3])+2)) delay(BMS_TIMEOUT2);  // response incomplete: wait for next response bytes to arrive
+        if (!Serial2.available() && (len < (bms_resp[2]<<8|bms_resp[3])+2)) {  // response incomplete
+            ts_BMS = millis();
+            while ((millis()-ts_BMS < BMS_TIMEOUT2) && !Serial2.available());  // wait for next response byte to arrive
+        }
     }
     ts_BMS = millis();  // set "end of BMS response" timestamp
 
@@ -286,12 +262,25 @@ bool BMSCommand(const byte command[]) {
     if ((bms_resp[0] == RS485_ID1) && (bms_resp[1] == RS485_ID2)) {  // start of response frame
          if ((bms_resp[2]<<8|bms_resp[3])+2 == len) {  // response length
              if ((bms_resp[len-2]<<8|bms_resp[len-1]) == checksum-bms_resp[len-2]-bms_resp[len-1]) {  // response checksum
-                if (bms_resp[RS485_COMMAND_POS] == RS485_WRITE_DATA) return true;  // no need to parse response to write or activate command
 
-                // process BMS response
-                if (bms_resp[RS485_COMMAND_POS] == RS485_READ_DATA) {
-                    if (bms_resp[RS485_DATA_ID_POS] == RS485_VCELLS_ID) {
-                        // read voltages of battery cells, determine min and max voltages
+                if (bms_resp[RS485_COMMAND_POS] == RS485_READ_ALL) {  // process response to "read all" command
+                    vcell_ovp = (bms_resp[RS485_OVP_POS]<<8|bms_resp[RS485_OVP_POS+1]) - ESS_OVP_OFFSET;  // cell OVP voltage
+                    vcell_ovpr = (bms_resp[RS485_OVPR_POS]<<8|bms_resp[RS485_OVPR_POS+1]) - ESS_OVP_OFFSET;  // cell OVPR voltage
+                    vcell_uvp = (bms_resp[RS485_UVP_POS]<<8|bms_resp[RS485_UVP_POS+1]) + ESS_UVP_OFFSET;  // cell UVP voltage
+                    vcell_uvpr = (bms_resp[RS485_UVPR_POS]<<8|bms_resp[RS485_UVPR_POS+1]) + ESS_UVP_OFFSET;  // cell UVP voltage
+                    bms_balancer_start = bms_resp[RS485_BAL_ST_POS]<<8|bms_resp[RS485_BAL_ST_POS+1];  // balancer start voltage
+                    bms_balancer_trigger = bms_resp[RS485_BAL_TR_POS]<<8|bms_resp[RS485_BAL_TR_POS+1];  // balancer trigger voltage
+                    bms_bal_on = bms_resp[RS485_BAL_SW_POS];  // state of balancer
+                    hm_asleep = !bms_resp[RS485_DISCH_SW_POS];  // Hoymiles asleep? (i.e. BMS discharge switch turned off)
+                    return true;
+                }
+
+                switch (bms_resp[RS485_DATA_ID_POS]) {
+                    case RS485_DISCH_SW_ID:  // process response to "set discharge switch"
+                        ts_HM = millis();  // give Hoymiles time to boot before starting RF24 keep alive messages
+                        return true;
+                    case RS485_VCELLS_ID:  // process response to "read cell voltages"
+                        voltages_uxt = unixtime;
                         vbat = vcell_max = 0; vcell_min = 4000;
                         for (int i=RS485_DATA_ID_POS+3; i<=RS485_DATA_ID_POS+bms_resp[RS485_DATA_ID_POS+1]; i+=3) {
                             int vcell = bms_resp[i]<<8|bms_resp[i+1];
@@ -299,71 +288,17 @@ bool BMSCommand(const byte command[]) {
                             if (vcell > vcell_max) vcell_max = vcell;
                             vbat += vcell;
                         }
-                        // determine if cell balancer is active
-                        bms_bal_active = bms_bal_on && (vcell_max-vcell_min >= bms_balancer_trigger) && (vcell_max >= bms_balancer_start);
-                        // Save old charging power limit, update limit (depending on vcell_max)
-                        mw_limit_old = mw_limit;
-                        if ((vcell_max <= ESS_OVPR) || (mw_limit >= MW_MAX_POWER)) mw_limit = round(MW_MAX_POWER_FORMULA);  // exit OVP mode (update MW power limit)
-                        if (vcell_max >= ESS_OVP) {  // OVP cell voltage reached
-                            if ((mw_limit <= MW_MIN_POWER) || !power_new) mw_limit = 0;  // enter (or remain in) OVP mode
-                            else mw_limit = max(int(round(power_new*POWER_LIMIT_RAMPDOWN)), MW_MIN_POWER);  // ramp down charging power limit softly
-                        }
-                        // Save old discharging power limit, update limit (depending on vcell_min)
-                        hm_limit_old = hm_limit;
-                        if (vcell_min >= ESS_UVPR) hm_limit = HM_MAX_POWER;  // exit UVP mode (reset HM power limit)
-                        if (vcell_min <= ESS_UVP) {  // UVP cell voltage reached
-                            if ((hm_limit >= HM_MIN_POWER) || !power_new) hm_limit = 0;  // enter (or remain in) UVP mode
-                            else hm_limit = min(int(round(power_new*POWER_LIMIT_RAMPDOWN)), HM_MIN_POWER);  // ramp up discharging power limit softly
-                        }
                         return true;
-                    }
-                    
-                    if (bms_resp[RS485_DATA_ID_POS] == RS485_CURRENT_ID) {
-                        // Read charging/discharging DC current, calculate DC power
+                    case RS485_CURRENT_ID:  // process response to "read battery current"
                         cbat = (bms_resp[RS485_DATA_ID_POS+1]&0x7F)<<8|bms_resp[RS485_DATA_ID_POS+2];
                         if (!(bms_resp[RS485_DATA_ID_POS+1]&0x80)) cbat = -cbat; // charging current is positive, discharging current is negative
                         pbat = (vbat/1000.0)*(cbat/100.0);
-                        return true;               
-                    }
-                }
-
-                if (bms_resp[RS485_COMMAND_POS] == RS485_READ_ALL) {
-                    // check for BMS warnings
-                    if (bms_resp[RS485_WARNINGS_POS]|bms_resp[RS485_WARNINGS_POS+1]) {
-                        sprintf(error_str, "BMS has warnings 0x%02X 0x%02X", bms_resp[RS485_WARNINGS_POS], bms_resp[RS485_WARNINGS_POS+1]);
-                        return false;
-                    }
-                    // check OVP and UVP setting
-                    int bms_ovp = bms_resp[RS485_OVP_POS]<<8|bms_resp[RS485_OVP_POS+1];
-                    if (bms_ovp-ESS_OVP < ESS_BMS_OVP_DIFF) {
-                        sprintf(error_str, "ESS_OVP less than %d mV below BMS_OVP (%d mV)", ESS_BMS_OVP_DIFF, bms_ovp);
-                        return false;
-                    }
-                    bms_uvp = bms_resp[RS485_UVP_POS]<<8|bms_resp[RS485_UVP_POS+1];
-                    if (ESS_UVP-bms_uvp < ESS_BMS_UVP_DIFF) {
-                        sprintf(error_str, "ESS_UVP less than %d mV above BMS_UVP (%d mV)", ESS_BMS_UVP_DIFF, bms_uvp);
-                        return false;
-                    }
-                    // read balancer settings
-                    bms_balancer_start = bms_resp[RS485_BAL_ST_POS]<<8|bms_resp[RS485_BAL_ST_POS+1];
-                    if (ESS_UVP < bms_balancer_start) {
-                        sprintf(error_str, "BMS Balancer Start Voltage higher than ESS_UVP (%d mV)", ESS_UVP);
-                        return false;
-                    }
-                    bms_balancer_trigger = bms_resp[RS485_BAL_TR_POS]<<8|bms_resp[RS485_BAL_TR_POS+1];
-                    bms_bal_on = bms_resp[RS485_BAL_SW_POS];
-                    hm_awake = bms_resp[RS485_DISCH_SW_POS];
-                    if (!hm_awake) hm_limit = 0;  // if BMS discharging switch turned off, prevent any attempts to turn on Hoymiles
-                    return true;
+                        return true;
                 }
             }
         } 
     }
     sprintf(error_str, "BMS RS485 command 0x%02X 0x%02X failed", command[RS485_COMMAND_POS], command[RS485_DATA_ID_POS]);
-    // for (int i=0; i<len; i++) telnet.printf("0x%02X ", bms_resp[i]);
-    // telnet.println();
-    // while (!telnet.available());
-    // telnet.read();
     return false;
 }
 
@@ -409,9 +344,26 @@ bool HoymilesCommand(int hm_command) {
 
 void SetNewPower() {
 
-    // Save power settings from previous cycle as baseline for new power calculation
+    // Save charging/discharging power limits and power setting from previous cycle,as calc baseline and for UserIO()
     power_old = power_new;
+    mw_limit_old = mw_limit;
+    hm_limit_old = hm_limit;
 
+    // Re-calculate power limits (depending on vcell_max/vcell_min)
+    if ((vcell_max <= vcell_ovpr) || (mw_limit >= MW_MAX_POWER)) mw_limit = round(MW_MAX_POWER_FORMULA);  // exit OVP mode (update MW power limit)
+    if (vcell_max >= vcell_ovp) {  // OVP cell voltage reached
+        if ((mw_limit <= MW_MIN_POWER) || !power_old) mw_limit = 0;  // enter (or remain in) OVP mode
+        else mw_limit = max(int(round(power_old*POWER_LIMIT_RAMPDOWN)), MW_MIN_POWER);  // decrease charging power limit softly
+    }
+    if (vcell_min >= vcell_uvpr) hm_limit = HM_MAX_POWER;  // exit UVP mode (reset HM power limit)
+    if (vcell_min <= vcell_uvp) {  // UVP cell voltage reached
+        if ((hm_limit >= HM_MIN_POWER) || !power_old) hm_limit = 0;  // enter (or remain in) UVP mode
+        else hm_limit = min(int(round(power_old*POWER_LIMIT_RAMPDOWN)), HM_MIN_POWER);  // decrease discharging power limit softly
+    }
+    if (hm_asleep) hm_limit = 0;  // prevent discharging if HM is asleep
+
+    // Save power setting from previous cycle, as baseline for calculations and for UserIO()
+    power_old = power_new;
     // Calculate new power setting
     int target_deviation = round(power_grid - power_grid_target);
     int positive_tolerance = POWER_TARGET_TOLERANCE;
@@ -439,24 +391,24 @@ void SetNewPower() {
         filter_cycles = POWER_FILTER_CYCLES;
     }
     
+    // check/set automatic battery recharge power (prevents battery damage)
+    if (auto_recharge) {
+        manual_mode = false;
+        filter_cycles = POWER_FILTER_CYCLES;
+        if (vcell_min >= vcell_uvp) {
+            power_new = 0;
+            auto_recharge = false;
+        }
+        else power_new = MW_MAX_POWER/2;
+    }
+    if (unixtime - voltages_uxt > BATT_RECHARGE_TIMEOUT*3600) auto_recharge = true;  //  too many hours without charging since vcell_min dropped to BMS UVP: activate auto recharge
+
     // Make sure charging/discharging power limits are not exceeded
     if (power_new > mw_limit) power_new = mw_limit;
     if (power_new < hm_limit) power_new = hm_limit;
 
     // Turn ESS off if power is between MW and HM operating ranges
     if ((power_new > HM_MIN_POWER) && (power_new < MW_MIN_POWER)) power_new = 0;
-
-    // Set automatic battery recharge power (to prevent BMS turnoff)
-    if (auto_recharge) {
-        manual_mode = false;
-        filter_cycles = POWER_FILTER_CYCLES;
-        if (vcell_min >= ESS_UVP) {
-            power_new = 0;
-            auto_recharge = false;
-        }
-        else power_new = MW_MAX_POWER/2;
-    }
-    if ((vcell_min <= (bms_uvp + ESS_UVP)/2)) auto_recharge = true;
 
     // Apply new power setting
     if (power_new == 0) {  // turn charging or discharging off
@@ -500,9 +452,9 @@ void SetNewPower() {
         }
     }
     
-    // Calculate cycle duration and reset power timestamp
-    msecs_cycle = millis()-ts_power;
-    ts_power = millis();
+    // Calculate cycle duration and reset cycle timestamp
+    msecs_cycle = millis()-ts_cycle;
+    ts_cycle = millis();
 }
 
 void FinishCycle() {
@@ -539,14 +491,19 @@ void FinishCycle() {
     en_from_batt += hrs_cycle * (pbat < 0) * -pbat;
     en_to_batt += hrs_cycle * (pbat > 0) * pbat;
 
+    if (!sunrise || min_of_day == 210) {  // calculate sunrise/sunset times at 03:30 local time (after a possible SDT/DST change, before sunrise)
+        sunrise = ess_location.sunrise(year(unixtime), month(unixtime), day(unixtime), (utc_offset != TIMEZONE));
+        sunset = ess_location.sunset(year(unixtime), month(unixtime), day(unixtime), (utc_offset != TIMEZONE));
+    }
+
     // No ESS power output and no PV production: check for new power_grid_min (i.e. min household consumption)
     if (!power_ess && !hm_limit_old && !power_pv && (power_grid < power_grid_min)) {
         power_grid_min = power_grid;
-        minpower_time = unixtime;
+        minpower_uxt = unixtime;
     }
 
     // Keep alive Hoymiles RF24 interface
-    if ((millis()-ts_HM >= RF24_KEEPALIVE*1000) && hm_awake)
+    if ((millis()-ts_HM >= RF24_KEEPALIVE*1000) && !hm_asleep)
         if (power_new < 0) HoymilesCommand(HM_POWER_ON);
         else HoymilesCommand(HM_POWER_OFF);
 
@@ -563,24 +520,27 @@ void FinishCycle() {
 
     // Set Shelly 2PM eco mode (turn off when charging/discharging, turn on when charging/discharging inactive and impossible)
     if (power_new && pm2_eco_mode) pm2_eco_mode = !ShellyCommand(PM2_ADDR, ECO_MODE, "false}}");
-    if (!power_new && (power_pv < MW_MIN_POWER-power_grid_target) && !hm_awake && !pm2_eco_mode) pm2_eco_mode = ShellyCommand(PM2_ADDR, ECO_MODE, "true}}");
+    if (!power_new && (power_pv < MW_MIN_POWER-power_grid_target) && hm_asleep && !pm2_eco_mode) pm2_eco_mode = ShellyCommand(PM2_ADDR, ECO_MODE, "true}}");
 
-    // Make Hoymiles fall asleep or wake it up, depending on hm_limit and vcell_min
-    if ((vcell_min <= ESS_UVP) && !hm_limit && hm_awake) hm_awake = !ShellyCommand(PM2_ADDR, HM_RELAY, "off");
-    if ((vcell_min >= ESS_UVPR-10) && !hm_awake) hm_awake = ShellyCommand(PM2_ADDR, HM_RELAY, "on");  // wake up HM before reaching ESS_UVPR, to have time for AC sync procedure
-
+    // Make Hoymiles fall asleep or wake it up, depending on vcell_min and hm_limit
+    if ((vcell_min >= vcell_uvpr - ESS_UVP_OFFSET) && hm_asleep) hm_asleep = !BMSCommand(RS485_DISCH_ON);  // wakeup HM (offset gives HM time to boot/sync)
+    if ((vcell_min <= vcell_uvp) && !hm_limit && !hm_asleep) hm_asleep = BMSCommand(RS485_DISCH_OFF);  // make HM fall asleep
+    
     // Clear Shelly 3EM energy data at 23:00 UTC (prevents HTTP timeouts at 00:00 UTC due to internal data reorgs)
     if ((min_of_day/60 == (23+utc_offset)%24) && !em_data_cleared) em_data_cleared = ShellyCommand(EM_ADDR, EM_RESET, "");
     if (min_of_day/60 == utc_offset) em_data_cleared = false;
 
     // Check if public IP address was changed, if yes: update DDNS server entry
-    if (millis()-ts_pubip >= DDNS_UPDATE_INTERVAL*1000) UpdateDDNS();
+    if (unixtime-pubip_uxt >= DDNS_UPDATE_INTERVAL) UpdateDDNS();
 
     // flash LED to indicate end of cycle
     digitalWrite(LED_PIN, HIGH);  delay(20); digitalWrite(LED_PIN, LOW);
 
+    // ESS asleep?
+    sleep_mode = pm1_eco_mode && pm2_eco_mode;
+
     // calculate end-of-cycle waiting time (consider ESS sleep mode and time since power change, allow time for userIO and PV power reading)
-    int cycle_delay = PROCESSING_DELAY*(1+(pm1_eco_mode && pm2_eco_mode))-(millis()-ts_power)-100;
+    int cycle_delay = PROCESSING_DELAY*(1+sleep_mode)-(millis()-ts_cycle)-100;
     if (cycle_delay > 0) delay(cycle_delay);
 
     // check for OTA software update
@@ -596,7 +556,7 @@ void FinishCycle() {
     else power_pv = 0;
 
     // wait until power change has stabilized
-    cycle_delay = PROCESSING_DELAY*(1+(pm1_eco_mode && pm2_eco_mode))-(millis()-ts_power);
+    cycle_delay = PROCESSING_DELAY*(1+sleep_mode)-(millis()-ts_cycle);
     if (cycle_delay > 0) delay(cycle_delay);
 }
 
@@ -619,23 +579,23 @@ void CheckErrors() {
         }
     error_str[0] = '\0';  // assumption: no errors during next cycle
     if (error_index >= UNCRITICAL_ERROR_TYPES) errors_consecutive++;  // if error was WIFI related: allow unlimited erroneous cycles
-    if ((errors_consecutive < ERROR_LIMIT) && starttime) return;  // continue with next cycle if below ERROR_LIMIT and no error during setup()
+    if ((errors_consecutive < ERROR_LIMIT) && start_uxt) return;  // continue with next cycle if below ERROR_LIMIT and no error during setup()
 
     // Error is persistent or error during setup(): Halt the system
-    if (!HoymilesCommand(HM_POWER_OFF)) ShellyCommand(PM2_ADDR, HM_RELAY, "off");
+    HoymilesCommand(HM_POWER_OFF);
     SetMWPower(MW_MIN_POWER);
     ShellyCommand(PM2_ADDR, MW_RELAY, "off");
     
     // System halted: prepare continuous error message
     sprintf(tn_str, "%sBinSmart ESS %s\r\n\n%sSystem halted ", CLEAR_SCREEN, SW_VERSION, ERROR_SYMBOL);
-    if (starttime) sprintf(tn_str + strlen(tn_str), "at %02d/%02d/%04d %02d:%02d:%02d\r\n   after %d consecutive errors\r\n\n", day(unixtime), month(unixtime), year(unixtime), hour(unixtime), minute(unixtime), second(unixtime), errors_consecutive);
+    if (start_uxt) sprintf(tn_str + strlen(tn_str), "at %02d/%02d/%04d %02d:%02d:%02d\r\n   after %d consecutive errors\r\n\n", day(unixtime), month(unixtime), year(unixtime), hour(unixtime), minute(unixtime), second(unixtime), errors_consecutive);
     else strcat(tn_str, "during setup\r\n\n");
     strcat(tn_str, "Last error: ");
     strcat(tn_str, last_error_str);
     strcat(tn_str, "\r\n\nPress any key to restart: ");
 
     while (true) {  // wait for user to confirm restart
-        ts_power = millis();
+        ts_cycle = millis();
         OTA_server.handleClient();  // Check for OTA software update
         if (millis()-ts_pubip >= DDNS_UPDATE_INTERVAL*1000) UpdateDDNS();  // keep updating DDNS in order to be reachable via Internet
         if (!telnet) telnet = telnet_server.available();
@@ -643,7 +603,7 @@ void CheckErrors() {
         for (int i=0; i<10; i++) {
             digitalWrite(LED_PIN, HIGH);  delay(20); digitalWrite(LED_PIN, LOW); delay(40); // indicates halted system
         }
-        while (millis()-ts_power < PROCESSING_DELAY*2);  // wait for two PROCESSING_DELAYS
+        while (millis()-ts_cycle < PROCESSING_DELAY*2);  // wait for two PROCESSING_DELAYS
         if (telnet.available()) {
             telnet.print("\r\nRestarting in 3 seconds, re-open terminal ...\r\n");
             delay(2000);
@@ -679,7 +639,7 @@ void UserIO() {
     strcat(tn_str, WIFI_SYMBOL[WiFi.RSSI() >= GOOD_WIFI_RSSI]);
 
     // Time, cycle time, operations symbol
-    sprintf(tn_str + strlen(tn_str), "\r\n%02d:%02d:%02d +%d.%03d%s\r\n", hour(unixtime), minute(unixtime), second(unixtime), msecs_cycle/1000, msecs_cycle%1000, OPS_SYMBOL[!power_new + (pm1_eco_mode && pm2_eco_mode)]);
+    sprintf(tn_str + strlen(tn_str), "\r\n%02d:%02d:%02d +%d.%03d%s\r\n", hour(unixtime), minute(unixtime), second(unixtime), msecs_cycle/1000, msecs_cycle%1000, OPS_SYMBOL[!power_new + sleep_mode]);
 
     // OVP symbol above battery symbol
     strcat(tn_str, BAT_OVP_SYMBOL[(mw_limit_old < MW_MAX_POWER) + !mw_limit_old]);
@@ -701,7 +661,7 @@ void UserIO() {
     if (power_old < 0)
         strcat(tn_str, HM_FLOW_SYMBOL[(power_old == hm_limit_old) + (power_old == HM_MAX_POWER)]);
     int vbat_idle = vbat-round(cbat/16.0);  // voltage at cbat=0 (needed for accurate battery charge level)
-    strcat(tn_str, BAT_LEVEL_SYMBOL[(vbat_idle > BAT_EMPTY) ? min(((vbat_idle-BAT_EMPTY)*(BAT_LEVELS-2))/(BAT_FULL-BAT_EMPTY) + 1, BAT_LEVELS-1) : 0]);
+    strcat(tn_str, BAT_LEVEL_SYMBOL[(vbat_idle > vcell_uvp*8) ? min(((vbat_idle-vcell_uvp*8)*(BAT_LEVELS-2))/((vcell_ovp-vcell_uvp)*8) + 1, BAT_LEVELS-1) : 0]);
     sprintf(tn_str + strlen(tn_str), "%d", int(round(power_ess)));
     if (power_new != power_old) strcat(tn_str, DIFF_SYMBOL[(power_new < power_old) + !filter_cycles]);
     else if (filter_cycles && (filter_cycles < POWER_FILTER_CYCLES)) strcat(tn_str, POWERFILTER_SYMBOL);
@@ -772,8 +732,11 @@ void UserIO() {
             break;
         case 'b':
             // DC (batt) status
-            sprintf(tn_str + strlen(tn_str), "Cell voltages: %d - %d mV\r\nMax cell diff: %d mV%s", vcell_min, vcell_max, vcell_max-vcell_min, (bms_bal_active) ? BALANCER_SYMBOL : "");
-            sprintf(tn_str + strlen(tn_str), "\r\nBatt voltage : %.3f V\r\nBatt current : %.2f A\r\nBatt power   : %.1f W\r\n\n", vbat/1000.0, cbat/100.0, pbat);
+            bms_bal_active = bms_bal_on && (vcell_max-vcell_min >= bms_balancer_trigger) && (vcell_max >= bms_balancer_start);  // balancer active?
+            sprintf(tn_str + strlen(tn_str), "Cell voltages: %d - %d mV\r\nMax cell diff: %d mV%s\r\n", vcell_min, vcell_max, vcell_max-vcell_min, (bms_bal_active) ? BALANCER_SYMBOL : "");
+            sprintf(tn_str + strlen(tn_str), "Batt voltage : %.3f V\r\n", vbat/1000.0);
+            if (voltages_uxt != unixtime) sprintf(tn_str + strlen(tn_str), "Last read    : %02d/%02d/%04d %02d:%02d\r\n\n", day(voltages_uxt), month(voltages_uxt), year(voltages_uxt), hour(voltages_uxt), minute(voltages_uxt));
+            else sprintf(tn_str + strlen(tn_str), "Batt current : %.2f A\r\nBatt power   : %.1f W\r\n\n", cbat/100.0, pbat);
             // AC status
             sprintf(tn_str + strlen(tn_str), "AC power setting: %d W\r\nAC power reading: %.1f W\r\n", power_old, power_ess);
             // AC/DC (or DC/AC) power conversion efficiency of Meanwell or Hoymiles
@@ -783,8 +746,8 @@ void UserIO() {
             resp_str[0] = '\0';
             break;
         case 'd':
-            sprintf(tn_str + strlen(tn_str), "ESS public IP address: %s\r\nLast address check   : %02d/%02d/%04d %02d:%02d\r\n", pubip_addr.toString().c_str(), day(pubip_time), month(pubip_time), year(pubip_time), hour(pubip_time), minute(pubip_time));
-            sprintf(tn_str + strlen(tn_str), "Last DDNS update     : %02d/%02d/%04d %02d:%02d\r\n\n", day(ddns_time), month(ddns_time), year(ddns_time), hour(ddns_time), minute(ddns_time));
+            sprintf(tn_str + strlen(tn_str), "ESS public IP address: %s\r\nLast address check   : %02d/%02d/%04d %02d:%02d\r\n", pubip_addr.toString().c_str(), day(pubip_uxt), month(pubip_uxt), year(pubip_uxt), hour(pubip_uxt), minute(pubip_uxt));
+            sprintf(tn_str + strlen(tn_str), "Last DDNS update     : %02d/%02d/%04d %02d:%02d\r\n\n", day(ddns_uxt), month(ddns_uxt), year(ddns_uxt), hour(ddns_uxt), minute(ddns_uxt));
             resp_str[0] = '\0';
             break;
         case 'w':
@@ -793,20 +756,20 @@ void UserIO() {
             break;
         case 't':
             sprintf(tn_str + strlen(tn_str), "Local time   : %02d/%02d/%04d %02d:%02d:%02d", day(unixtime), month(unixtime), year(unixtime), hour(unixtime), minute(unixtime), second(unixtime));
-            sprintf(tn_str + strlen(tn_str), "\r\nTimezone     : UTC%+d\r\nSDT/DST      : %s", TIMEZONE, (utc_offset>TIMEZONE)?"DST":"SDT");
-            sprintf(tn_str + strlen(tn_str), "\r\nESS started  : %02d/%02d/%04d %02d:%02d:%02d", day(starttime), month(starttime), year(starttime), hour(starttime), minute(starttime), second(starttime));
-            sprintf(tn_str + strlen(tn_str), "\r\nESS uptime   : %03dd %02dh %02dm %02ds", (unixtime-starttime)/86400, ((unixtime-starttime)%86400)/3600, ((unixtime-starttime)/60)%60, (unixtime-starttime)%60);
+            sprintf(tn_str + strlen(tn_str), "\r\nTimezone     : UTC%+d\r\nSDT/DST      : %s", TIMEZONE, (utc_offset == TIMEZONE) ? "SDT" : "DST");
+            sprintf(tn_str + strlen(tn_str), "\r\nESS started  : %02d/%02d/%04d %02d:%02d:%02d", day(start_uxt), month(start_uxt), year(start_uxt), hour(start_uxt), minute(start_uxt), second(start_uxt));
+            sprintf(tn_str + strlen(tn_str), "\r\nESS uptime   : %03dd %02dh %02dm %02ds", (unixtime-start_uxt)/86400, ((unixtime-start_uxt)%86400)/3600, ((unixtime-start_uxt)/60)%60, (unixtime-start_uxt)%60);
             sprintf(tn_str + strlen(tn_str), "\r\nSunrise today: %02d:%02d\r\nSunset today : %02d:%02d\r\n\n", sunrise/60, sunrise%60, sunset/60, sunset%60); 
             resp_str[0] = '\0';
             break;
         case 'l':
-            sprintf(tn_str + strlen(tn_str), "Lowest consumption since %02d/%02d/%04d %02d:%02d\r\n\n", day(starttime), month(starttime), year(starttime), hour(starttime), minute(starttime));
-            if (!minpower_time) strcat(tn_str, "Not yet measured\r\n\n");
-            else sprintf(tn_str + strlen(tn_str), "%.1f W (measured %02d/%02d/%04d %02d:%02d)\r\n\n", power_grid_min, day(minpower_time), month(minpower_time), year(minpower_time), hour(minpower_time), minute(minpower_time));
+            sprintf(tn_str + strlen(tn_str), "Lowest consumption since %02d/%02d/%04d %02d:%02d\r\n\n", day(start_uxt), month(start_uxt), year(start_uxt), hour(start_uxt), minute(start_uxt));
+            if (!minpower_uxt) strcat(tn_str, "Not yet measured\r\n\n");
+            else sprintf(tn_str + strlen(tn_str), "%.1f W (measured %02d/%02d/%04d %02d:%02d)\r\n\n", power_grid_min, day(minpower_uxt), month(minpower_uxt), year(minpower_uxt), hour(minpower_uxt), minute(minpower_uxt));
             resp_str[0] = '\0';
             break;
         case 'n':
-            sprintf(tn_str + strlen(tn_str), "Energy flows [kWh] since %02d/%02d/%04d %02d:%02d\r\n\n", day(resettime_energy), month(resettime_energy), year(resettime_energy), hour(resettime_energy), minute(resettime_energy));
+            sprintf(tn_str + strlen(tn_str), "Energy flows [kWh] since %02d/%02d/%04d %02d:%02d\r\n\n", day(energy_uxt), month(energy_uxt), year(energy_uxt), hour(energy_uxt), minute(energy_uxt));
             // PV energy
             sprintf(tn_str + strlen(tn_str), "%7.3f %s%s%s%s%s%s %.1f﹪+%.1f﹪\r\n", en_from_pv/1000, NIGHT_DAY_SYMBOL[1], PV_FLOW_SYMBOL[1], PV_CABLE_SYMBOL, ESS_CABLE_SYMBOL, MW_FLOW_SYMBOL[0][0], ESS_SYMBOL, (en_pv_to_ess-en_pv_wasted)/en_from_pv*100, en_pv_wasted/en_from_pv*100);
             sprintf(tn_str + strlen(tn_str), "  %s\r\n", HOUSE_SYMBOL);
@@ -824,7 +787,7 @@ void UserIO() {
             resp_str[0] = '\0';
             break;
         case 'e':
-            sprintf(tn_str + strlen(tn_str), "Errors since %02d/%02d/%04d %02d:%02d\r\n\n", day(resettime_errors), month(resettime_errors), year(resettime_errors), hour(resettime_errors), minute(resettime_errors));
+            sprintf(tn_str + strlen(tn_str), "Errors since %02d/%02d/%04d %02d:%02d\r\n\n", day(errors_uxt), month(errors_uxt), year(errors_uxt), hour(errors_uxt), minute(errors_uxt));
             for (int i=0; i<ERROR_TYPES; i++) {
                 sprintf(tn_str + strlen(tn_str), "%-4s: %3d", ERROR_TYPE[i], error_counter[i]);
                 if (error_counter[i]) sprintf(tn_str + strlen(tn_str), " (last: %02d/%02d/%04d %02d:%02d)", day(errortime[i]), month(errortime[i]), year(errortime[i]), hour(errortime[i]), minute(errortime[i]));
@@ -837,8 +800,8 @@ void UserIO() {
             resp_str[0] = '\0';
             break;
         case 's':
-            sprintf(tn_str + strlen(tn_str), "Shelly relay ops since %02d/%02d/%04d %02d:%02d\r\n\n", day(starttime), month(starttime), year(starttime), hour(starttime), minute(starttime));
-            sprintf(tn_str + strlen(tn_str), "Meanwell relay: %d (%d/day)\r\nHoymiles relay: %d (%d/day)\r\n\n", mw_counter, mw_counter/((unixtime-starttime)/86400+1), hm_counter, hm_counter/((unixtime-starttime)/86400+1));
+            sprintf(tn_str + strlen(tn_str), "Meanwell relay ops since %02d/%02d/%04d %02d:%02d\r\n\n", day(start_uxt), month(start_uxt), year(start_uxt), hour(start_uxt), minute(start_uxt));
+            sprintf(tn_str + strlen(tn_str), "%d (%d/day)\r\n\n", mw_counter, mw_counter/((unixtime-start_uxt)/86400+1));
             resp_str[0] = '\0';
             break;
         case 'z':
@@ -853,7 +816,7 @@ void UserIO() {
                     en_from_grid = en_grid_to_cons = en_grid_to_ess = 0;  // Reset grid energy counters
                     en_from_ess = en_to_ess = en_ess_to_cons = en_ess_to_grid = 0;  // Reset ESS energy counters
                     en_from_batt = en_to_batt = 0;  // Reset ESS DC energy counters
-                    resettime_energy = unixtime;
+                    energy_uxt = unixtime;
                     strcpy(resp_str, "Energy stats reset to zero\r\n\n");
                     ts_userio = millis();
                     break;
@@ -863,7 +826,7 @@ void UserIO() {
                     errors_consecutive = 0;
                     last_error_str[0] = '\0';
                     error_flag = false;
-                    resettime_errors = unixtime;
+                    errors_uxt = unixtime;
                     strcpy(resp_str, "Error stats reset to zero\r\n\n");
                     ts_userio = millis();
                     break;
@@ -924,29 +887,29 @@ bool UpdateDDNS() {
 
     // connect to server and request public IP address
     if (http.connect(PUBLIC_IP_SERVER, HTTP_PORT)) {
-        sprintf(http_command, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", PUBLIC_IP_SERVER_URL, PUBLIC_IP_SERVER);
+        sprintf(http_command, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", PUBLIC_IP_URL, PUBLIC_IP_SERVER);
         http.write(http_command, strlen(http_command));
         if (http.find(HTTP_OK)) {
-            // read public IP address
+            // read public IP address from router
             http.find("\r\n\r\n");  // start of HTML body
             http.setTimeout(10);  // waiting time max 10 ms if IP address is shorter than 15 bytes
             http_resp[http.readBytes(http_resp, 15)] = '\0';  // read public IP address, append \0
             http.stop();
             http.setTimeout(HTTP_TIMEOUT);  // http timeout back to normal
             pubip_addr.fromString(http_resp);
+            pubip_uxt = unixtime;
             ts_pubip = millis();
-            pubip_time = unixtime;
             if (ddns_addr == pubip_addr) return true;  // public IP unchanged
 
             // connect to DDNS server and update public IP address
             if (http.connect(DDNS_SERVER, HTTP_PORT)) {
-                sprintf(http_command, "GET %s%s HTTP/1.1\r\nHost: %s\r\nAuthorization: Basic %s\r\n\r\n", DDNS_SERVER_URL, http_resp, DDNS_SERVER, DDNS_SERVER_CREDS);
+                sprintf(http_command, "GET %s%s%s%s HTTP/1.1\r\nHost: %s\r\nAuthorization: Basic %s\r\n\r\n", DDNS_URL, DDNS_HOSTNAME, DDNS_IP, http_resp, DDNS_SERVER, DDNS_CREDS);
                 http.write(http_command, strlen(http_command));
                 if (http.find(HTTP_OK)) {
                     if (http.find(http_resp)) {  // DDNS server confirmed updated (or unchanged) public IP address
                         http.stop();
                         ddns_addr = pubip_addr;
-                        ddns_time = unixtime;
+                        ddns_uxt = unixtime;
                         return true;
                     }
                 }
