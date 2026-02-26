@@ -21,5 +21,6 @@ const int TIMEZONE = **;  // timezone (relative to UTC) of ESS
 const byte HM_SN[] = {0x**, 0x**, 0x**, 0x**, 0x**, 0x**};  // serial number of Hoymiles inverter
 
 // DDNS service
-const char DDNS_SERVER_URL[] = "/nic/update?hostname=***&myip=";
-const char DDNS_SERVER_CREDS[] = "***";  // base 64 encoded user credentials
+const char DDNS_HOSTNAME[] = "***";  // DNS hostname of ESS public IP
+const char DDNS_CREDS[] = "***";  // base 64 encoded user credentials
+
