@@ -85,8 +85,8 @@ const int HM_LOW_POWER_THRESHOLD = -61;  // Hoymiles power output above this thr
 const int HM_LOW_POWER_TOLERANCE = 15;  // Max tolerated positive deviation from target power when Hoymiles is below HM_LOW_POWER_THRESHOLD
 
 // BMS/ESS voltage settings in millivolts
-const int ESS_OVP_OFFSET = 10;  // vcell_ovp/vcell_ovpr set ESS_OVP_OFFSET below BMS OVP/OVPR
-const int ESS_UVP_OFFSET = 10;  // vcell_uvp/vcell_uvpr set ESS_UVP_OFFSET above BMS UVP/UVPR
+const int ESS_OVP_OFFSET = 10;  // vcell_ovp/vcell_ovpr are ESS_OVP_OFFSET below BMS OVP/OVPR
+const int ESS_UVP_OFFSET = 5;  // vcell_uvp/vcell_uvpr are ESS_UVP_OFFSET above BMS UVP/UVPR
 const int BMS_BAL_ON = 3150;  // one cell at or below this voltage: activate bottom balancing
 const int BMS_BAL_OFF = 3170;  // all cells at or above this voltage: deactivate bottom balancing
 

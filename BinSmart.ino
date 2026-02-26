@@ -1,4 +1,4 @@
-const char SW_VERSION[] = "v2.87";
+const char SW_VERSION[] = "v2.88";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <WebServer.h>  // standard Arduino/ESP32
@@ -523,8 +523,8 @@ void FinishCycle() {
     if (!power_new && (power_pv < MW_MIN_POWER-power_grid_target) && hm_asleep && !pm2_eco_mode) pm2_eco_mode = ShellyCommand(PM2_ADDR, ECO_MODE, "true}}");
 
     // Make Hoymiles fall asleep or wake it up, depending on vcell_min and hm_limit
-    if ((vcell_min >= vcell_uvpr - ESS_UVP_OFFSET) && hm_asleep) hm_asleep = !BMSCommand(RS485_DISCH_ON);  // wakeup HM (offset gives HM time to boot/sync)
-    if ((vcell_min <= vcell_uvp) && !hm_limit && !hm_asleep) hm_asleep = BMSCommand(RS485_DISCH_OFF);  // make HM fall asleep
+    if ((vcell_min >= vcell_uvpr - ESS_UVP_OFFSET) && power_new && hm_asleep) hm_asleep = !BMSCommand(RS485_DISCH_ON);  // wakeup HM (offset gives HM time to boot/sync)
+    if ((vcell_min <= vcell_uvp) && !hm_limit && !power_old && !hm_asleep) hm_asleep = BMSCommand(RS485_DISCH_OFF);  // make HM fall asleep
     
     // Clear Shelly 3EM energy data at 23:00 UTC (prevents HTTP timeouts at 00:00 UTC due to internal data reorgs)
     if ((min_of_day/60 == (23+utc_offset)%24) && !em_data_cleared) em_data_cleared = ShellyCommand(EM_ADDR, EM_RESET, "");
