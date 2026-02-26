@@ -58,16 +58,16 @@ const int BATT_RECHARGE_TIMEOUT = 96;  // number of hours in BMS UVP mode withou
 const int PWM_CHANNEL = 0;
 const int PWM_FREQ = 250;
 const int PWM_RESOLUTION = 10;
-const int DUTY_CYCLE_MIN = 4;
+const int DUTY_CYCLE_MIN = 2;
 const int DUTY_CYCLE_MAX = pow(2,PWM_RESOLUTION)-1;
 
 // Meanwell power parameters
 const int MW_MIN_POWER = 15;  // Meanwell turned off below min_power (power output would be unstable and inefficient)
 const int MW_MAX_POWER = 300;  // theoretical max AC power at vbat < 24000
 const int MW_LOW_POWER_THRESHOLD = 31;  // power output below MW_LOW_POWER_THRESHOLD is non-linear
-#define MW_MAX_POWER_FORMULA vbat/77.648*(0.984-float(DUTY_CYCLE_MIN)/DUTY_CYCLE_MAX)  // actual max AC power is between 300 and 360W, depending on vbat
-#define MW_POWER_FORMULA DUTY_CYCLE_MAX*(0.984-77.648*mw_power/vbat)  // converts current to PWM duty cycle (result of Meanwell HLG-320 tests)
-#define MW_LOW_POWER_FORMULA DUTY_CYCLE_MAX*(94523.2839*mw_power/vbat*mw_power/vbat-266.5076*mw_power/vbat+1.075)  // non-linear formula for low power
+#define MW_MAX_POWER_FORMULA vbat/77.0*(0.98-float(DUTY_CYCLE_MIN)/DUTY_CYCLE_MAX)  // actual max AC power is between 300 and 360W, depending on vbat
+#define MW_POWER_FORMULA DUTY_CYCLE_MAX*(0.98-77.0*mw_power/vbat)  // converts current to PWM duty cycle (result of Meanwell HLG-320 tests)
+#define MW_LOW_POWER_FORMULA DUTY_CYCLE_MAX*(94523.28*mw_power/vbat*mw_power/vbat-266.51*mw_power/vbat+1.07)  // non-linear formula for low power
 
 // Hoymiles/RF24 comms parameters
 const byte RF24_CHANNEL = 03; // Possible RF24 channles for Hoymiles comms are 03, 23, 40, 61, 75; frequency in MHz is 2400 + channel
