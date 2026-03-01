@@ -65,8 +65,8 @@ const int DUTY_CYCLE_MAX = pow(2,PWM_RESOLUTION)-1;
 const int MW_MIN_POWER = 15;  // Meanwell turned off below min_power (power output would be unstable and inefficient)
 const int MW_MAX_POWER = 300;  // theoretical max AC power at vbat < 24000
 const int MW_LOW_POWER_THRESHOLD = 31;  // power output below MW_LOW_POWER_THRESHOLD is non-linear
-#define MW_MAX_POWER_FORMULA vbat/77.8*(0.9815-float(DUTY_CYCLE_MIN)/DUTY_CYCLE_MAX)  // actual max AC power is between 300 and 360W, depending on vbat
-#define MW_POWER_FORMULA DUTY_CYCLE_MAX*(0.9815-77.8*mw_power/vbat)  // converts current to PWM duty cycle (result of Meanwell HLG-320 tests)
+#define MW_MAX_POWER_FORMULA vbat/77.8*(0.9814-float(DUTY_CYCLE_MIN)/DUTY_CYCLE_MAX)  // actual max AC power is between 300 and 360W, depending on vbat
+#define MW_POWER_FORMULA DUTY_CYCLE_MAX*(0.9814-77.8*mw_power/vbat)  // converts current to PWM duty cycle (result of Meanwell HLG-320 tests)
 #define MW_LOW_POWER_FORMULA DUTY_CYCLE_MAX*(94523.28*mw_power/vbat*mw_power/vbat-266.51*mw_power/vbat+1.07)  // non-linear formula for low power
 
 // Hoymiles/RF24 comms parameters
@@ -85,10 +85,10 @@ const int HM_LOW_POWER_THRESHOLD = -61;  // Hoymiles power output above this thr
 const int HM_LOW_POWER_TOLERANCE = 15;  // Max tolerated positive deviation from target power when Hoymiles is below HM_LOW_POWER_THRESHOLD
 
 // BMS/ESS voltage settings in millivolts
-const int ESS_OVP_OFFSET = 10;  // vcell_ovp/vcell_ovpr are ESS_OVP_OFFSET below BMS OVP/OVPR
-const int ESS_UVP_OFFSET = 5;  // vcell_uvp/vcell_uvpr are ESS_UVP_OFFSET above BMS UVP/UVPR
-const int BMS_BAL_ON = 3150;  // one cell at or below this voltage: activate bottom balancing
-const int BMS_BAL_OFF = 3170;  // all cells at or above this voltage: deactivate bottom balancing
+const int ESS_OVP_OFFSET = -10;  // ESS vcell_ovp/vcell_ovpr are -ESS_OVP_OFFSET below BMS OVP/OVPR
+const int ESS_UVP_OFFSET = +5;  // ESS vcell_uvp/vcell_uvpr are ESS_UVP_OFFSET above BMS UVP/UVPR
+const int BMS_BAL_HYSTERESIS = 20;  // delta between "balancer on" (UVP voltage) and "balancer off"
+const int BMS_DISCH_HYSTERESIS = 90;  // delta between "discharge switch off" (UVP voltage) and "discharge switch on"
 
 // BMS definitions and commands
 const byte RS485_ID1 = 0x4E;
@@ -166,5 +166,6 @@ const char AUTO_RECHARGE_SYMBOL[] = " ⚡";
 const char WIFI_SYMBOL[2][10] = {"⚠️­","📶"};
 const char ERROR_SYMBOL[] = "❌ ";
 const char BALANCER_SYMBOL[] = " 🔄";
+const char CLOCK_SYMBOL[] = " 🕒";
 const char CLEAR_SCREEN[] = "\033[0H\033[0J";
 const char CMD_PROMPT[] = "Enter command or [h] for help: ";

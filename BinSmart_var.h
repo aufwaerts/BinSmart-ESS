@@ -60,7 +60,7 @@ bool error_flag;  // errors occured and not yet read by user?
 // Other global variables
 int filter_cycles = POWER_FILTER_CYCLES;  // number of cycles where power spikes are filtered out
 bool pm1_eco_mode, pm2_eco_mode;  // eco mode of Shellies
-bool sleep_mode, manual_mode, auto_recharge;  // special ESS operating modes
+bool manual_mode, auto_recharge;  // special ESS operating modes
 bool em_data_cleared;  // indicates if Shelly 3EM energy data has been cleared
 bool mw_on, hm_on;  // state of Shelly 2PM Meanwell/Hoymiles relays
 unsigned long mw_counter;  // counter for Meanwell relay operations
