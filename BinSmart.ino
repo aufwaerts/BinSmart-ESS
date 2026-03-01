@@ -1,4 +1,4 @@
-const char SW_VERSION[] = "v2.88";
+const char SW_VERSION[] = "v2.89";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <WebServer.h>  // standard Arduino/ESP32
@@ -92,7 +92,7 @@ void setup() {
     telnet.println("RF24 radio initialized");
 
     // Turn off Hoymiles power (if Hoymiles isn't asleep)
-    if (hm_asleep) telnet.println("Hoymiles is asleep");
+    if (!bms_disch_on) telnet.println("Hoymiles is asleep");
     else if (HoymilesCommand(HM_POWER_OFF)) telnet.println("RF24 communication with Hoymiles OK");
     CheckErrors();
 
@@ -271,7 +271,7 @@ bool BMSCommand(const byte command[]) {
                     bms_balancer_start = bms_resp[RS485_BAL_ST_POS]<<8|bms_resp[RS485_BAL_ST_POS+1];  // balancer start voltage
                     bms_balancer_trigger = bms_resp[RS485_BAL_TR_POS]<<8|bms_resp[RS485_BAL_TR_POS+1];  // balancer trigger voltage
                     bms_bal_on = bms_resp[RS485_BAL_SW_POS];  // state of balancer
-                    hm_asleep = !bms_resp[RS485_DISCH_SW_POS];  // Hoymiles asleep? (i.e. BMS discharge switch turned off)
+                    bms_disch_on = bms_resp[RS485_DISCH_SW_POS];  // Hoymiles asleep? (i.e. BMS discharge switch turned off)
                     return true;
                 }
 
@@ -360,7 +360,7 @@ void SetNewPower() {
         if ((hm_limit >= HM_MIN_POWER) || !power_old) hm_limit = 0;  // enter (or remain in) UVP mode
         else hm_limit = min(int(round(power_old*POWER_LIMIT_RAMPDOWN)), HM_MIN_POWER);  // decrease discharging power limit softly
     }
-    if (hm_asleep) hm_limit = 0;  // prevent discharging if HM is asleep
+    if (!bms_disch_on) hm_limit = 0;  // prevent discharging if BMS discharging switch is off
 
     // Save power setting from previous cycle, as baseline for calculations and for UserIO()
     power_old = power_new;
@@ -503,7 +503,7 @@ void FinishCycle() {
     }
 
     // Keep alive Hoymiles RF24 interface
-    if ((millis()-ts_HM >= RF24_KEEPALIVE*1000) && !hm_asleep)
+    if ((millis()-ts_HM >= RF24_KEEPALIVE*1000) && bms_disch_on)
         if (power_new < 0) HoymilesCommand(HM_POWER_ON);
         else HoymilesCommand(HM_POWER_OFF);
 
@@ -520,11 +520,11 @@ void FinishCycle() {
 
     // Set Shelly 2PM eco mode (turn off when charging/discharging, turn on when charging/discharging inactive and impossible)
     if (power_new && pm2_eco_mode) pm2_eco_mode = !ShellyCommand(PM2_ADDR, ECO_MODE, "false}}");
-    if (!power_new && (power_pv < MW_MIN_POWER-power_grid_target) && hm_asleep && !pm2_eco_mode) pm2_eco_mode = ShellyCommand(PM2_ADDR, ECO_MODE, "true}}");
+    if (!power_new && (power_pv < MW_MIN_POWER-power_grid_target) && !bms_disch_on && !pm2_eco_mode) pm2_eco_mode = ShellyCommand(PM2_ADDR, ECO_MODE, "true}}");
 
     // Make Hoymiles fall asleep or wake it up, depending on vcell_min and hm_limit
-    if ((vcell_min >= vcell_uvpr - ESS_UVP_OFFSET) && power_new && hm_asleep) hm_asleep = !BMSCommand(RS485_DISCH_ON);  // wakeup HM (offset gives HM time to boot/sync)
-    if ((vcell_min <= vcell_uvp) && !hm_limit && !power_old && !hm_asleep) hm_asleep = BMSCommand(RS485_DISCH_OFF);  // make HM fall asleep
+    if ((vcell_min >= vcell_uvpr - ESS_UVP_OFFSET) && power_new && !bms_disch_on) bms_disch_on = BMSCommand(RS485_DISCH_ON);  // wakeup HM (offset gives HM time to boot/sync)
+    if ((vcell_min <= vcell_uvp) && !hm_limit && !power_old && bms_disch_on) bms_disch_on = !BMSCommand(RS485_DISCH_OFF);  // make HM fall asleep
     
     // Clear Shelly 3EM energy data at 23:00 UTC (prevents HTTP timeouts at 00:00 UTC due to internal data reorgs)
     if ((min_of_day/60 == (23+utc_offset)%24) && !em_data_cleared) em_data_cleared = ShellyCommand(EM_ADDR, EM_RESET, "");
@@ -641,9 +641,6 @@ void UserIO() {
     // Time, cycle time, operations symbol
     sprintf(tn_str + strlen(tn_str), "\r\n%02d:%02d:%02d +%d.%03d%s\r\n", hour(unixtime), minute(unixtime), second(unixtime), msecs_cycle/1000, msecs_cycle%1000, OPS_SYMBOL[!power_new + sleep_mode]);
 
-    // OVP symbol above battery symbol
-    strcat(tn_str, BAT_OVP_SYMBOL[(mw_limit_old < MW_MAX_POWER) + !mw_limit_old]);
-
     // PV power, nighttime/daytime symbol
     sprintf(tn_str + strlen(tn_str), "\r\n%4d ", int(round(power_pv)));
     strcat(tn_str, NIGHT_DAY_SYMBOL[(min_of_day >= sunrise) && (min_of_day < sunset)]);
@@ -661,7 +658,7 @@ void UserIO() {
     if (power_old < 0)
         strcat(tn_str, HM_FLOW_SYMBOL[(power_old == hm_limit_old) + (power_old == HM_MAX_POWER)]);
     int vbat_idle = vbat-round(cbat/16.0);  // voltage at cbat=0 (needed for accurate battery charge level)
-    strcat(tn_str, BAT_LEVEL_SYMBOL[(vbat_idle > vcell_uvp*8) ? min(((vbat_idle-vcell_uvp*8)*(BAT_LEVELS-2))/((vcell_ovp-vcell_uvp)*8) + 1, BAT_LEVELS-1) : 0]);
+    strcat(tn_str, BAT_LEVEL_SYMBOL[(vbat_idle > vcell_uvp*8) ? min(((vbat_idle-vcell_uvp*8)*(BAT_LEVELS-2))/((vcell_ovpr-vcell_uvp)*8) + 1, BAT_LEVELS-1) : 0]);
     sprintf(tn_str + strlen(tn_str), "%d", int(round(power_ess)));
     if (power_new != power_old) strcat(tn_str, DIFF_SYMBOL[(power_new < power_old) + !filter_cycles]);
     else if (filter_cycles && (filter_cycles < POWER_FILTER_CYCLES)) strcat(tn_str, POWERFILTER_SYMBOL);
@@ -671,9 +668,6 @@ void UserIO() {
 
     // House symbol
     strcat(tn_str, HOUSE_SYMBOL);
-
-    // UVP symbol below battery symbol
-    strcat(tn_str, BAT_UVP_SYMBOL[(hm_limit_old > HM_MAX_POWER) + !hm_limit_old]);
 
     // Grid power
     sprintf(tn_str + strlen(tn_str), "\r\n%4d ", int(round(power_grid)));
@@ -730,19 +724,25 @@ void UserIO() {
             else sprintf(resp_str, "Grid power target remains at %d W\r\n\n", power_grid_target);
             ts_userio = millis();
             break;
-        case 'b':
-            // DC (batt) status
-            bms_bal_active = bms_bal_on && (vcell_max-vcell_min >= bms_balancer_trigger) && (vcell_max >= bms_balancer_start);  // balancer active?
-            sprintf(tn_str + strlen(tn_str), "Cell voltages: %d - %d mV\r\nMax cell diff: %d mV%s\r\n", vcell_min, vcell_max, vcell_max-vcell_min, (bms_bal_active) ? BALANCER_SYMBOL : "");
-            sprintf(tn_str + strlen(tn_str), "Batt voltage : %.3f V\r\n", vbat/1000.0);
-            if (voltages_uxt != unixtime) sprintf(tn_str + strlen(tn_str), "Last read    : %02d/%02d/%04d %02d:%02d\r\n\n", day(voltages_uxt), month(voltages_uxt), year(voltages_uxt), hour(voltages_uxt), minute(voltages_uxt));
-            else sprintf(tn_str + strlen(tn_str), "Batt current : %.2f A\r\nBatt power   : %.1f W\r\n\n", cbat/100.0, pbat);
-            // AC status
+        case 'p':
+            // AC/DC power status
             sprintf(tn_str + strlen(tn_str), "AC power setting: %d W\r\nAC power reading: %.1f W\r\n", power_old, power_ess);
-            // AC/DC (or DC/AC) power conversion efficiency of Meanwell or Hoymiles
-            sprintf(tn_str + strlen(tn_str), "AC/DC conv. eff.: %.1f %%\r\n", (power_ess >= 0) ? pbat/power_ess*100 : power_ess/pbat*100);
-            // Meanwell/Hoymiles power limit settings
+            sprintf(tn_str + strlen(tn_str), "DC power reading: %.1f W\r\nAC/DC conv. eff.: %.1f %%\r\n", pbat, (power_ess >= 0) ? pbat/power_ess*100 : power_ess/pbat*100);
+            // Meanwell/Hoymiles power limits
             sprintf(tn_str + strlen(tn_str), "MW power limit  : %d W\r\nHM power limit  : %d W\r\n\n", mw_limit, hm_limit);
+            resp_str[0] = '\0';
+            break;
+        case 'b':
+            // Batt voltage infos
+            sprintf(tn_str + strlen(tn_str), "Cell voltages: %d - %d mV\r\nMax cell diff: %d mV%s\r\n", vcell_min, vcell_max, vcell_max-vcell_min, (bms_bal_on && (vcell_max-vcell_min >= bms_balancer_trigger) && (vcell_max >= bms_balancer_start)) ? BALANCER_SYMBOL : "");
+            sprintf(tn_str + strlen(tn_str), "Batt voltage : %.3f V\r\n", vbat/1000.0);
+            if (voltages_uxt != unixtime) sprintf(tn_str + strlen(tn_str), "Last read    : %02d/%02d/%04d %02d:%02d\r\n", day(voltages_uxt), month(voltages_uxt), year(voltages_uxt), hour(voltages_uxt), minute(voltages_uxt));
+            else sprintf(tn_str + strlen(tn_str), "Batt current : %.2f A\r\n", cbat/100.0);
+            sprintf(tn_str + strlen(tn_str), "Cell OVP/OVPR: %d/%d mV\r\n", vcell_ovp, vcell_ovpr);
+            sprintf(tn_str + strlen(tn_str), "Cell UVP/UVPR: %d/%d mV\r\n\n", vcell_uvp, vcell_uvpr);
+            // BMS infos
+            sprintf(tn_str + strlen(tn_str), "Balancer start voltage  : %d mV\r\nBalancer trigger voltage: %d mV\r\n", bms_balancer_start, bms_balancer_trigger);
+            sprintf(tn_str + strlen(tn_str), "Balancer switch         : %s\r\nDischarge switch        : %s\r\n\n", (bms_bal_on) ? "on" : "off", (bms_disch_on) ? "on" : "off");
             resp_str[0] = '\0';
             break;
         case 'd':
@@ -860,7 +860,8 @@ void UserIO() {
             strcat(tn_str, "[m] - Manual power mode\r\n");
             strcat(tn_str, "[a] - Automatic power mode\r\n");
             strcat(tn_str, "[g] - Grid power target\r\n");
-            strcat(tn_str, "[b] - Battery info\r\n");
+            strcat(tn_str, "[p] - Power status\r\n");
+            strcat(tn_str, "[b] - Batt/BMS info\r\n");
             strcat(tn_str, "[d] - DDNS info\r\n");
             strcat(tn_str, "[w] - WiFi RSSI\r\n");
             strcat(tn_str, "[t] - Time, uptime, astro times\r\n");

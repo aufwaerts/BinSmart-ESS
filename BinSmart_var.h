@@ -16,7 +16,7 @@ int vcell_uvp, vcell_uvpr, vcell_ovp, vcell_ovpr;  // cell protection voltages
 int cbat, vbat;  // batt DC current [cA], total batt voltage [mV]
 int bms_balancer_start;  // BMS balancer cell voltage threshold [mV] (read from BMS)
 int bms_balancer_trigger;  // BMS balancer cell diff threshold [mV] (read from BMS)
-bool bms_bal_on, bms_bal_active;  // BMS balancer switch and balancing activity
+bool bms_bal_on, bms_disch_on;  // BMS balancer switch and discharge switch
 byte bms_resp[300];  // buffer for BMS response
 
 // Hoymiles/RF24 comms
@@ -63,7 +63,6 @@ bool pm1_eco_mode, pm2_eco_mode;  // eco mode of Shellies
 bool sleep_mode, manual_mode, auto_recharge;  // special ESS operating modes
 bool em_data_cleared;  // indicates if Shelly 3EM energy data has been cleared
 bool mw_on, hm_on;  // state of Shelly 2PM Meanwell/Hoymiles relays
-bool hm_asleep;  // does Hoymiles DC side have power, i.e. is Hoymiles awake or asleep?
 unsigned long mw_counter;  // counter for Meanwell relay operations
 char tn_str[1000];  // output (telnet) message string
 char command;  // last user command (read via telnet)
