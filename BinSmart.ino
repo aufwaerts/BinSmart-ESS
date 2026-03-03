@@ -512,17 +512,17 @@ void FinishCycle() {
     if (((min_of_day < sunrise-1) || (min_of_day >= sunset)) && !pm1_eco_mode) pm1_eco_mode = ShellyCommand(PM1_ADDR, ECO_MODE, "true}}");
 
     // Set Shelly 2PM eco mode (turn off when charging/discharging, turn on when charging/discharging inactive and impossible)
-    if (power_new && pm2_eco_mode) pm2_eco_mode = !ShellyCommand(PM2_ADDR, ECO_MODE, "false}}");
-    if (!power_new && (power_pv < MW_MIN_POWER-power_grid_target) && !bms_disch_on && !pm2_eco_mode) pm2_eco_mode = ShellyCommand(PM2_ADDR, ECO_MODE, "true}}");
+    if ((power_new || (power_pv >= MW_MIN_POWER-power_grid_target)) && pm2_eco_mode) pm2_eco_mode = !ShellyCommand(PM2_ADDR, ECO_MODE, "false}}");
+    if (!power_new && !power_pv && !bms_disch_on && !pm2_eco_mode) pm2_eco_mode = ShellyCommand(PM2_ADDR, ECO_MODE, "true}}");
 
     // Turn on/off BMS balancer (disable/enable bottom balancing), depending on lowest cell voltage
     if ((vcell_min <= vcell_uvp) && !bms_bal_on) bms_bal_on = BMSCommand(BLE_BAL_ON);
     if ((vcell_min >= vcell_uvp + BMS_BAL_HYSTERESIS) && bms_bal_on) bms_bal_on = !BMSCommand(BLE_BAL_OFF);
 
-    // Turn on/off BMS discharge switch (wakeup HM or make it fall asleep), depending on lowest call voltage and hm_limit
-    if ((vcell_min >= vcell_uvp + BMS_DISCH_HYSTERESIS) && power_new && !bms_disch_on) bms_disch_on = BMSCommand(RS485_DISCH_ON);
-    if ((vcell_min <= vcell_uvp) && !hm_limit && !power_old && bms_disch_on) bms_disch_on = !BMSCommand(RS485_DISCH_OFF);
-
+    // Turn on/off BMS discharge switch (wakeup HM or make it fall asleep), depending on lowest cell voltage and hm_limit
+    if ((vcell_min >= vcell_uvp + BMS_DISCH_HYSTERESIS) && !bms_disch_on) bms_disch_on = BMSCommand(RS485_DISCH_ON);
+    if ((vcell_min <= vcell_uvp) && !hm_limit && bms_disch_on) bms_disch_on = !BMSCommand(RS485_DISCH_OFF);
+    
     // Clear Shelly 3EM energy data at 23:00 UTC (prevents HTTP timeouts at 00:00 UTC due to internal data reorgs)
     if ((min_of_day/60 == (23+utc_offset)%24) && !em_data_cleared) em_data_cleared = ShellyCommand(EM_ADDR, EM_RESET, "");
     if (min_of_day/60 == utc_offset) em_data_cleared = false;
