@@ -63,7 +63,7 @@ bool pm1_eco_mode, pm2_eco_mode;  // eco mode of Shellies
 bool manual_mode, auto_recharge;  // special ESS operating modes
 bool em_data_cleared;  // indicates if Shelly 3EM energy data has been cleared
 bool mw_on, hm_on;  // state of Shelly 2PM Meanwell/Hoymiles relays
-unsigned long mw_counter;  // counter for Meanwell relay operations
+unsigned long mw_counter, hm_counter;  // counter for Meanwell/Hoymiles Shelly relay operations
 char tn_str[1000];  // output (telnet) message string
 char command;  // last user command (read via telnet)
 char resp_str[100];  // last user command response

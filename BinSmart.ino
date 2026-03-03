@@ -1,4 +1,4 @@
-const char SW_VERSION[] = "v2.91";
+const char SW_VERSION[] = "v2.92";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <WebServer.h>  // standard Arduino/ESP32
@@ -102,6 +102,11 @@ void setup() {
 
     // Shelly 2PM: Read eco mode setting, turn off Meanwell relay, make sure Hoymiles relay state matches BMS discharging switch
     if (ShellyCommand(PM2_ADDR, PM_CONFIG, "") && ShellyCommand(PM2_ADDR, MW_RELAY, "off")) telnet.println("Shelly 2PM found");
+    mw_counter = 0;
+    CheckErrors();
+    if (!bms_disch_on) ShellyCommand(PM2_ADDR, HM_RELAY, "off");
+    else ShellyCommand(PM2_ADDR, HM_RELAY, "on");
+    hm_counter = 0;
     CheckErrors();
     
     // Shelly 3EM: Read local time and grid power, init timestamps
@@ -177,7 +182,12 @@ bool ShellyCommand(IPAddress ip_addr, const char command[], const char params[])
                 }
                 delay(400);  // allow a little more time for power change to stabilize
                 if (!mw_on) ledcWrite(PWM_OUTPUT_PIN, 0);  // if MW was turned off, also turn off optocoupler LED
-                if (mw_on && !bms_disch_on) ts_HM = millis();  // if MW was turned on while HM was asleep, give HM time to boot before starting RF24 keep alive messages   
+            }
+            if (!strcmp(command, HM_RELAY)) {  // Hoymiles relay turned on or off
+                if (hm_on == !strcmp(params, "off")) {  // relay state changed
+                    hm_counter++;
+                    hm_on = !hm_on;
+                }
             }
             if (!strcmp(command, PM_CONFIG)) {
                 bool eco_mode = http.findUntil("eco_mode\":true", "eco_mode\":false");
@@ -275,7 +285,11 @@ bool BMSCommand(const byte command[]) {
 
                 switch (command[RS485_DATA_ID_POS]) {
                     case RS485_DISCH_SW_ID:  // process response to "set discharge switch"
-                        if (command[RS485_DATA_ID_POS+1] == 0x01) ts_HM = millis();  // give Hoymiles time to boot before starting RF24 keep alive messages
+                        if (command[RS485_DATA_ID_POS+1] == 0x01) {  // BMS discharging switch turned on
+                            ShellyCommand(PM2_ADDR, HM_RELAY, "on");  // turn on Hoymiles AC side, too
+                            ts_HM = millis();  // give Hoymiles time to boot before starting RF24 keep alive messages
+                        }
+                        else ShellyCommand(PM2_ADDR, HM_RELAY, "off");  // turn off Hoymiles AC side, too
                         return true;
                     case RS485_VCELLS_ID:  // process response to "read cell voltages"
                         voltages_uxt = unixtime;
@@ -501,7 +515,7 @@ void FinishCycle() {
     }
 
     // Keep alive Hoymiles RF24 interface
-    if ((millis()-ts_HM >= RF24_KEEPALIVE*1000) && (bms_disch_on || power_new))
+    if ((millis()-ts_HM >= RF24_KEEPALIVE*1000) && bms_disch_on)
         if (power_new < 0) HoymilesCommand(HM_POWER_ON);
         else HoymilesCommand(HM_POWER_OFF);
     
@@ -518,10 +532,10 @@ void FinishCycle() {
 
     // Turn on/off BMS balancer (disable/enable bottom balancing), depending on lowest cell voltage
     if ((vcell_min <= vcell_uvp) && !bms_bal_on) bms_bal_on = BMSCommand(BLE_BAL_ON);
-    if ((vcell_min >= vcell_uvp + BMS_BAL_HYSTERESIS) && bms_bal_on) bms_bal_on = !BMSCommand(BLE_BAL_OFF);
+    if ((vcell_min >= vcell_uvp + BMS_BAL_UVP_OFFSET) && bms_bal_on) bms_bal_on = !BMSCommand(BLE_BAL_OFF);
 
     // Turn on/off BMS discharge switch (wakeup HM or make it fall asleep), depending on lowest cell voltage and hm_limit
-    if ((vcell_min >= vcell_uvp + BMS_DISCH_HYSTERESIS) && !bms_disch_on) bms_disch_on = BMSCommand(RS485_DISCH_ON);
+    if ((vcell_min >= vcell_uvpr + BMS_DISCH_UVPR_OFFSET) && !bms_disch_on) bms_disch_on = BMSCommand(RS485_DISCH_ON);
     if ((vcell_min <= vcell_uvp) && !hm_limit && bms_disch_on) bms_disch_on = !BMSCommand(RS485_DISCH_OFF);
 
     // Clear Shelly 3EM energy data at 23:00 UTC (prevents HTTP timeouts at 00:00 UTC due to internal data reorgs)
@@ -577,7 +591,7 @@ void CheckErrors() {
     if ((errors_consecutive < ERROR_LIMIT) && start_uxt) return;  // continue with next cycle if below ERROR_LIMIT and no error during setup()
 
     // Error is persistent or error during setup(): Halt the system
-    HoymilesCommand(HM_POWER_OFF);
+    if (!HoymilesCommand(HM_POWER_OFF)) ShellyCommand(PM2_ADDR, HM_RELAY, "off");
     SetMWPower(MW_MIN_POWER);
     ShellyCommand(PM2_ADDR, MW_RELAY, "off");
     
@@ -795,8 +809,8 @@ void UserIO() {
             resp_str[0] = '\0';
             break;
         case 's':
-            sprintf(tn_str + strlen(tn_str), "MW relay ops since %02d/%02d/%04d %02d:%02d:\r\n", day(start_uxt), month(start_uxt), year(start_uxt), hour(start_uxt), minute(start_uxt));
-            sprintf(tn_str + strlen(tn_str), "%d (%d/day)\r\n\n", mw_counter, mw_counter/((unixtime-start_uxt)/86400+1));
+            sprintf(tn_str + strlen(tn_str), "Shelly relay ops since %02d/%02d/%04d %02d:%02d:\r\n", day(start_uxt), month(start_uxt), year(start_uxt), hour(start_uxt), minute(start_uxt));
+            sprintf(tn_str + strlen(tn_str), "Meanwell: %d (%d/day)\r\nHoymiles: %d (%d/day)\r\n\n", mw_counter, mw_counter/((unixtime-start_uxt)/86400+1), hm_counter, hm_counter/((unixtime-start_uxt)/86400+1));
             resp_str[0] = '\0';
             break;
         case 'z':

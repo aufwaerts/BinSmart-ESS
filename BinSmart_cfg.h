@@ -20,6 +20,7 @@ const char EM_RESET[] = "/reset_data";
 const char PM_CONFIG[] = "/rpc/Shelly.GetConfig";
 const char PM_STATUS[] = "/rpc/Switch.GetStatus?id=";
 const char MW_RELAY[] = "/relay/0?turn=";
+const char HM_RELAY[] = "/relay/1?turn=";
 const char ECO_MODE[] = "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":";
 
 // ESP32 pin definitions
@@ -46,7 +47,7 @@ const int DDNS_UPDATE_INTERVAL = 60;  // DDNS IP address check interval (in secs
 const int MW_KEEPALIVE = 40;  // number of secs after which Shelly 2PM receives "keep alive" message (must be less than corresponding Shelly timer)
 const int RF24_WAIT = 50;  // min Hoymiles RF24 waiting time (in msecs) after previous response
 const int RF24_TIMEOUT = 1000;  // max waiting time (in msecs) for RF24 ACKs after writeFast()
-const int RF24_KEEPALIVE = 25;  // number of secs after which Hoymiles RF24 interface receives "keep alive" message
+const int RF24_KEEPALIVE = 40;  // number of secs after which Hoymiles RF24 interface receives "keep alive" message
 const int BMS_WAIT = 50;  // min BMS waiting time (in msecs) after previous response
 const int BMS_TIMEOUT1 = 20;  // max waiting time (in msecs) for BMS response
 const int BMS_TIMEOUT2 = 3;  // max additional waiting time (in msecs) if response is incomplete
@@ -85,10 +86,10 @@ const int HM_LOW_POWER_THRESHOLD = -61;  // Hoymiles power output above this thr
 const int HM_LOW_POWER_TOLERANCE = 15;  // Max tolerated positive deviation from target power when Hoymiles is below HM_LOW_POWER_THRESHOLD
 
 // BMS/ESS voltage settings in millivolts
-const int ESS_OVP_OFFSET = -10;  // ESS vcell_ovp/vcell_ovpr are -ESS_OVP_OFFSET below BMS OVP/OVPR
+const int ESS_OVP_OFFSET = -10;  // ESS vcell_ovp/vcell_ovpr are ESS_OVP_OFFSET below BMS OVP/OVPR
 const int ESS_UVP_OFFSET = +5;  // ESS vcell_uvp/vcell_uvpr are ESS_UVP_OFFSET above BMS UVP/UVPR
-const int BMS_BAL_HYSTERESIS = 20;  // delta between "balancer on" (UVP voltage) and "balancer off"
-const int BMS_DISCH_HYSTERESIS = 90;  // delta between "discharge switch off" (UVP voltage) and "discharge switch on"
+const int BMS_BAL_UVP_OFFSET = +20;  // BMS balancer is turned off BMS_BAL_UVP_OFFSET above vcell_uvp
+const int BMS_DISCH_UVPR_OFFSET = -10;  // BMS discharge switch is turned on BMS_DISCH_UVPR_OFFSET below vcell_uvpr
 
 // BMS definitions and commands
 const byte RS485_ID1 = 0x4E;
