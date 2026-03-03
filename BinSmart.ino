@@ -1,4 +1,4 @@
-const char SW_VERSION[] = "v2.92";
+const char SW_VERSION[] = "v2.93";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <WebServer.h>  // standard Arduino/ESP32
@@ -93,7 +93,7 @@ void setup() {
     else if (HoymilesCommand(HM_POWER_OFF)) telnet.println("RF24 communication with Hoymiles OK");
     CheckErrors();
 
-    // set max waiting time for all http requests
+    // Set max waiting time for all http requests
     http.setTimeout(HTTP_TIMEOUT);
 
     // Shelly 1PM: Read eco mode setting and PV power
@@ -285,11 +285,7 @@ bool BMSCommand(const byte command[]) {
 
                 switch (command[RS485_DATA_ID_POS]) {
                     case RS485_DISCH_SW_ID:  // process response to "set discharge switch"
-                        if (command[RS485_DATA_ID_POS+1] == 0x01) {  // BMS discharging switch turned on
-                            ShellyCommand(PM2_ADDR, HM_RELAY, "on");  // turn on Hoymiles AC side, too
-                            ts_HM = millis();  // give Hoymiles time to boot before starting RF24 keep alive messages
-                        }
-                        else ShellyCommand(PM2_ADDR, HM_RELAY, "off");  // turn off Hoymiles AC side, too
+                        if (command[RS485_DATA_ID_POS+1] == 0x01) ts_HM = millis();  // gives Hoymiles time to boot before starting RF24 keep alive messages
                         return true;
                     case RS485_VCELLS_ID:  // process response to "read cell voltages"
                         voltages_uxt = unixtime;
@@ -514,11 +510,14 @@ void FinishCycle() {
         minpower_uxt = unixtime;
     }
 
-    // Keep alive Hoymiles RF24 interface
+    // Keep alive Hoymiles RF24 interface (if Hoymiles is awake)
     if ((millis()-ts_HM >= RF24_KEEPALIVE*1000) && bms_disch_on)
         if (power_new < 0) HoymilesCommand(HM_POWER_ON);
         else HoymilesCommand(HM_POWER_OFF);
     
+    // Make sure Hoymiles relay state matches BMS discharging switch (i.e. Hoymiles AC on/off state matches DC on/off state)
+    if (hm_on != bms_disch_on) ShellyCommand(PM2_ADDR, HM_RELAY, (bms_disch_on) ? "on" : "off");
+
     // Keep alive Meanwell relay (if Meanwell is turned on)
     if (mw_on && (millis()-ts_MW >= MW_KEEPALIVE*1000)) ShellyCommand(PM2_ADDR, MW_RELAY, "on&timer=60");
 
