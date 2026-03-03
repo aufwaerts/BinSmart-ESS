@@ -1,4 +1,4 @@
-const char SW_VERSION[] = "v2.90";
+const char SW_VERSION[] = "v2.91";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <WebServer.h>  // standard Arduino/ESP32
@@ -177,6 +177,7 @@ bool ShellyCommand(IPAddress ip_addr, const char command[], const char params[])
                 }
                 delay(400);  // allow a little more time for power change to stabilize
                 if (!mw_on) ledcWrite(PWM_OUTPUT_PIN, 0);  // if MW was turned off, also turn off optocoupler LED
+                if (mw_on && !bms_disch_on) ts_HM = millis();  // if MW was turned on while HM was asleep, give HM time to boot before starting RF24 keep alive messages   
             }
             if (!strcmp(command, PM_CONFIG)) {
                 bool eco_mode = http.findUntil("eco_mode\":true", "eco_mode\":false");
@@ -260,7 +261,7 @@ bool BMSCommand(const byte command[]) {
          if ((bms_resp[2]<<8|bms_resp[3])+2 == len) {  // response length
              if ((bms_resp[len-2]<<8|bms_resp[len-1]) == checksum-bms_resp[len-2]-bms_resp[len-1]) {  // response checksum
 
-                if (bms_resp[RS485_COMMAND_POS] == RS485_READ_ALL) {  // process response to "read all" command
+                if (command[RS485_COMMAND_POS] == RS485_READ_ALL) {  // process response to "read all" command
                     vcell_ovp = (bms_resp[RS485_OVP_POS]<<8|bms_resp[RS485_OVP_POS+1]) + ESS_OVP_OFFSET;  // cell OVP voltage
                     vcell_ovpr = (bms_resp[RS485_OVPR_POS]<<8|bms_resp[RS485_OVPR_POS+1]) + ESS_OVP_OFFSET;  // cell OVPR voltage
                     vcell_uvp = (bms_resp[RS485_UVP_POS]<<8|bms_resp[RS485_UVP_POS+1]) + ESS_UVP_OFFSET;  // cell UVP voltage
@@ -272,9 +273,9 @@ bool BMSCommand(const byte command[]) {
                     return true;
                 }
 
-                switch (bms_resp[RS485_DATA_ID_POS]) {
+                switch (command[RS485_DATA_ID_POS]) {
                     case RS485_DISCH_SW_ID:  // process response to "set discharge switch"
-                        ts_HM = millis();  // give Hoymiles time to boot before starting RF24 keep alive messages
+                        if (command[RS485_DATA_ID_POS+1] == 0x01) ts_HM = millis();  // give Hoymiles time to boot before starting RF24 keep alive messages
                         return true;
                     case RS485_VCELLS_ID:  // process response to "read cell voltages"
                         voltages_uxt = unixtime;
@@ -500,10 +501,10 @@ void FinishCycle() {
     }
 
     // Keep alive Hoymiles RF24 interface
-    if ((millis()-ts_HM >= RF24_KEEPALIVE*1000) && bms_disch_on)
+    if ((millis()-ts_HM >= RF24_KEEPALIVE*1000) && (bms_disch_on || power_new))
         if (power_new < 0) HoymilesCommand(HM_POWER_ON);
         else HoymilesCommand(HM_POWER_OFF);
-
+    
     // Keep alive Meanwell relay (if Meanwell is turned on)
     if (mw_on && (millis()-ts_MW >= MW_KEEPALIVE*1000)) ShellyCommand(PM2_ADDR, MW_RELAY, "on&timer=60");
 
@@ -522,7 +523,7 @@ void FinishCycle() {
     // Turn on/off BMS discharge switch (wakeup HM or make it fall asleep), depending on lowest cell voltage and hm_limit
     if ((vcell_min >= vcell_uvp + BMS_DISCH_HYSTERESIS) && !bms_disch_on) bms_disch_on = BMSCommand(RS485_DISCH_ON);
     if ((vcell_min <= vcell_uvp) && !hm_limit && bms_disch_on) bms_disch_on = !BMSCommand(RS485_DISCH_OFF);
-    
+
     // Clear Shelly 3EM energy data at 23:00 UTC (prevents HTTP timeouts at 00:00 UTC due to internal data reorgs)
     if ((min_of_day/60 == (23+utc_offset)%24) && !em_data_cleared) em_data_cleared = ShellyCommand(EM_ADDR, EM_RESET, "");
     if (min_of_day/60 == utc_offset) em_data_cleared = false;
