@@ -736,21 +736,18 @@ void UserIO() {
         case 'p':
             // AC/DC power status
             sprintf(tn_str + strlen(tn_str), "AC power setting: %d W\r\nAC power reading: %.1f W\r\n", power_old, power_ess);
-            sprintf(tn_str + strlen(tn_str), "DC power reading: %.1f W\r\nAC/DC conv. eff.: %.1f %%\r\n", pbat, (power_ess >= 0) ? pbat/power_ess*100 : power_ess/pbat*100);
+            sprintf(tn_str + strlen(tn_str), "DC power reading: %.1f W\r\nAC/DC conv. eff.: %.1f %%\r\n\n", pbat, (power_ess >= 0) ? pbat/power_ess*100 : power_ess/pbat*100);
             // Meanwell/Hoymiles power limits
-            sprintf(tn_str + strlen(tn_str), "MW power limit  : %d W\r\nHM power limit  : %d W\r\n\n", mw_limit, hm_limit);
+            sprintf(tn_str + strlen(tn_str), "MW power limit: %d W\r\nHM power limit: %d W\r\n\n", mw_limit, hm_limit);
             resp_str[0] = '\0';
             break;
         case 'b':
             // Batt voltage infos
             sprintf(tn_str + strlen(tn_str), "Cell voltages: %d - %d mV\r\nMax cell diff: %d mV%s\r\n", vcell_min, vcell_max, vcell_max-vcell_min, (bms_bal_on && (vcell_max-vcell_min >= bms_balancer_trigger) && (vcell_max >= bms_balancer_start)) ? BALANCER_SYMBOL : "");
             sprintf(tn_str + strlen(tn_str), "Batt voltage : %.3f V", vbat/1000.0);
-            if (voltages_uxt != unixtime) sprintf(tn_str + strlen(tn_str), "%s\r\nLast read    : %02d/%02d/%04d %02d:%02d", CLOCK_SYMBOL, day(voltages_uxt), month(voltages_uxt), year(voltages_uxt), hour(voltages_uxt), minute(voltages_uxt));
-            else sprintf(tn_str + strlen(tn_str), "\r\nBatt current : %.2f A", cbat/100.0);
-            sprintf(tn_str + strlen(tn_str), "\r\n\nOVP/OVPR (offs.): %d/%d (%+d) mV\r\n", vcell_ovp, vcell_ovpr, ESS_OVP_OFFSET);
-            sprintf(tn_str + strlen(tn_str), "UVP/UVPR (offs.): %d/%d (%+d) mV\r\n", vcell_uvp, vcell_uvpr, ESS_UVP_OFFSET);
-            // BMS settings
-            sprintf(tn_str + strlen(tn_str), "Balancer start  : %d mV\r\nBalancer trigger: %d mV\r\n", bms_balancer_start, bms_balancer_trigger);
+            if (voltages_uxt != unixtime) sprintf(tn_str + strlen(tn_str), "%s\r\nLast read    : %02d/%02d/%04d %02d:%02d\r\n\n", CLOCK_SYMBOL, day(voltages_uxt), month(voltages_uxt), year(voltages_uxt), hour(voltages_uxt), minute(voltages_uxt));
+            else sprintf(tn_str + strlen(tn_str), "\r\nBatt current : %.2f A\r\n\n", cbat/100.0);
+            // BMS switch status
             sprintf(tn_str + strlen(tn_str), "Balancer switch : %s\r\nDischarge switch: %s\r\n\n", (bms_bal_on) ? "on" : "off", (bms_disch_on) ? "on" : "off");
             resp_str[0] = '\0';
             break;
