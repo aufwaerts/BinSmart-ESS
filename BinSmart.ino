@@ -666,7 +666,7 @@ void UserIO() {
     if (power_old < 0)
         strcat(tn_str, HM_FLOW_SYMBOL[(power_old == hm_limit_old) + (power_old == HM_MAX_POWER)]);
     int vbat_idle = vbat-round(cbat/16.0);  // voltage at cbat=0 (needed for accurate battery charge level)
-    strcat(tn_str, BAT_LEVEL_SYMBOL[(vbat_idle > vcell_uvp*8) ? min(((vbat_idle/8-vcell_uvp)*(BAT_LEVELS-2))/((vcell_ovp+vcell_ovpr)/2-vcell_uvp)+1, BAT_LEVELS-1) : 0]);
+    strcat(tn_str, BAT_LEVEL_SYMBOL[(vbat_idle > vcell_uvp*8) ? min(((vbat_idle/8-vcell_uvp)*(BAT_LEVELS-2))/(vcell_ovp-vcell_uvp)+1, BAT_LEVELS-1) : 0]);
     sprintf(tn_str + strlen(tn_str), "%d", int(round(power_ess)));
     if (power_new != power_old) strcat(tn_str, DIFF_SYMBOL[(power_new < power_old) + !filter_cycles]);
     else if (filter_cycles && (filter_cycles < POWER_FILTER_CYCLES)) strcat(tn_str, POWERFILTER_SYMBOL);
