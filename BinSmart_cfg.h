@@ -57,7 +57,7 @@ const int BMS_WAIT = 50;  // min BMS waiting time (in msecs) after previous resp
 const int BMS_TIMEOUT1 = 20;  // max waiting time (in msecs) for BMS response
 const int BMS_TIMEOUT2 = 3;  // max additional waiting time (in msecs) if response is incomplete
 const int BLE_TIMEOUT = 2;  // max waiting time (in secs) for JKBMS BLE server connection
-const int USERIO_TIMEOUT = 4000;  // max waiting time (in msecs) for terminal input/output
+const int USER_TIMEOUT = 4000;  // max waiting time (in msecs) for terminal input
 const int BATT_RECHARGE_TIMEOUT = 96;  // number of hours in BMS UVP mode without charging, before auto recharge is activated
 
 // PWM params for Meanwell power control

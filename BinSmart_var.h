@@ -34,7 +34,7 @@ int sunrise, sunset;  // current day's sunrise and sunset (minutes after midnigh
 unsigned long unixtime; // epoch time of local time (will be read from Shelly 3EM)
 unsigned long start_uxt, minpower_uxt, errors_uxt, energy_uxt, voltages_uxt;  // unixtime of various events
 unsigned long pubip_uxt, ddns_uxt;  // unixtime of last public IP address check and last DDNS update
-unsigned long ts_cycle, ts_MW, ts_HM, ts_BMS, ts_userio, ts_pubip;  // various millis() timestamps
+unsigned long ts_cycle, ts_MW, ts_HM, ts_BMS, ts_user, ts_pubip;  // various millis() timestamps
 unsigned long msecs_cycle;  // duration of one polling cycle in msecs
 
 // Power and energy variables ([W] and [Wh])
@@ -65,6 +65,6 @@ bool manual_mode, auto_recharge;  // special ESS operating modes
 bool em_data_cleared;  // indicates if Shelly 3EM energy data has been cleared
 bool mw_on, hm_on;  // state of Shelly 2PM Meanwell/Hoymiles relays
 unsigned long mw_counter, hm_counter;  // counter for Meanwell/Hoymiles Shelly relay operations
-char tn_str[1000];  // output (telnet) message string
-char command;  // last user command (read via telnet)
-char resp_str[100];  // last user command response
+char cycle_str[400];  // cycle status string
+char command;  // user command (read via telnet)
+char resp_str[800];  // command response string

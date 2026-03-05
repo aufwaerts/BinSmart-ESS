@@ -1,4 +1,4 @@
-const char SW_VERSION[] = "v2.95";
+const char SW_VERSION[] = "v2.96";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <WebServer.h>  // standard Arduino/ESP32
@@ -119,6 +119,7 @@ void setup() {
     telnet.print("\nNo errors during setup, start polling cycle ...");
     start_uxt = errors_uxt = energy_uxt = unixtime;  // called by setup(): init timestamps
     ts_cycle = millis();
+    delay(PROCESSING_DELAY);
 }
 
 void loop() {
@@ -607,19 +608,19 @@ void CheckErrors() {
     ShellyCommand(PM2_ADDR, PM_CH0_OFF);
     
     // System halted: prepare continuous error message
-    sprintf(tn_str, "%sBinSmart ESS %s\r\n\n%sSystem halted ", CLEAR_SCREEN, SW_VERSION, ERROR_SYMBOL);
-    if (start_uxt) sprintf(tn_str + strlen(tn_str), "at %02d/%02d/%04d %02d:%02d:%02d\r\n   after %d consecutive errors\r\n\n", day(unixtime), month(unixtime), year(unixtime), hour(unixtime), minute(unixtime), second(unixtime), errors_consecutive);
-    else strcat(tn_str, "during setup\r\n\n");
-    strcat(tn_str, "Last error: ");
-    strcat(tn_str, last_error_str);
-    strcat(tn_str, "\r\n\nPress any key to restart: ");
+    sprintf(cycle_str, "%sBinSmart ESS %s\r\n\n%sSystem halted ", CLEAR_SCREEN, SW_VERSION, ERROR_SYMBOL);
+    if (start_uxt) sprintf(cycle_str + strlen(cycle_str), "at %02d/%02d/%04d %02d:%02d:%02d\r\n   after %d consecutive errors\r\n\n", day(unixtime), month(unixtime), year(unixtime), hour(unixtime), minute(unixtime), second(unixtime), errors_consecutive);
+    else strcat(cycle_str, "during setup\r\n\n");
+    strcat(cycle_str, "Last error: ");
+    strcat(cycle_str, last_error_str);
+    strcat(cycle_str, "\r\n\nPress any key to restart: ");
 
     while (true) {  // wait for user to confirm restart
         ts_cycle = millis();
         OTA_server.handleClient();  // Check for OTA software update
         if (millis()-ts_pubip >= DDNS_UPDATE_INTERVAL*1000) UpdateDDNS();  // keep updating DDNS in order to be reachable via Internet
         if (!telnet) telnet = telnet_server.available();
-        if (telnet) telnet.print(tn_str);
+        if (telnet) telnet.print(cycle_str);
         for (int i=0; i<10; i++) {
             digitalWrite(LED_PIN, HIGH);  delay(20); digitalWrite(LED_PIN, LOW); delay(40); // indicates halted system
         }
@@ -651,59 +652,59 @@ void SetMWPower(const int mw_power) {
 void UserIO() {
 
     // Prepare telnet status message
-    strcpy(tn_str, CLEAR_SCREEN);
-    strcat(tn_str, "BinSmart ESS ");
-    strcat(tn_str, SW_VERSION);
-    strcat(tn_str, " ");
-    if (error_flag && (command != 'e')) strcat(tn_str, ERROR_SYMBOL);  // "unread error" symbol
-    strcat(tn_str, WIFI_SYMBOL[WiFi.RSSI() >= GOOD_WIFI_RSSI]);
+    strcpy(cycle_str, CLEAR_SCREEN);
+    strcat(cycle_str, "BinSmart ESS ");
+    strcat(cycle_str, SW_VERSION);
+    strcat(cycle_str, " ");
+    if (error_flag && (command != 'e')) strcat(cycle_str, ERROR_SYMBOL);  // "unread error" symbol
+    strcat(cycle_str, WIFI_SYMBOL[WiFi.RSSI() >= GOOD_WIFI_RSSI]);
 
     // Time, cycle time, operations symbol
-    sprintf(tn_str + strlen(tn_str), "\r\n%02d:%02d:%02d +%d.%03d%s\r\n", hour(unixtime), minute(unixtime), second(unixtime), msecs_cycle/1000, msecs_cycle%1000, OPS_SYMBOL[!power_new + (pm1_eco_mode && pm2_eco_mode)]);
+    sprintf(cycle_str + strlen(cycle_str), "\r\n%02d:%02d:%02d +%d.%03d%s\r\n", hour(unixtime), minute(unixtime), second(unixtime), msecs_cycle/1000, msecs_cycle%1000, OPS_SYMBOL[!power_new + (pm1_eco_mode && pm2_eco_mode)]);
 
     // PV power, nighttime/daytime symbol
-    sprintf(tn_str + strlen(tn_str), "\r\n%4d ", int(round(power_pv)));
-    strcat(tn_str, NIGHT_DAY_SYMBOL[(min_of_day >= sunrise) && (min_of_day < sunset)]);
-    strcat(tn_str, PV_FLOW_SYMBOL[(round(power_pv) > 0) + (round(power_pv) >= PV_MAX_POWER)]);
-    strcat(tn_str, CABLE_SYMBOL);
-    strcat(tn_str, PV_CABLE_SYMBOL);
+    sprintf(cycle_str + strlen(cycle_str), "\r\n%4d ", int(round(power_pv)));
+    strcat(cycle_str, NIGHT_DAY_SYMBOL[(min_of_day >= sunrise) && (min_of_day < sunset)]);
+    strcat(cycle_str, PV_FLOW_SYMBOL[(round(power_pv) > 0) + (round(power_pv) >= PV_MAX_POWER)]);
+    strcat(cycle_str, CABLE_SYMBOL);
+    strcat(cycle_str, PV_CABLE_SYMBOL);
 
     // ESS power
-    strcat(tn_str, ESS_CABLE_SYMBOL);
-    strcat(tn_str, CABLE_SYMBOL);
+    strcat(cycle_str, ESS_CABLE_SYMBOL);
+    strcat(cycle_str, CABLE_SYMBOL);
     if (!power_old)
-        strcat(tn_str, ESS_FLOW_SYMBOL[!mw_limit_old + 2*(!hm_limit_old)]);
+        strcat(cycle_str, ESS_FLOW_SYMBOL[!mw_limit_old + 2*(!hm_limit_old)]);
     if (power_old > 0)
-        strcat(tn_str, MW_FLOW_SYMBOL[(power_old == mw_limit_old) + ((power_old == mw_limit_old) && (mw_limit_old >= MW_MAX_POWER))][power_grid_to_ess > power_pv_to_ess]);
+        strcat(cycle_str, MW_FLOW_SYMBOL[(power_old == mw_limit_old) + ((power_old == mw_limit_old) && (mw_limit_old >= MW_MAX_POWER))][power_grid_to_ess > power_pv_to_ess]);
     if (power_old < 0)
-        strcat(tn_str, HM_FLOW_SYMBOL[(power_old == hm_limit_old) + (power_old == HM_MAX_POWER)]);
+        strcat(cycle_str, HM_FLOW_SYMBOL[(power_old == hm_limit_old) + (power_old == HM_MAX_POWER)]);
     int vbat_idle = vbat-round(cbat/16.0);  // voltage at cbat=0 (needed for accurate battery charge level)
-    strcat(tn_str, BAT_LEVEL_SYMBOL[(vbat_idle > vcell_uvp*8) ? min(((vbat_idle/8-vcell_uvp)*(BAT_LEVELS-2))/(vcell_ovp-vcell_uvp)+1, BAT_LEVELS-1) : 0]);
-    sprintf(tn_str + strlen(tn_str), "%d", int(round(power_ess)));
-    if (power_new != power_old) strcat(tn_str, DIFF_SYMBOL[(power_new < power_old) + !filter_cycles]);
-    else if (filter_cycles && (filter_cycles < POWER_FILTER_CYCLES)) strcat(tn_str, POWERFILTER_SYMBOL);
-    if (manual_mode) strcat(tn_str, MANUAL_MODE_SYMBOL);
-    if (auto_recharge) strcat(tn_str, AUTO_RECHARGE_SYMBOL);
-    strcat(tn_str, "\r\n");
+    strcat(cycle_str, BAT_LEVEL_SYMBOL[(vbat_idle > vcell_uvp*8) ? min(((vbat_idle/8-vcell_uvp)*(BAT_LEVELS-2))/(vcell_ovp-vcell_uvp)+1, BAT_LEVELS-1) : 0]);
+    sprintf(cycle_str + strlen(cycle_str), "%d", int(round(power_ess)));
+    if (power_new != power_old) strcat(cycle_str, DIFF_SYMBOL[(power_new < power_old) + !filter_cycles]);
+    else if (filter_cycles && (filter_cycles < POWER_FILTER_CYCLES)) strcat(cycle_str, POWERFILTER_SYMBOL);
+    if (manual_mode) strcat(cycle_str, MANUAL_MODE_SYMBOL);
+    if (auto_recharge) strcat(cycle_str, AUTO_RECHARGE_SYMBOL);
+    strcat(cycle_str, "\r\n");
 
     // House symbol
-    strcat(tn_str, HOUSE_SYMBOL);
+    strcat(cycle_str, HOUSE_SYMBOL);
 
     // Grid power
-    sprintf(tn_str + strlen(tn_str), "\r\n%4d ", int(round(power_grid)));
-    strcat(tn_str, GRID_SYMBOL);
-    strcat(tn_str, GRID_FLOW_SYMBOL[(int(round(power_grid)) > 0)  + 2*(int(round(power_grid)) < 0)][power_ess_to_grid > power_pv_to_grid]);
-    strcat(tn_str, CABLE_SYMBOL);
-    strcat(tn_str, GRID_CABLE_SYMBOL);
+    sprintf(cycle_str + strlen(cycle_str), "\r\n%4d ", int(round(power_grid)));
+    strcat(cycle_str, GRID_SYMBOL);
+    strcat(cycle_str, GRID_FLOW_SYMBOL[(int(round(power_grid)) > 0)  + 2*(int(round(power_grid)) < 0)][power_ess_to_grid > power_pv_to_grid]);
+    strcat(cycle_str, CABLE_SYMBOL);
+    strcat(cycle_str, GRID_CABLE_SYMBOL);
 
     // Power to consumers
-    strcat(tn_str, CONS_CABLE_SYMBOL);
-    strcat(tn_str, CABLE_SYMBOL);
-    if (power_grid_to_cons >= max(power_pv_to_cons, power_ess_to_cons)) strcat(tn_str, CONS_FLOW_SYMBOL[0]);
-    if (power_ess_to_cons >= max(power_grid_to_cons, power_pv_to_cons)) strcat(tn_str, CONS_FLOW_SYMBOL[1]);
-    if (power_pv_to_cons >= max(power_grid_to_cons, power_ess_to_cons)) strcat(tn_str, CONS_FLOW_SYMBOL[2]);
-    strcat(tn_str, CONS_SYMBOL);
-    sprintf(tn_str + strlen(tn_str), " %.0f\r\n\n", power_cons);
+    strcat(cycle_str, CONS_CABLE_SYMBOL);
+    strcat(cycle_str, CABLE_SYMBOL);
+    if (power_grid_to_cons >= max(power_pv_to_cons, power_ess_to_cons)) strcat(cycle_str, CONS_FLOW_SYMBOL[0]);
+    if (power_ess_to_cons >= max(power_grid_to_cons, power_pv_to_cons)) strcat(cycle_str, CONS_FLOW_SYMBOL[1]);
+    if (power_pv_to_cons >= max(power_grid_to_cons, power_ess_to_cons)) strcat(cycle_str, CONS_FLOW_SYMBOL[2]);
+    strcat(cycle_str, CONS_SYMBOL);
+    sprintf(cycle_str + strlen(cycle_str), " %.0f\r\n\n", power_cons);
 
     // Read user command
     if (telnet.available()) command = telnet.read();
@@ -711,10 +712,10 @@ void UserIO() {
     // Append user command response to telnet message
     switch (command) {
         case 'm':
-            command = '\0';  // ask for user input only once
-            telnet.printf("%s%s", tn_str, "Enter ESS power: ");
-            ts_userio = millis();
-            while (!telnet.available() && (millis()-ts_userio < USERIO_TIMEOUT));
+            command = '\0';  // react to command only once
+            telnet.printf("%s%s", cycle_str, "Enter ESS power: ");
+            ts_user = millis();
+            while (!telnet.available() && (millis()-ts_user < USER_TIMEOUT));
             if (telnet.available()) {
                 power_manual = telnet.parseInt();
                 manual_mode = true;
@@ -724,108 +725,96 @@ void UserIO() {
                 if (!manual_mode) strcpy(resp_str, "Automatic mode remains activated\r\n\n");
                 else sprintf(resp_str, "ESS power remains at %d W\r\n\n", power_manual);
             }
-            ts_userio = millis();
             break;
         case 'a':
-            command = '\0';  // switch to automatic mode only once
+            command = '\0';  // react to command only once
             manual_mode = false;
             strcpy(resp_str, "Automatic mode activated\r\n\n");
-            ts_userio = millis();
             break;
         case 'g':
-            command = '\0';  // ask for user input only once
-            telnet.printf("%s%s", tn_str, "Enter grid power target: ");
-            ts_userio = millis();
-            while (!telnet.available() && (millis()-ts_userio < USERIO_TIMEOUT));
+            command = '\0';  // react to command only once
+            telnet.printf("%s%s", cycle_str, "Enter grid power target: ");
+            ts_user = millis();
+            while (!telnet.available() && (millis()-ts_user < USER_TIMEOUT));
             if (telnet.available()) {
                 power_grid_target = telnet.parseInt();
                 sprintf(resp_str, "Grid power target set to %d W\r\n\n", power_grid_target);
             }
             else sprintf(resp_str, "Grid power target remains at %d W\r\n\n", power_grid_target);
-            ts_userio = millis();
             break;
         case 'p':
             // AC/DC power status
-            sprintf(tn_str + strlen(tn_str), "AC power setting: %d W\r\nAC power reading: %.1f W\r\n", power_old, power_ess);
-            sprintf(tn_str + strlen(tn_str), "DC power reading: %.1f W\r\nAC/DC conv. eff.: %.1f %%\r\n\n", pbat, (power_ess >= 0) ? pbat/power_ess*100 : power_ess/pbat*100);
+            sprintf(resp_str, "AC power setting: %d W\r\nAC power reading: %.1f W\r\n", power_old, power_ess);
+            sprintf(resp_str + strlen(resp_str), "DC power reading: %.1f W\r\nAC/DC conv. eff.: %.1f %%\r\n\n", pbat, (power_ess >= 0) ? pbat/power_ess*100 : power_ess/pbat*100);
             // Meanwell/Hoymiles power limits
-            sprintf(tn_str + strlen(tn_str), "MW power limit: %d W\r\nHM power limit: %d W\r\n\n", mw_limit, hm_limit);
-            resp_str[0] = '\0';
+            sprintf(resp_str + strlen(resp_str), "MW power limit: %d W\r\nHM power limit: %d W\r\n\n", mw_limit, hm_limit);
             break;
         case 'b':
             // Batt voltage infos
-            sprintf(tn_str + strlen(tn_str), "Cell voltages: %d - %d mV\r\nMax cell diff: %d mV%s\r\n", vcell_min, vcell_max, vcell_max-vcell_min, (bms_bal_on && (vcell_max-vcell_min >= bms_balancer_trigger) && (vcell_max >= bms_balancer_start)) ? BALANCER_SYMBOL : "");
-            sprintf(tn_str + strlen(tn_str), "Batt voltage : %.3f V", vbat/1000.0);
-            if (voltages_uxt != unixtime) sprintf(tn_str + strlen(tn_str), "%s\r\nLast read    : %02d/%02d/%04d %02d:%02d\r\n\n", CLOCK_SYMBOL, day(voltages_uxt), month(voltages_uxt), year(voltages_uxt), hour(voltages_uxt), minute(voltages_uxt));
-            else sprintf(tn_str + strlen(tn_str), "\r\nBatt current : %.2f A\r\n\n", cbat/100.0);
+            sprintf(resp_str, "Cell voltages: %d - %d mV\r\nMax cell diff: %d mV%s\r\n", vcell_min, vcell_max, vcell_max-vcell_min, (bms_bal_on && (vcell_max-vcell_min >= bms_balancer_trigger) && (vcell_max >= bms_balancer_start)) ? BALANCER_SYMBOL : "");
+            sprintf(resp_str + strlen(resp_str), "Batt voltage : %.3f V", vbat/1000.0);
+            if (voltages_uxt != unixtime) sprintf(resp_str + strlen(resp_str), "%s\r\nLast read    : %02d/%02d/%04d %02d:%02d\r\n\n", CLOCK_SYMBOL, day(voltages_uxt), month(voltages_uxt), year(voltages_uxt), hour(voltages_uxt), minute(voltages_uxt));
+            else sprintf(resp_str + strlen(resp_str), "\r\nBatt current : %.2f A\r\n\n", cbat/100.0);
             // BMS switch status
-            sprintf(tn_str + strlen(tn_str), "Balancer switch : %s\r\nDischarge switch: %s\r\n\n", (bms_bal_on) ? "on" : "off", (bms_disch_on) ? "on" : "off");
-            resp_str[0] = '\0';
+            sprintf(resp_str + strlen(resp_str), "Balancer switch : %s\r\nDischarge switch: %s\r\n\n", (bms_bal_on) ? "on" : "off", (bms_disch_on) ? "on" : "off");
             break;
         case 'd':
-            sprintf(tn_str + strlen(tn_str), "ESS public IP address: %s\r\nLast address check   : %02d/%02d/%04d %02d:%02d\r\n", pubip_addr.toString().c_str(), day(pubip_uxt), month(pubip_uxt), year(pubip_uxt), hour(pubip_uxt), minute(pubip_uxt));
-            sprintf(tn_str + strlen(tn_str), "Last DDNS update     : %02d/%02d/%04d %02d:%02d\r\n\n", day(ddns_uxt), month(ddns_uxt), year(ddns_uxt), hour(ddns_uxt), minute(ddns_uxt));
-            resp_str[0] = '\0';
+            sprintf(resp_str, "ESS public IP address: %s\r\nLast address check   : %02d/%02d/%04d %02d:%02d\r\n", pubip_addr.toString().c_str(), day(pubip_uxt), month(pubip_uxt), year(pubip_uxt), hour(pubip_uxt), minute(pubip_uxt));
+            sprintf(resp_str + strlen(resp_str), "Last DDNS update     : %02d/%02d/%04d %02d:%02d\r\n\n", day(ddns_uxt), month(ddns_uxt), year(ddns_uxt), hour(ddns_uxt), minute(ddns_uxt));
             break;
         case 'w':
-            sprintf(tn_str + strlen(tn_str), "WiFi RSSI: %d dBm\r\nChip temp: %.1f °C\r\n\n", WiFi.RSSI(), temperatureRead());
-            resp_str[0] = '\0';
+            sprintf(resp_str, "WiFi RSSI: %d dBm\r\nChip temp: %.1f °C\r\n\n", WiFi.RSSI(), temperatureRead());
             break;
         case 't':
-            sprintf(tn_str + strlen(tn_str), "Local time   : %02d/%02d/%04d %02d:%02d:%02d", day(unixtime), month(unixtime), year(unixtime), hour(unixtime), minute(unixtime), second(unixtime));
-            sprintf(tn_str + strlen(tn_str), "\r\nTimezone     : UTC%+d\r\nSDT/DST      : %s", TIMEZONE, (utc_offset == TIMEZONE) ? "SDT" : "DST");
-            sprintf(tn_str + strlen(tn_str), "\r\nESS started  : %02d/%02d/%04d %02d:%02d:%02d", day(start_uxt), month(start_uxt), year(start_uxt), hour(start_uxt), minute(start_uxt), second(start_uxt));
-            sprintf(tn_str + strlen(tn_str), "\r\nESS uptime   : %03dd %02dh %02dm %02ds", (unixtime-start_uxt)/86400, ((unixtime-start_uxt)%86400)/3600, ((unixtime-start_uxt)/60)%60, (unixtime-start_uxt)%60);
-            sprintf(tn_str + strlen(tn_str), "\r\nSunrise today: %02d:%02d\r\nSunset today : %02d:%02d\r\n\n", sunrise/60, sunrise%60, sunset/60, sunset%60); 
-            resp_str[0] = '\0';
+            sprintf(resp_str, "Local time   : %02d/%02d/%04d %02d:%02d:%02d", day(unixtime), month(unixtime), year(unixtime), hour(unixtime), minute(unixtime), second(unixtime));
+            sprintf(resp_str + strlen(resp_str), "\r\nTimezone     : UTC%+d\r\nSDT/DST      : %s", TIMEZONE, (utc_offset == TIMEZONE) ? "SDT" : "DST");
+            sprintf(resp_str + strlen(resp_str), "\r\nESS started  : %02d/%02d/%04d %02d:%02d:%02d", day(start_uxt), month(start_uxt), year(start_uxt), hour(start_uxt), minute(start_uxt), second(start_uxt));
+            sprintf(resp_str + strlen(resp_str), "\r\nESS uptime   : %03dd %02dh %02dm %02ds", (unixtime-start_uxt)/86400, ((unixtime-start_uxt)%86400)/3600, ((unixtime-start_uxt)/60)%60, (unixtime-start_uxt)%60);
+            sprintf(resp_str + strlen(resp_str), "\r\nSunrise today: %02d:%02d\r\nSunset today : %02d:%02d\r\n\n", sunrise/60, sunrise%60, sunset/60, sunset%60); 
             break;
         case 'l':
-            sprintf(tn_str + strlen(tn_str), "Lowest cons. since %02d/%02d/%04d %02d:%02d:\r\n", day(start_uxt), month(start_uxt), year(start_uxt), hour(start_uxt), minute(start_uxt));
-            if (!minpower_uxt) strcat(tn_str, "Not yet measured\r\n\n");
-            else sprintf(tn_str + strlen(tn_str), "%.1f W (measured %02d/%02d/%04d %02d:%02d)\r\n\n", power_grid_min, day(minpower_uxt), month(minpower_uxt), year(minpower_uxt), hour(minpower_uxt), minute(minpower_uxt));
-            resp_str[0] = '\0';
+            sprintf(resp_str, "Lowest cons. since %02d/%02d/%04d %02d:%02d:\r\n", day(start_uxt), month(start_uxt), year(start_uxt), hour(start_uxt), minute(start_uxt));
+            if (!minpower_uxt) strcat(resp_str, "Not yet measured\r\n\n");
+            else sprintf(resp_str + strlen(resp_str), "%.1f W (measured %02d/%02d/%04d %02d:%02d)\r\n\n", power_grid_min, day(minpower_uxt), month(minpower_uxt), year(minpower_uxt), hour(minpower_uxt), minute(minpower_uxt));
             break;
         case 'n':
-            sprintf(tn_str + strlen(tn_str), "Energy [kWh] since %02d/%02d/%04d %02d:%02d:\r\n\n", day(energy_uxt), month(energy_uxt), year(energy_uxt), hour(energy_uxt), minute(energy_uxt));
+            sprintf(resp_str, "Energy [kWh] since %02d/%02d/%04d %02d:%02d:\r\n\n", day(energy_uxt), month(energy_uxt), year(energy_uxt), hour(energy_uxt), minute(energy_uxt));
             // PV energy
-            sprintf(tn_str + strlen(tn_str), "%7.3f %s%s%s%s%s%s %.1f﹪+%.1f﹪\r\n", en_from_pv/1000, NIGHT_DAY_SYMBOL[1], PV_FLOW_SYMBOL[1], PV_CABLE_SYMBOL, ESS_CABLE_SYMBOL, MW_FLOW_SYMBOL[0][0], ESS_SYMBOL, (en_pv_to_ess-en_pv_wasted)/en_from_pv*100, en_pv_wasted/en_from_pv*100);
-            sprintf(tn_str + strlen(tn_str), "  %s\r\n", HOUSE_SYMBOL);
-            sprintf(tn_str + strlen(tn_str), "%6.1f﹪%s%s%s%s%s%s %.1f﹪\r\n\n", en_pv_to_grid/en_from_pv*100, GRID_SYMBOL, GRID_FLOW_SYMBOL[2][0], GRID_CABLE_SYMBOL, CONS_CABLE_SYMBOL, CONS_FLOW_SYMBOL[2], CONS_SYMBOL, en_pv_to_cons/en_from_pv*100);
+            sprintf(resp_str + strlen(resp_str), "%7.3f %s%s%s%s%s%s %.1f﹪+%.1f﹪\r\n", en_from_pv/1000, NIGHT_DAY_SYMBOL[1], PV_FLOW_SYMBOL[1], PV_CABLE_SYMBOL, ESS_CABLE_SYMBOL, MW_FLOW_SYMBOL[0][0], ESS_SYMBOL, (en_pv_to_ess-en_pv_wasted)/en_from_pv*100, en_pv_wasted/en_from_pv*100);
+            sprintf(resp_str + strlen(resp_str), "  %s\r\n", HOUSE_SYMBOL);
+            sprintf(resp_str + strlen(resp_str), "%6.1f﹪%s%s%s%s%s%s %.1f﹪\r\n\n", en_pv_to_grid/en_from_pv*100, GRID_SYMBOL, GRID_FLOW_SYMBOL[2][0], GRID_CABLE_SYMBOL, CONS_CABLE_SYMBOL, CONS_FLOW_SYMBOL[2], CONS_SYMBOL, en_pv_to_cons/en_from_pv*100);
             // ESS energy
-            sprintf(tn_str + strlen(tn_str), "                %s%s%s %.3f\r\n", ESS_CABLE_SYMBOL, HM_FLOW_SYMBOL[0], ESS_SYMBOL, en_from_ess/1000);
-            sprintf(tn_str + strlen(tn_str), "  %s\r\n", HOUSE_SYMBOL);
-            sprintf(tn_str + strlen(tn_str), "%6.1f﹪%s%s%s%s%s%s %.1f﹪\r\n\n", en_ess_to_grid/en_from_ess*100, GRID_SYMBOL, GRID_FLOW_SYMBOL[2][1], GRID_CABLE_SYMBOL, CONS_CABLE_SYMBOL, CONS_FLOW_SYMBOL[1], CONS_SYMBOL, en_ess_to_cons/en_from_ess*100);
+            sprintf(resp_str + strlen(resp_str), "                %s%s%s %.3f\r\n", ESS_CABLE_SYMBOL, HM_FLOW_SYMBOL[0], ESS_SYMBOL, en_from_ess/1000);
+            sprintf(resp_str + strlen(resp_str), "  %s\r\n", HOUSE_SYMBOL);
+            sprintf(resp_str + strlen(resp_str), "%6.1f﹪%s%s%s%s%s%s %.1f﹪\r\n\n", en_ess_to_grid/en_from_ess*100, GRID_SYMBOL, GRID_FLOW_SYMBOL[2][1], GRID_CABLE_SYMBOL, CONS_CABLE_SYMBOL, CONS_FLOW_SYMBOL[1], CONS_SYMBOL, en_ess_to_cons/en_from_ess*100);
             // Grid energy
-            sprintf(tn_str + strlen(tn_str), "                %s%s%s %.1f﹪\r\n", ESS_CABLE_SYMBOL, MW_FLOW_SYMBOL[0][1], ESS_SYMBOL, en_grid_to_ess/en_from_grid*100);
-            sprintf(tn_str + strlen(tn_str), "  %s\r\n", HOUSE_SYMBOL);
-            sprintf(tn_str + strlen(tn_str), "%7.3f %s%s%s%s%s%s %.1f﹪\r\n\n", en_from_grid/1000, GRID_SYMBOL, GRID_FLOW_SYMBOL[1][0], GRID_CABLE_SYMBOL, CONS_CABLE_SYMBOL, CONS_FLOW_SYMBOL[0], CONS_SYMBOL, en_grid_to_cons/en_from_grid*100);
+            sprintf(resp_str + strlen(resp_str), "                %s%s%s %.1f﹪\r\n", ESS_CABLE_SYMBOL, MW_FLOW_SYMBOL[0][1], ESS_SYMBOL, en_grid_to_ess/en_from_grid*100);
+            sprintf(resp_str + strlen(resp_str), "  %s\r\n", HOUSE_SYMBOL);
+            sprintf(resp_str + strlen(resp_str), "%7.3f %s%s%s%s%s%s %.1f﹪\r\n\n", en_from_grid/1000, GRID_SYMBOL, GRID_FLOW_SYMBOL[1][0], GRID_CABLE_SYMBOL, CONS_CABLE_SYMBOL, CONS_FLOW_SYMBOL[0], CONS_SYMBOL, en_grid_to_cons/en_from_grid*100);
             // Meanwell/Hoymiles/ESS efficiency
-            sprintf(tn_str + strlen(tn_str), "MW AC▸DC eff.: %.1f﹪\r\nHM DC▸AC eff.: %.1f﹪\r\nAC▸DC▸AC eff.: %.1f﹪\r\n\n", en_to_batt/en_to_ess*100, en_from_ess/en_from_batt*100, en_from_ess/en_to_ess*100);
-            resp_str[0] = '\0';
+            sprintf(resp_str + strlen(resp_str), "MW AC▸DC eff.: %.1f﹪\r\nHM DC▸AC eff.: %.1f﹪\r\nAC▸DC▸AC eff.: %.1f﹪\r\n\n", en_to_batt/en_to_ess*100, en_from_ess/en_from_batt*100, en_from_ess/en_to_ess*100);
             break;
         case 'e':
-            sprintf(tn_str + strlen(tn_str), "Errors since %02d/%02d/%04d %02d:%02d:\r\n", day(errors_uxt), month(errors_uxt), year(errors_uxt), hour(errors_uxt), minute(errors_uxt));
+            sprintf(resp_str, "Errors since %02d/%02d/%04d %02d:%02d:\r\n", day(errors_uxt), month(errors_uxt), year(errors_uxt), hour(errors_uxt), minute(errors_uxt));
             for (int i=0; i<ERROR_TYPES; i++) {
-                sprintf(tn_str + strlen(tn_str), "%-4s: %3d", ERROR_TYPE[i], error_counter[i]);
-                if (error_counter[i]) sprintf(tn_str + strlen(tn_str), " (last: %02d/%02d/%04d %02d:%02d)", day(errortime[i]), month(errortime[i]), year(errortime[i]), hour(errortime[i]), minute(errortime[i]));
-                strcat(tn_str, "\r\n");
+                sprintf(resp_str + strlen(resp_str), "%-4s: %3d", ERROR_TYPE[i], error_counter[i]);
+                if (error_counter[i]) sprintf(resp_str + strlen(resp_str), " (last: %02d/%02d/%04d %02d:%02d)", day(errortime[i]), month(errortime[i]), year(errortime[i]), hour(errortime[i]), minute(errortime[i]));
+                strcat(resp_str, "\r\n");
             }
-            strcat(tn_str, "\n");
-            if (error_str[0] != '\0') sprintf(tn_str + strlen(tn_str), "%s%s\r\n\n", ERROR_SYMBOL, error_str);  // error has just occured: show ERROR_SYMBOL
-            else if (last_error_str[0] != '\0') sprintf(tn_str + strlen(tn_str), "Last: %s\r\n\n", last_error_str);
+            strcat(resp_str, "\n");
+            if (error_str[0] != '\0') sprintf(resp_str + strlen(resp_str), "%s%s\r\n\n", ERROR_SYMBOL, error_str);  // error has just occured: show ERROR_SYMBOL
+            else if (last_error_str[0] != '\0') sprintf(resp_str + strlen(resp_str), "Last: %s\r\n\n", last_error_str);
             error_flag = false;
-            resp_str[0] = '\0';
             break;
         case 's':
-            sprintf(tn_str + strlen(tn_str), "Shelly relay ops since %02d/%02d/%04d %02d:%02d:\r\n", day(start_uxt), month(start_uxt), year(start_uxt), hour(start_uxt), minute(start_uxt));
-            sprintf(tn_str + strlen(tn_str), "Meanwell: %d (%d/day)\r\nHoymiles: %d (%d/day)\r\n\n", mw_counter, mw_counter/((unixtime-start_uxt)/86400+1), hm_counter, hm_counter/((unixtime-start_uxt)/86400+1));
-            resp_str[0] = '\0';
+            sprintf(resp_str, "Shelly relay ops since %02d/%02d/%04d %02d:%02d:\r\n", day(start_uxt), month(start_uxt), year(start_uxt), hour(start_uxt), minute(start_uxt));
+            sprintf(resp_str + strlen(resp_str), "Meanwell: %d (%d/day)\r\nHoymiles: %d (%d/day)\r\n\n", mw_counter, mw_counter/((unixtime-start_uxt)/86400+1), hm_counter, hm_counter/((unixtime-start_uxt)/86400+1));
             break;
         case 'z':
-            command = '\0';  // ask for user input only once
-            telnet.printf("%s%s", tn_str, "Reset [e]rror or e[n]ergy stats: ");
-            ts_userio = millis();
-            while (!telnet.available() && (millis()-ts_userio < USERIO_TIMEOUT));
+            command = '\0';  // react to command only once
+            telnet.printf("%s%s", cycle_str, "Reset [e]rror or e[n]ergy stats: ");
+            ts_user = millis();
+            while (!telnet.available() && (millis()-ts_user < USER_TIMEOUT));
             if (telnet.available()) {
                 char input = telnet.read();
                 if (input == 'n') {
@@ -835,7 +824,6 @@ void UserIO() {
                     en_from_batt = en_to_batt = 0;  // Reset ESS DC energy counters
                     energy_uxt = unixtime;
                     strcpy(resp_str, "Energy stats reset to zero\r\n\n");
-                    ts_userio = millis();
                     break;
                 }
                 if (input == 'e') {
@@ -845,21 +833,19 @@ void UserIO() {
                     error_flag = false;
                     errors_uxt = unixtime;
                     strcpy(resp_str, "Error stats reset to zero\r\n\n");
-                    ts_userio = millis();
                     break;
                 }
             }
             strcpy(resp_str, "No stats reset\r\n\n");
-            ts_userio = millis();
             break;
         case 'c':
             command = resp_str[0] = '\0';
             break;
         case 'r':
-            command = '\0';  // ask for user input only once
-            telnet.printf("%s%s", tn_str, "Enter [y] to confirm system reboot: ");
-            ts_userio = millis();
-            while (!telnet.available() && (millis()-ts_userio < USERIO_TIMEOUT));
+            command = '\0';  // react to command only once
+            telnet.printf("%s%s", cycle_str, "Enter [y] to confirm system reboot: ");
+            ts_user = millis();
+            while (!telnet.available() && (millis()-ts_user < USER_TIMEOUT));
             if (telnet.available()) {
                 if (telnet.read() == 'y') {
                     telnet.print("\r\nRestarting in 3 seconds, re-open terminal ...\r\n");
@@ -870,30 +856,28 @@ void UserIO() {
                 }
             }
             strcpy(resp_str, "System not rebooted\r\n\n");
-            ts_userio = millis();
             break;
         case 'h':
-            strcat(tn_str, "Command options:\r\n");
-            strcat(tn_str, "[m] - Manual power mode\r\n");
-            strcat(tn_str, "[a] - Automatic power mode\r\n");
-            strcat(tn_str, "[g] - Grid power target\r\n");
-            strcat(tn_str, "[p] - Power status\r\n");
-            strcat(tn_str, "[b] - Batt/BMS status\r\n");
-            strcat(tn_str, "[d] - DDNS status\r\n");
-            strcat(tn_str, "[w] - WiFi RSSI, chip temp\r\n");
-            strcat(tn_str, "[t] - Time, uptime, astro times\r\n");
-            strcat(tn_str, "[l] - Lowest power consumption\r\n");
-            strcat(tn_str, "[n] - Energy stats\r\n");
-            strcat(tn_str, "[e] - Error stats\r\n");
-            strcat(tn_str, "[s] - Shelly relay counter\r\n");
-            strcat(tn_str, "[z] - Reset stats to zero\r\n");
-            strcat(tn_str, "[c] - Clear command response\r\n");
-            strcat(tn_str, "[r] - Reboot system\r\n\n");
-            resp_str[0] = '\0';
+            command = '\0';  // react to command only once
+            strcpy(resp_str, "Command options:\r\n");
+            strcat(resp_str, "[m] - Manual power mode\r\n");
+            strcat(resp_str, "[a] - Automatic power mode\r\n");
+            strcat(resp_str, "[g] - Grid power target\r\n");
+            strcat(resp_str, "[p] - Power status\r\n");
+            strcat(resp_str, "[b] - Batt/BMS status\r\n");
+            strcat(resp_str, "[d] - DDNS status\r\n");
+            strcat(resp_str, "[w] - WiFi RSSI, chip temp\r\n");
+            strcat(resp_str, "[t] - Time, uptime, astro times\r\n");
+            strcat(resp_str, "[l] - Lowest power consumption\r\n");
+            strcat(resp_str, "[n] - Energy stats\r\n");
+            strcat(resp_str, "[e] - Error stats\r\n");
+            strcat(resp_str, "[s] - Shelly relay counter\r\n");
+            strcat(resp_str, "[z] - Reset stats to zero\r\n");
+            strcat(resp_str, "[c] - Clear command response\r\n");
+            strcat(resp_str, "[r] - Reboot system\r\n\n");
             break;
     }
-    if (millis()-ts_userio > USERIO_TIMEOUT) resp_str[0] = '\0';  // clear command response if shown long enough
-    telnet.printf("%s%s%s", tn_str, resp_str, CMD_PROMPT);  // print output message and user command response
+    telnet.printf("%s%s%s", cycle_str, resp_str, CMD_PROMPT);  // print output message, user command response and command prompt
 }
 
 bool UpdateDDNS() {
