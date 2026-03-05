@@ -42,7 +42,7 @@ const int POWER_TARGET_DEFAULT = 5;  // System is aiming for this amount of watt
 const int POWER_TARGET_TOLERANCE = 5;  // Max tolerated deviation (+/-) from target power
 const int POWER_RAMPDOWN_RATE = -40; // Max power decrease per cycle
 const int POWER_FILTER_CYCLES = 12;  // Number of cycles during which power spikes are filtered out
-const float POWER_LIMIT_RAMPDOWN = 0.67;  // Power rampdown rate when ESS_OVP or ESS_UVP is reached
+const float POWER_LIMIT_RAMPDOWN = 0.67;  // Power rampdown rate when vcell_ovp or vcell_uvp is reached
 const float PM2_MW_POWER_CORR = 1.006;  // Power correction factor for MW power readings with PM2
 
 // Time/timer settings
