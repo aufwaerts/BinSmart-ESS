@@ -45,9 +45,9 @@ const int PROCESSING_DELAY = 2000;  // minimum delay (in msecs) for power change
 const int HTTP_TIMEOUT = 3000;  // max waiting time (in msecs) during http requests
 const int DDNS_UPDATE_INTERVAL = 60;  // DDNS IP address check interval (in secs)
 const int MW_KEEPALIVE = 40;  // number of secs after which Shelly 2PM receives "keep alive" message (must be less than corresponding Shelly timer)
+const int RF24_KEEPALIVE = 43;  // number of secs after which Hoymiles RF24 interface receives "keep alive" message (must be less than one minute)
 const int RF24_WAIT = 50;  // min Hoymiles RF24 waiting time (in msecs) after previous response
 const int RF24_TIMEOUT = 1000;  // max waiting time (in msecs) for RF24 ACKs after writeFast()
-const int RF24_KEEPALIVE = 50;  // number of secs after which Hoymiles RF24 interface receives "keep alive" message
 const int BMS_WAIT = 50;  // min BMS waiting time (in msecs) after previous response
 const int BMS_TIMEOUT1 = 20;  // max waiting time (in msecs) for BMS response
 const int BMS_TIMEOUT2 = 3;  // max additional waiting time (in msecs) if response is incomplete
@@ -74,10 +74,9 @@ const int MW_LOW_POWER_THRESHOLD = 31;  // power output below MW_LOW_POWER_THRES
 const byte RF24_CHANNEL = 03; // Possible RF24 channles for Hoymiles comms are 03, 23, 40, 61, 75; frequency in MHz is 2400 + channel
 const byte RF24_PALEVEL = RF24_PA_MIN; // Possible RF24 PA levels are RF24_PA_MIN, RF24_PA_LOW, RF24_PA_HIGH, RF24_PA_MAX
 const byte HM_RADIO_ID[] = {0x01, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5]};
-const byte HM_POWER_ON = 0x00;
-const byte HM_POWER_OFF = 0x01;
-const byte HM_SWITCH[2][15] = {{0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17, 0x41, 0x72, 0x81, HM_POWER_ON, 0x00, 0xB0, 0x01, 0x44},
-                               {0x51, HM_SN[2], HM_SN[3], HM_SN[4], HM_SN[5], 0x80, 0x17, 0x41, 0x72, 0x81, HM_POWER_OFF, 0x00, 0x20, 0x00, 0xD4}};
+const byte HM_TURNON = 0x00;
+const byte HM_TURNOFF = 0x01;
+const byte HM_POWERLIMIT = 0x0B;
 
 // Hoymiles power parameters
 const int HM_MIN_POWER = -15;  // Hoymiles turned off above min_power (power would be too unstable)

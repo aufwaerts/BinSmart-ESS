@@ -1,4 +1,4 @@
-const char SW_VERSION[] = "v2.93";
+const char SW_VERSION[] = "v2.94";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <WebServer.h>  // standard Arduino/ESP32
@@ -48,10 +48,9 @@ void setup() {
     delay(2000);
 
     // Init PWM generator (for adjusting Meanwell power)
-    if (!ledcAttachChannel(PWM_OUTPUT_PIN, PWM_FREQ, PWM_RESOLUTION, PWM_CHANNEL)) strcpy(error_str, "PWM generator init failed");
+    if (ledcAttachChannel(PWM_OUTPUT_PIN, PWM_FREQ, PWM_RESOLUTION, PWM_CHANNEL) && ledcWrite(PWM_OUTPUT_PIN, DUTY_CYCLE_MAX)) telnet.println("PWM generator initialized");
+    else strcpy(error_str, "PWM generator init failed");
     CheckErrors();
-    SetMWPower(MW_MIN_POWER);
-    telnet.println("PWM generator initialized");
     
     // Init RS485 communication with BMS, read OVP/UVP/balancer/switch settings
     Serial2.begin(115200, SERIAL_8N1, UART_RX_PIN, UART_TX_PIN);
@@ -90,7 +89,7 @@ void setup() {
 
     // Turn off Hoymiles power (if Hoymiles isn't asleep)
     if (!bms_disch_on) telnet.println("Hoymiles is asleep");
-    else if (HoymilesCommand(HM_POWER_OFF)) telnet.println("RF24 communication with Hoymiles OK");
+    else if (HoymilesCommand(HM_TURNOFF)) telnet.println("RF24 communication with Hoymiles OK");
     CheckErrors();
 
     // Set max waiting time for all http requests
@@ -136,9 +135,15 @@ void loop() {
 
 bool ShellyCommand(IPAddress ip_addr, const char command[], const char params[]) {
 
-    if ((ip_addr == PM2_ADDR) && !strcmp(command, PM_STATUS)) {  // read ESS power from Shelly 2PM
-        power_ess = power_new;  // assumption: ESS power reading equals power setting
-        if (!power_new) return true;  // no need to read ESS power if ESS is turned off
+    if (ip_addr == PM2_ADDR) {
+        if (!strcmp(command, PM_STATUS)) {  // command is "read ESS power from Shelly 2PM"
+            power_ess = power_new;  // assumption: ESS power reading equals power setting
+            if (!power_new) return true;  // no need to read ESS power if ESS is turned off
+        }
+        if (!strcmp(command, MW_RELAY) && !strcmp(params, "off")) { // command is "turn Shelly 2PM Meanwell relay off"
+            SetMWPower(MW_MIN_POWER);  // minimizing MW power before turning MW off extends Shelly relay lifetime
+            delay(20);
+        }
     }
 
     if (WiFi.status() != WL_CONNECTED) {  // no need to carry on if WiFi is disconnected
@@ -285,7 +290,7 @@ bool BMSCommand(const byte command[]) {
 
                 switch (command[RS485_DATA_ID_POS]) {
                     case RS485_DISCH_SW_ID:  // process response to "set discharge switch"
-                        if (command[RS485_DATA_ID_POS+1] == 0x01) ts_HM = millis();  // gives Hoymiles time to boot before starting RF24 keep alive messages
+                        ts_HM = millis();  // gives Hoymiles RF24 interface time to boot before (re-)starting RF24 keep alive messages
                         return true;
                     case RS485_VCELLS_ID:  // process response to "read cell voltages"
                         voltages_uxt = unixtime;
@@ -310,44 +315,54 @@ bool BMSCommand(const byte command[]) {
     return false;
 }
 
-bool HoymilesCommand(int hm_command) {
+bool HoymilesCommand(const byte command) {
+
+    unsigned int crc;  // result of CRC-16/MODBUS calculations
 
     while (millis()-ts_HM < RF24_WAIT);  // minimum delay between two consecutive Hoymiles RF24 commands
 
-    if ((hm_command == HM_POWER_OFF) || (hm_command == HM_POWER_ON)) {  // switch command
-        if (radio.writeFast(HM_SWITCH[hm_command], sizeof(HM_SWITCH[0])))
-            if (radio.txStandBy(RF24_TIMEOUT)) {
-                ts_HM = millis();
-                delay(400);  // allow a little more time for power change to stabilize
-                return true;
-            }
-        ts_HM = millis();
-        if (hm_command == HM_POWER_OFF) strcpy(error_str, "RF24 Hoymiles turn off command failed");
-        else strcpy(error_str, "RF24 Hoymiles turn on command failed");
-        return false;
+    switch (command) {
+        case HM_TURNON:
+        case HM_TURNOFF:
+            hm_switch_command[10] = command;
+            crc16.restart();
+            crc16.add(&hm_switch_command[10],2);
+            crc = crc16.getCRC();
+            hm_switch_command[12] = highByte(crc);
+            hm_switch_command[13] = lowByte(crc);
+            crc8.restart();
+            crc8.add(hm_switch_command, 14);
+            hm_switch_command[14] = crc8.getCRC();
+            if (radio.writeFast(hm_switch_command, sizeof(hm_switch_command)))
+                if (radio.txStandBy(RF24_TIMEOUT)) {
+                    ts_HM = millis();
+                    delay(400);  // allow a little more time for power change to stabilize
+                    return true;
+                }
+            ts_HM = millis();
+            sprintf(error_str, "RF24 Hoymiles turn%s command failed", (command == HM_TURNON) ? "on": "off");
+            return false;
+        case HM_POWERLIMIT:
+            unsigned int limit = -10 * power_new;
+            hm_power_command[12] = highByte(limit);
+            hm_power_command[13] = lowByte(limit);
+            crc16.restart();
+            crc16.add(&hm_power_command[10],6);
+            crc = crc16.getCRC();
+            hm_power_command[16] = highByte(crc);
+            hm_power_command[17] = lowByte(crc);
+            crc8.restart();
+            crc8.add(hm_power_command, 18);
+            hm_power_command[18] = crc8.getCRC();
+            if (radio.writeFast(hm_power_command, sizeof(hm_power_command)))
+                if (radio.txStandBy(RF24_TIMEOUT)) {
+                        ts_HM = millis();
+                        return true;
+                }
+            ts_HM = millis();
+            strcpy(error_str, "RF24 Hoymiles power command failed");
+            return false;
     }
-
-    // power limit command
-    unsigned int limit = -10 * hm_command;
-    hm_power[12] = highByte(limit);
-    hm_power[13] = lowByte(limit);
-    crc16.restart();
-    crc16.add(&hm_power[10],6);
-    unsigned int crc = crc16.getCRC();
-    hm_power[16] = highByte(crc);
-    hm_power[17] = lowByte(crc);
-    crc8.restart();
-    crc8.add(hm_power, 18);
-    hm_power[18] = crc8.getCRC();
-
-    if (radio.writeFast(hm_power, sizeof(hm_power)))
-        if (radio.txStandBy(RF24_TIMEOUT)) {
-                ts_HM = millis();
-                return true;
-        }
-    ts_HM = millis();
-    strcpy(error_str, "RF24 Hoymiles power command failed");
-    return false;
 }
 
 void SetNewPower() {
@@ -421,11 +436,9 @@ void SetNewPower() {
     // Apply new power setting
     if (power_new == 0) {  // turn charging or discharging off
         if (power_old < 0)
-            if (!HoymilesCommand(HM_POWER_OFF)) power_new = power_old;
-        if (power_old > 0) {
-            SetMWPower(MW_MIN_POWER);  // extends Shelly relay lifetime
+            if (!HoymilesCommand(HM_TURNOFF)) power_new = power_old;
+        if (power_old > 0)
             if (!ShellyCommand(PM2_ADDR, MW_RELAY, "off")) power_new = MW_MIN_POWER;
-        }
     }
     if (power_new > 0) {  // set new charging power, (if necessary) turn discharging off, turn charging on
         if (power_old > 0) SetMWPower(power_new);  // re-calculate even if power setting remains unchanged (vbat might have changed)
@@ -434,7 +447,7 @@ void SetNewPower() {
             if (!ShellyCommand(PM2_ADDR, MW_RELAY, "on&timer=60")) power_new = 0;
         }
         if (power_old < 0) {
-            if (!HoymilesCommand(HM_POWER_OFF)) power_new = power_old;
+            if (!HoymilesCommand(HM_TURNOFF)) power_new = power_old;
             else {
                 SetMWPower(power_new);
                 if (!ShellyCommand(PM2_ADDR, MW_RELAY, "on&timer=60")) power_new = 0;
@@ -444,20 +457,18 @@ void SetNewPower() {
     if (power_new < 0) {  // set new discharging power, (if necessary) turn charging off, turn discharging on
         if (power_old < 0) {
             if (power_new != power_old)
-                if (!HoymilesCommand(power_new)) power_new = power_old;
+                if (!HoymilesCommand(HM_POWERLIMIT)) power_new = power_old;
         }
         if (power_old == 0) {
-            if (!HoymilesCommand(power_new)) power_new = 0;
-            else if (!HoymilesCommand(HM_POWER_ON)) power_new = 0;
+            if (!HoymilesCommand(HM_POWERLIMIT)) power_new = 0;
+            else if (!HoymilesCommand(HM_TURNON)) power_new = 0;
         }
-        if (power_old > 0) {
-            SetMWPower(MW_MIN_POWER);  // extends Shelly relay lifetime
+        if (power_old > 0)
             if (!ShellyCommand(PM2_ADDR, MW_RELAY, "off")) power_new = MW_MIN_POWER;
             else {
-                if (!HoymilesCommand(power_new)) power_new = 0;
-                else if (!HoymilesCommand(HM_POWER_ON)) power_new = 0;
+                if (!HoymilesCommand(HM_POWERLIMIT)) power_new = 0;
+                else if (!HoymilesCommand(HM_TURNON)) power_new = 0;
             }
-        }
     }
     
     // Calculate cycle duration and reset cycle timestamp
@@ -512,8 +523,8 @@ void FinishCycle() {
 
     // Keep alive Hoymiles RF24 interface (if Hoymiles is awake)
     if ((millis()-ts_HM >= RF24_KEEPALIVE*1000) && bms_disch_on)
-        if (power_new < 0) HoymilesCommand(HM_POWER_ON);
-        else HoymilesCommand(HM_POWER_OFF);
+        if (power_new < 0) HoymilesCommand(HM_TURNON);
+        else HoymilesCommand(HM_TURNOFF);
     
     // Make sure Hoymiles relay state matches BMS discharging switch (i.e. Hoymiles AC on/off state matches DC on/off state)
     if (hm_on != bms_disch_on) ShellyCommand(PM2_ADDR, HM_RELAY, (bms_disch_on) ? "on" : "off");
@@ -544,13 +555,6 @@ void FinishCycle() {
     // Check if public IP address was changed, if yes: update DDNS server entry
     if (unixtime-pubip_uxt >= DDNS_UPDATE_INTERVAL) UpdateDDNS();
 
-    // flash LED to indicate end of cycle
-    digitalWrite(LED_PIN, HIGH);  delay(20); digitalWrite(LED_PIN, LOW);
-
-    // calculate end-of-cycle waiting time (consider ESS sleep mode and time since power change, allow time for userIO and PV power reading)
-    int cycle_delay = PROCESSING_DELAY*(1+(pm1_eco_mode && pm2_eco_mode))-(millis()-ts_cycle)-100;
-    if (cycle_delay > 0) delay(cycle_delay);
-
     // check for OTA software update
     OTA_server.handleClient();
 
@@ -559,7 +563,14 @@ void FinishCycle() {
     if (telnet) UserIO();  // if telnet session exists, print cycle info and handle user command
     else command = '\0';  // no telnet session: clear user command response
 
-    // daytime: read PV power from Shelly 1PM (should take less than 100 ms)
+    // flash LED to indicate end of cycle
+    digitalWrite(LED_PIN, HIGH);  delay(20); digitalWrite(LED_PIN, LOW);
+
+    // wait until power change has almost stabilized (allow time for PV power reading)
+    int cycle_delay = PROCESSING_DELAY*(1+(pm1_eco_mode && pm2_eco_mode))-(millis()-ts_cycle)-100;
+    if (cycle_delay > 0) delay(cycle_delay);
+
+    // daytime: read PV power from Shelly 1PM (should take less than 100 ms, including LED flash)
     if ((min_of_day >= sunrise) && (min_of_day < sunset)) ShellyCommand(PM1_ADDR, PM_STATUS, "0");
     else power_pv = 0;
 
@@ -590,8 +601,7 @@ void CheckErrors() {
     if ((errors_consecutive < ERROR_LIMIT) && start_uxt) return;  // continue with next cycle if below ERROR_LIMIT and no error during setup()
 
     // Error is persistent or error during setup(): Halt the system
-    if (!HoymilesCommand(HM_POWER_OFF)) ShellyCommand(PM2_ADDR, HM_RELAY, "off");
-    SetMWPower(MW_MIN_POWER);
+    if (!HoymilesCommand(HM_TURNOFF)) ShellyCommand(PM2_ADDR, HM_RELAY, "off");
     ShellyCommand(PM2_ADDR, MW_RELAY, "off");
     
     // System halted: prepare continuous error message
