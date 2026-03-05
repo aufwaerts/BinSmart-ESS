@@ -564,7 +564,7 @@ void FinishCycle() {
     // check for telnet session
     if (!telnet) telnet = telnet_server.available();
     if (telnet) UserIO();  // if telnet session exists, print cycle info and handle user command
-    else command = '\0';  // no telnet session: clear user command response
+    else command = resp_str[0] = '\0';  // no telnet session: clear user command response
 
     // flash LED to indicate end of cycle
     digitalWrite(LED_PIN, HIGH);  delay(20); digitalWrite(LED_PIN, LOW);
