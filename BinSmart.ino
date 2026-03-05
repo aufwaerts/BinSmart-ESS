@@ -1,4 +1,4 @@
-const char SW_VERSION[] = "v2.94";
+const char SW_VERSION[] = "v2.95";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <WebServer.h>  // standard Arduino/ESP32
@@ -96,20 +96,20 @@ void setup() {
     http.setTimeout(HTTP_TIMEOUT);
 
     // Shelly 1PM: Read eco mode setting and PV power
-    if (ShellyCommand(PM1_ADDR, PM_CONFIG, "") && ShellyCommand(PM1_ADDR, PM_STATUS, "0")) telnet.println("Shelly 1PM found");
+    if (ShellyCommand(PM1_ADDR, PM_CONFIG) && ShellyCommand(PM1_ADDR, PM_CH0_STATUS)) telnet.println("Shelly 1PM found");
     CheckErrors();
 
     // Shelly 2PM: Read eco mode setting, turn off Meanwell relay, make sure Hoymiles relay state matches BMS discharging switch
-    if (ShellyCommand(PM2_ADDR, PM_CONFIG, "") && ShellyCommand(PM2_ADDR, MW_RELAY, "off")) telnet.println("Shelly 2PM found");
+    if (ShellyCommand(PM2_ADDR, PM_CONFIG) && ShellyCommand(PM2_ADDR, PM_CH0_OFF)) telnet.println("Shelly 2PM found");
     mw_counter = 0;
     CheckErrors();
-    if (!bms_disch_on) ShellyCommand(PM2_ADDR, HM_RELAY, "off");
-    else ShellyCommand(PM2_ADDR, HM_RELAY, "on");
+    if (!bms_disch_on) ShellyCommand(PM2_ADDR, PM_CH1_OFF);
+    else ShellyCommand(PM2_ADDR, PM_CH1_ON);
     hm_counter = 0;
     CheckErrors();
     
     // Shelly 3EM: Read local time and grid power, init timestamps
-    if (ShellyCommand(EM_ADDR, EM_STATUS, "")) telnet.println("Shelly 3EM found");
+    if (ShellyCommand(EM_ADDR, EM_STATUS)) telnet.println("Shelly 3EM found");
     CheckErrors();
 
     // Check public IP address and update DDNS server entry
@@ -117,30 +117,29 @@ void setup() {
     CheckErrors();
 
     telnet.print("\nNo errors during setup, start polling cycle ...");
-    delay(500);
     start_uxt = errors_uxt = energy_uxt = unixtime;  // called by setup(): init timestamps
     ts_cycle = millis();
 }
 
 void loop() {
 
-    ShellyCommand(EM_ADDR, EM_STATUS, "");  // read time and grid power from Shelly 3EM
+    ShellyCommand(EM_ADDR, EM_STATUS);  // read time and grid power from Shelly 3EM
     BMSCommand(RS485_READ_VOLTAGES);  // read cell voltages from BMS
-    ShellyCommand(PM2_ADDR, PM_STATUS, (power_new > 0) ? "0" : "1"); // read ESS AC power from Shelly 2PM
+    ShellyCommand(PM2_ADDR, (power_new > 0) ? PM_CH0_STATUS : PM_CH1_STATUS); // read ESS AC power from Shelly 2PM
     BMSCommand(RS485_READ_CURRENT);  // read charging/discharging current and DC power from BMS
     SetNewPower();  // calculate charging/discharging power limits and setting, apply new power setting
     FinishCycle();  // update energy stats, do maintenance tasks, print status info, handle user command, read PV power, flash LED
     CheckErrors();  // check for comms errors, halt system if an error is persistent
 }
 
-bool ShellyCommand(IPAddress ip_addr, const char command[], const char params[]) {
+bool ShellyCommand(const IPAddress ip_addr, const char command[]) {
 
     if (ip_addr == PM2_ADDR) {
-        if (!strcmp(command, PM_STATUS)) {  // command is "read ESS power from Shelly 2PM"
-            power_ess = power_new;  // assumption: ESS power reading equals power setting
-            if (!power_new) return true;  // no need to read ESS power if ESS is turned off
+        if (!strncmp(command, PM_CH0_STATUS, 10)) {  // command is "read ESS power from Shelly 2PM"
+            power_ess = power_new;  // assumption: power reading equals power setting
+            if (!power_new) return true;  // no need to read ESS power from Shelly 2PM if ESS is turned off
         }
-        if (!strcmp(command, MW_RELAY) && !strcmp(params, "off")) { // command is "turn Shelly 2PM Meanwell relay off"
+        if (!strcmp(command, PM_CH0_OFF)) { // command is "turn Shelly 2PM Meanwell relay off"
             SetMWPower(MW_MIN_POWER);  // minimizing MW power before turning MW off extends Shelly relay lifetime
             delay(20);
         }
@@ -152,7 +151,7 @@ bool ShellyCommand(IPAddress ip_addr, const char command[], const char params[])
     }
 
     // Prepare Shelly http command
-    sprintf(http_command, "GET %s%s HTTP/1.1\r\nHost: %s\r\n\r\n", command, params, ip_addr.toString().c_str());
+    sprintf(http_command, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", command, ip_addr.toString().c_str());
 
     // connect to Shelly and send command
     if (http.connect(ip_addr, HTTP_PORT)) {
@@ -170,7 +169,7 @@ bool ShellyCommand(IPAddress ip_addr, const char command[], const char params[])
                 http.find("total_power");
                 power_grid = http.parseFloat();  // read grid power from http response
             }
-            if (!strcmp(command, PM_STATUS)) {
+            if (!strncmp(command, PM_CH0_STATUS, 10)) {
                 // read power from Shelly 1PM or 2PM
                 http.find("apower");
                 if (ip_addr == PM1_ADDR) power_pv = http.parseFloat();
@@ -179,20 +178,23 @@ bool ShellyCommand(IPAddress ip_addr, const char command[], const char params[])
                     if (power_new > 0) power_ess = power_ess*PM2_MW_POWER_CORR;  // power correction for positive (charging) power
                 }
             }
-            if (!strcmp(command, MW_RELAY)) {  // Meanwell relay turned on or off
-                ts_MW = millis();
-                if (mw_on == !strcmp(params, "off")) {  // relay state changed
-                    mw_counter++;
-                    mw_on = !mw_on;
-                }
-                delay(400);  // allow a little more time for power change to stabilize
-                if (!mw_on) ledcWrite(PWM_OUTPUT_PIN, 0);  // if MW was turned off, also turn off optocoupler LED
+            if (!strcmp(command, PM_CH0_ON)) {  // Meanwell relay turned on
+                ts_MW = millis();  // reset Shelly MW timer
+                mw_counter += !mw_on;
+                mw_on = true;
             }
-            if (!strcmp(command, HM_RELAY)) {  // Hoymiles relay turned on or off
-                if (hm_on == !strcmp(params, "off")) {  // relay state changed
-                    hm_counter++;
-                    hm_on = !hm_on;
-                }
+            if (!strcmp(command, PM_CH0_OFF)) {  // Meanwell relay turned off
+                mw_counter += mw_on;
+                mw_on = false;
+                ledcWrite(PWM_OUTPUT_PIN, 0);  // MW turned off: also turn off optocoupler LED
+            }
+            if (!strcmp(command, PM_CH1_ON)) {  // Hoymiles relay turned on
+                hm_counter += !hm_on;
+                hm_on = true;
+            }
+            if (!strcmp(command, PM_CH1_OFF)) {  // Hoymiles relay turned off
+                hm_counter += hm_on;
+                hm_on = false;
             }
             if (!strcmp(command, PM_CONFIG)) {
                 bool eco_mode = http.findUntil("eco_mode\":true", "eco_mode\":false");
@@ -205,9 +207,10 @@ bool ShellyCommand(IPAddress ip_addr, const char command[], const char params[])
     }
     // Shelly command failed
     http.stop();
-    if (ip_addr == EM_ADDR) sprintf(error_str, "3EM cmd %sfailed", http_command);
-    if (ip_addr == PM1_ADDR) sprintf(error_str, "1PM cmd %sfailed", http_command);
-    if (ip_addr == PM2_ADDR) sprintf(error_str, "2PM cmd %sfailed", http_command);
+    if (ip_addr == EM_ADDR) strcpy(error_str, "3EM");
+    if (ip_addr == PM1_ADDR) strcpy(error_str, "1PM");
+    if (ip_addr == PM1_ADDR) strcpy(error_str, "2PM");
+    sprintf(error_str + strlen(error_str), " cmd failed:\r\n%s%s", ip_addr.toString().c_str(), command);
     return false;
 }
 
@@ -336,7 +339,6 @@ bool HoymilesCommand(const byte command) {
             if (radio.writeFast(hm_switch_command, sizeof(hm_switch_command)))
                 if (radio.txStandBy(RF24_TIMEOUT)) {
                     ts_HM = millis();
-                    delay(400);  // allow a little more time for power change to stabilize
                     return true;
                 }
             ts_HM = millis();
@@ -438,19 +440,19 @@ void SetNewPower() {
         if (power_old < 0)
             if (!HoymilesCommand(HM_TURNOFF)) power_new = power_old;
         if (power_old > 0)
-            if (!ShellyCommand(PM2_ADDR, MW_RELAY, "off")) power_new = MW_MIN_POWER;
+            if (!ShellyCommand(PM2_ADDR, PM_CH0_OFF)) power_new = MW_MIN_POWER;
     }
     if (power_new > 0) {  // set new charging power, (if necessary) turn discharging off, turn charging on
         if (power_old > 0) SetMWPower(power_new);  // re-calculate even if power setting remains unchanged (vbat might have changed)
         if (power_old == 0) {
             SetMWPower(power_new);
-            if (!ShellyCommand(PM2_ADDR, MW_RELAY, "on&timer=60")) power_new = 0;
+            if (!ShellyCommand(PM2_ADDR, PM_CH0_ON)) power_new = 0;
         }
         if (power_old < 0) {
             if (!HoymilesCommand(HM_TURNOFF)) power_new = power_old;
             else {
                 SetMWPower(power_new);
-                if (!ShellyCommand(PM2_ADDR, MW_RELAY, "on&timer=60")) power_new = 0;
+                if (!ShellyCommand(PM2_ADDR, PM_CH0_ON)) power_new = 0;
             }
         }
     }
@@ -464,7 +466,7 @@ void SetNewPower() {
             else if (!HoymilesCommand(HM_TURNON)) power_new = 0;
         }
         if (power_old > 0)
-            if (!ShellyCommand(PM2_ADDR, MW_RELAY, "off")) power_new = MW_MIN_POWER;
+            if (!ShellyCommand(PM2_ADDR, PM_CH0_OFF)) power_new = MW_MIN_POWER;
             else {
                 if (!HoymilesCommand(HM_POWERLIMIT)) power_new = 0;
                 else if (!HoymilesCommand(HM_TURNON)) power_new = 0;
@@ -527,18 +529,18 @@ void FinishCycle() {
         else HoymilesCommand(HM_TURNOFF);
     
     // Make sure Hoymiles relay state matches BMS discharging switch (i.e. Hoymiles AC on/off state matches DC on/off state)
-    if (hm_on != bms_disch_on) ShellyCommand(PM2_ADDR, HM_RELAY, (bms_disch_on) ? "on" : "off");
+    if (hm_on != bms_disch_on) ShellyCommand(PM2_ADDR, (bms_disch_on) ? PM_CH1_ON : PM_CH1_OFF);
 
     // Keep alive Meanwell relay (if Meanwell is turned on)
-    if (mw_on && (millis()-ts_MW >= MW_KEEPALIVE*1000)) ShellyCommand(PM2_ADDR, MW_RELAY, "on&timer=60");
+    if (mw_on && (millis()-ts_MW >= MW_KEEPALIVE*1000)) ShellyCommand(PM2_ADDR, PM_CH0_ON);
 
     // Set Shelly 1PM eco mode (turn off just before sunrise, turn on at sunset)
-    if ((min_of_day >= sunrise-1) && (min_of_day < sunset) && pm1_eco_mode) pm1_eco_mode = !ShellyCommand(PM1_ADDR, ECO_MODE, "false}}");
-    if (((min_of_day < sunrise-1) || (min_of_day >= sunset)) && !pm1_eco_mode) pm1_eco_mode = ShellyCommand(PM1_ADDR, ECO_MODE, "true}}");
+    if ((min_of_day >= sunrise-1) && (min_of_day < sunset) && pm1_eco_mode) pm1_eco_mode = !ShellyCommand(PM1_ADDR, PM_ECO_MODE_OFF);
+    if (((min_of_day < sunrise-1) || (min_of_day >= sunset)) && !pm1_eco_mode) pm1_eco_mode = ShellyCommand(PM1_ADDR, PM_ECO_MODE_ON);
 
     // Set Shelly 2PM eco mode (turn off when charging/discharging, turn on when charging/discharging inactive and impossible)
-    if ((power_new || (power_pv >= MW_MIN_POWER-power_grid_target)) && pm2_eco_mode) pm2_eco_mode = !ShellyCommand(PM2_ADDR, ECO_MODE, "false}}");
-    if (!power_new && !power_pv && !bms_disch_on && !pm2_eco_mode) pm2_eco_mode = ShellyCommand(PM2_ADDR, ECO_MODE, "true}}");
+    if ((power_new || (power_pv >= MW_MIN_POWER-power_grid_target)) && pm2_eco_mode) pm2_eco_mode = !ShellyCommand(PM2_ADDR, PM_ECO_MODE_OFF);
+    if (!power_new && !power_pv && !bms_disch_on && !pm2_eco_mode) pm2_eco_mode = ShellyCommand(PM2_ADDR, PM_ECO_MODE_ON);
 
     // Turn on/off BMS balancer (disable/enable bottom balancing), depending on lowest cell voltage
     if ((vcell_min <= vcell_uvp) && !bms_bal_on) bms_bal_on = BMSCommand(BLE_BAL_ON);
@@ -549,7 +551,7 @@ void FinishCycle() {
     if ((vcell_min <= vcell_uvp) && !hm_limit && bms_disch_on) bms_disch_on = !BMSCommand(RS485_DISCH_OFF);
 
     // Clear Shelly 3EM energy data at 23:00 UTC (prevents HTTP timeouts at 00:00 UTC due to internal data reorgs)
-    if ((min_of_day/60 == (23+utc_offset)%24) && !em_data_cleared) em_data_cleared = ShellyCommand(EM_ADDR, EM_RESET, "");
+    if ((min_of_day/60 == (23+utc_offset)%24) && !em_data_cleared) em_data_cleared = ShellyCommand(EM_ADDR, EM_RESET);
     if (min_of_day/60 == utc_offset) em_data_cleared = false;
 
     // Check if public IP address was changed, if yes: update DDNS server entry
@@ -571,7 +573,7 @@ void FinishCycle() {
     if (cycle_delay > 0) delay(cycle_delay);
 
     // daytime: read PV power from Shelly 1PM (should take less than 100 ms, including LED flash)
-    if ((min_of_day >= sunrise) && (min_of_day < sunset)) ShellyCommand(PM1_ADDR, PM_STATUS, "0");
+    if ((min_of_day >= sunrise) && (min_of_day < sunset)) ShellyCommand(PM1_ADDR, PM_CH0_STATUS);
     else power_pv = 0;
 
     // wait until power change has stabilized
@@ -601,8 +603,8 @@ void CheckErrors() {
     if ((errors_consecutive < ERROR_LIMIT) && start_uxt) return;  // continue with next cycle if below ERROR_LIMIT and no error during setup()
 
     // Error is persistent or error during setup(): Halt the system
-    if (!HoymilesCommand(HM_TURNOFF)) ShellyCommand(PM2_ADDR, HM_RELAY, "off");
-    ShellyCommand(PM2_ADDR, MW_RELAY, "off");
+    if (!HoymilesCommand(HM_TURNOFF)) ShellyCommand(PM2_ADDR, PM_CH1_OFF);
+    ShellyCommand(PM2_ADDR, PM_CH0_OFF);
     
     // System halted: prepare continuous error message
     sprintf(tn_str, "%sBinSmart ESS %s\r\n\n%sSystem halted ", CLEAR_SCREEN, SW_VERSION, ERROR_SYMBOL);
@@ -632,7 +634,7 @@ void CheckErrors() {
     }
 }
 
-void SetMWPower(int mw_power) {
+void SetMWPower(const int mw_power) {
 
     int duty_cycle;
 
@@ -930,7 +932,7 @@ bool UpdateDDNS() {
                     }
                 }
             }
-            strcpy(error_str, "DDNS update failed");
+            strcpy(error_str, "DDNS update command failed");
         }
     }
     http.stop();

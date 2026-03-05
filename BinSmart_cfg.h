@@ -18,10 +18,15 @@ const char PUBLIC_IP_URL[] = "/";
 const char EM_STATUS[] = "/status";
 const char EM_RESET[] = "/reset_data";
 const char PM_CONFIG[] = "/rpc/Shelly.GetConfig";
-const char PM_STATUS[] = "/rpc/Switch.GetStatus?id=";
-const char MW_RELAY[] = "/relay/0?turn=";
-const char HM_RELAY[] = "/relay/1?turn=";
-const char ECO_MODE[] = "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":";
+const char PM_CH0_STATUS[] = "/rpc/Switch.GetStatus?id=0";
+const char PM_CH1_STATUS[] = "/rpc/Switch.GetStatus?id=1";
+const char PM_CH0_ON[] = "/relay/0?turn=on&timer=60";
+const char PM_CH0_OFF[] = "/relay/0?turn=off";
+const char PM_CH1_ON[] = "/relay/1?turn=on";
+const char PM_CH1_OFF[] = "/relay/1?turn=off";
+const char PM_ECO_MODE_ON[] = "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":true}}";
+const char PM_ECO_MODE_OFF[] = "/rpc/Sys.SetConfig?config={\"device\":{\"eco_mode\":false}}";
+
 
 // ESP32 pin definitions
 const int LED_PIN = 12;
@@ -42,7 +47,7 @@ const float PM2_MW_POWER_CORR = 1.006;  // Power correction factor for MW power 
 
 // Time/timer settings
 const int PROCESSING_DELAY = 2000;  // minimum delay (in msecs) for power changes to take effect
-const int HTTP_TIMEOUT = 3000;  // max waiting time (in msecs) during http requests
+const int HTTP_TIMEOUT = 4000;  // max waiting time (in msecs) during http requests
 const int DDNS_UPDATE_INTERVAL = 60;  // DDNS IP address check interval (in secs)
 const int MW_KEEPALIVE = 40;  // number of secs after which Shelly 2PM receives "keep alive" message (must be less than corresponding Shelly timer)
 const int RF24_KEEPALIVE = 43;  // number of secs after which Hoymiles RF24 interface receives "keep alive" message (must be less than one minute)
