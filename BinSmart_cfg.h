@@ -89,11 +89,11 @@ const int HM_MAX_POWER = -180;  // Limit of linear power output range
 const int HM_LOW_POWER_THRESHOLD = -61;  // Hoymiles power output above this threshold is unstable
 const int HM_LOW_POWER_TOLERANCE = 15;  // Max tolerated positive deviation from target power when Hoymiles is below HM_LOW_POWER_THRESHOLD
 
-// BMS/ESS voltage settings in millivolts
-const int ESS_OVP_OFFSET = -10;  // ESS vcell_ovp/vcell_ovpr are ESS_OVP_OFFSET below BMS OVP/OVPR
-const int ESS_UVP_OFFSET = +5;  // ESS vcell_uvp/vcell_uvpr are ESS_UVP_OFFSET above BMS UVP/UVPR
-const int BMS_BAL_UVP_OFFSET = +20;  // BMS balancer is turned off BMS_BAL_UVP_OFFSET above vcell_uvp
-const int BMS_DISCH_UVPR_OFFSET = -10;  // BMS discharge switch is turned on BMS_DISCH_UVPR_OFFSET below vcell_uvpr
+// Protection and balancer voltage offsets (diff between BMS and ESS settings) in millivolts
+const int OVP_OFFSET = 10;  // vcell_ovp is OVP_OFFSET below BMS Cell OVP setting (must be >= 5)
+const int OVPR_OFFSET = 10;  // vcell_ovpr is OVPR_OFFSET below BMS Cell OVPR setting (must be >= 5)
+const int UVP_OFFSET = 5;  // vcell_uvp is UVP_OFFSET above BMS Cell UVP setting (must be >= 5)
+const int UVPR_OFFSET = 15;  // vcell_uvpr is UVPR_OFFSET above BMS Cell UVPR setting (must be >= 15)
 
 // BMS definitions and commands
 const byte RS485_ID1 = 0x4E;

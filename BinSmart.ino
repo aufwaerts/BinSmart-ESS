@@ -1,4 +1,4 @@
-const char SW_VERSION[] = "v2.96";
+const char SW_VERSION[] = "v2.97";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <WebServer.h>  // standard Arduino/ESP32
@@ -217,7 +217,7 @@ bool ShellyCommand(const IPAddress ip_addr, const char command[]) {
 
 bool BMSCommand(const byte command[]) {
 
-    if ((command[RS485_DATA_ID_POS] == RS485_VCELLS_ID) && (vcell_min <= vcell_uvp-ESS_UVP_OFFSET) && !power_new)
+    if ((command[RS485_DATA_ID_POS] == RS485_VCELLS_ID) && (vcell_min <= vcell_uvp-UVP_OFFSET) && !power_new)
         return true;  // stop reading cell voltages when vcell_min drops to BMS UVP voltage (before BMS powers off)
     if ((command[RS485_DATA_ID_POS] == RS485_CURRENT_ID) && !power_new) {
         cbat = pbat = 0;  // batt current and power is zero if ESS is turned off
@@ -281,10 +281,10 @@ bool BMSCommand(const byte command[]) {
              if ((bms_resp[len-2]<<8|bms_resp[len-1]) == checksum-bms_resp[len-2]-bms_resp[len-1]) {  // response checksum
 
                 if (command[RS485_COMMAND_POS] == RS485_READ_ALL) {  // process response to "read all" command
-                    vcell_ovp = (bms_resp[RS485_OVP_POS]<<8|bms_resp[RS485_OVP_POS+1]) + ESS_OVP_OFFSET;  // cell OVP voltage
-                    vcell_ovpr = (bms_resp[RS485_OVPR_POS]<<8|bms_resp[RS485_OVPR_POS+1]) + ESS_OVP_OFFSET;  // cell OVPR voltage
-                    vcell_uvp = (bms_resp[RS485_UVP_POS]<<8|bms_resp[RS485_UVP_POS+1]) + ESS_UVP_OFFSET;  // cell UVP voltage
-                    vcell_uvpr = (bms_resp[RS485_UVPR_POS]<<8|bms_resp[RS485_UVPR_POS+1]) + ESS_UVP_OFFSET;  // cell UVP voltage
+                    vcell_ovp = (bms_resp[RS485_OVP_POS]<<8|bms_resp[RS485_OVP_POS+1]) - OVP_OFFSET;  // cell OVP voltage
+                    vcell_ovpr = (bms_resp[RS485_OVPR_POS]<<8|bms_resp[RS485_OVPR_POS+1]) - OVPR_OFFSET;  // cell OVPR voltage
+                    vcell_uvp = (bms_resp[RS485_UVP_POS]<<8|bms_resp[RS485_UVP_POS+1]) + UVP_OFFSET;  // cell UVP voltage
+                    vcell_uvpr = (bms_resp[RS485_UVPR_POS]<<8|bms_resp[RS485_UVPR_POS+1]) + UVPR_OFFSET;  // cell UVP voltage
                     bms_balancer_start = bms_resp[RS485_BAL_ST_POS]<<8|bms_resp[RS485_BAL_ST_POS+1];  // balancer start voltage
                     bms_balancer_trigger = bms_resp[RS485_BAL_TR_POS]<<8|bms_resp[RS485_BAL_TR_POS+1];  // balancer trigger voltage
                     bms_bal_on = bms_resp[RS485_BAL_SW_POS];  // state of balancer
@@ -544,12 +544,12 @@ void FinishCycle() {
     if (!power_new && !power_pv && !bms_disch_on && !pm2_eco_mode) pm2_eco_mode = ShellyCommand(PM2_ADDR, PM_ECO_MODE_ON);
 
     // Turn on/off BMS balancer (disable/enable bottom balancing), depending on lowest cell voltage
-    if ((vcell_min <= vcell_uvp) && !bms_bal_on) bms_bal_on = BMSCommand(BLE_BAL_ON);
-    if ((vcell_min >= vcell_uvp + BMS_BAL_UVP_OFFSET) && bms_bal_on) bms_bal_on = !BMSCommand(BLE_BAL_OFF);
+    if ((vcell_min <= vcell_uvp) && !bms_bal_on) bms_bal_on = BMSCommand(BLE_BAL_ON);  // turn on balancer when vcell_uvp is reached while discharging
+    if ((vcell_min >= vcell_uvp + 20) && bms_bal_on) bms_bal_on = !BMSCommand(BLE_BAL_OFF);  // offset of 20 mV prevents balancer oscillation when open circuit voltage rises above vcell_uvp 
 
-    // Turn on/off BMS discharge switch (wakeup HM or make it fall asleep), depending on lowest cell voltage and hm_limit
-    if ((vcell_min >= vcell_uvpr + BMS_DISCH_UVPR_OFFSET) && !bms_disch_on) bms_disch_on = BMSCommand(RS485_DISCH_ON);
-    if ((vcell_min <= vcell_uvp) && !hm_limit && bms_disch_on) bms_disch_on = !BMSCommand(RS485_DISCH_OFF);
+    // Turn on/off BMS discharge switch (wake HM or make it fall asleep), depending on lowest cell voltage and hm_limit
+    if ((vcell_min >= vcell_uvpr - 10) && !bms_disch_on) bms_disch_on = BMSCommand(RS485_DISCH_ON);  // wake HM 10 mV below vcell_uvpr gives HM time to boot and sync AC
+    if ((vcell_min <= vcell_uvp) && !hm_limit && bms_disch_on) bms_disch_on = !BMSCommand(RS485_DISCH_OFF);  // make HM fall asleep after hm_limit reaches zero
 
     // Clear Shelly 3EM energy data at 23:00 UTC (prevents HTTP timeouts at 00:00 UTC due to internal data reorgs)
     if ((min_of_day/60 == (23+utc_offset)%24) && !em_data_cleared) em_data_cleared = ShellyCommand(EM_ADDR, EM_RESET);
@@ -678,8 +678,8 @@ void UserIO() {
         strcat(cycle_str, MW_FLOW_SYMBOL[(power_old == mw_limit_old) + ((power_old == mw_limit_old) && (mw_limit_old >= MW_MAX_POWER))][power_grid_to_ess > power_pv_to_ess]);
     if (power_old < 0)
         strcat(cycle_str, HM_FLOW_SYMBOL[(power_old == hm_limit_old) + (power_old == HM_MAX_POWER)]);
-    int vbat_idle = vbat-round(cbat/16.0);  // voltage at cbat=0 (needed for accurate battery charge level)
-    strcat(cycle_str, BAT_LEVEL_SYMBOL[(vbat_idle > vcell_uvp*8) ? min(((vbat_idle/8-vcell_uvp)*(BAT_LEVELS-2))/(vcell_ovp-vcell_uvp)+1, BAT_LEVELS-1) : 0]);
+    int vbat_oc = vbat-round(cbat/15.0);  // voltage at cbat=0 (needed for accurate battery charge level)
+    strcat(cycle_str, BAT_LEVEL_SYMBOL[(vbat_oc > vcell_uvp*8) ? min(((vbat_oc/8-vcell_uvp)*(BAT_LEVELS-2))/(vcell_ovp-vcell_uvp)+1, BAT_LEVELS-1) : 0]);
     sprintf(cycle_str + strlen(cycle_str), "%d", int(round(power_ess)));
     if (power_new != power_old) strcat(cycle_str, DIFF_SYMBOL[(power_new < power_old) + !filter_cycles]);
     else if (filter_cycles && (filter_cycles < POWER_FILTER_CYCLES)) strcat(cycle_str, POWERFILTER_SYMBOL);
