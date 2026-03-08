@@ -211,7 +211,7 @@ bool ShellyCommand(const IPAddress ip_addr, const char command[]) {
     if (ip_addr == EM_ADDR) strcpy(error_str, "3EM");
     if (ip_addr == PM1_ADDR) strcpy(error_str, "1PM");
     if (ip_addr == PM2_ADDR) strcpy(error_str, "2PM");
-    sprintf(error_str + strlen(error_str), " cmd failed:\r\n%s%s", ip_addr.toString().c_str(), command);
+    sprintf(error_str + strlen(error_str), " cmd failed: %s%s", ip_addr.toString().c_str(), command);
     return false;
 }
 
@@ -773,12 +773,12 @@ void UserIO() {
             sprintf(resp_str + strlen(resp_str), "\r\nSunrise today: %02d:%02d\r\nSunset today : %02d:%02d\r\n\n", sunrise/60, sunrise%60, sunset/60, sunset%60); 
             break;
         case 'l':
-            sprintf(resp_str, "Lowest cons. since %02d/%02d/%04d %02d:%02d:\r\n", day(start_uxt), month(start_uxt), year(start_uxt), hour(start_uxt), minute(start_uxt));
+            sprintf(resp_str, "Lowest cons. since %02d/%02d/%04d %02d:%02d\r\n", day(start_uxt), month(start_uxt), year(start_uxt), hour(start_uxt), minute(start_uxt));
             if (!minpower_uxt) strcat(resp_str, "Not yet measured\r\n\n");
             else sprintf(resp_str + strlen(resp_str), "%.1f W (measured %02d/%02d/%04d %02d:%02d)\r\n\n", power_grid_min, day(minpower_uxt), month(minpower_uxt), year(minpower_uxt), hour(minpower_uxt), minute(minpower_uxt));
             break;
         case 'n':
-            sprintf(resp_str, "Energy [kWh] since %02d/%02d/%04d %02d:%02d:\r\n\n", day(energy_uxt), month(energy_uxt), year(energy_uxt), hour(energy_uxt), minute(energy_uxt));
+            sprintf(resp_str, "Energy [kWh] since %02d/%02d/%04d %02d:%02d\r\n\n", day(energy_uxt), month(energy_uxt), year(energy_uxt), hour(energy_uxt), minute(energy_uxt));
             // PV energy
             sprintf(resp_str + strlen(resp_str), "%7.3f %s%s%s%s%s%s %.1f﹪+%.1f﹪\r\n", en_from_pv/1000, NIGHT_DAY_SYMBOL[1], PV_FLOW_SYMBOL[1], PV_CABLE_SYMBOL, ESS_CABLE_SYMBOL, MW_FLOW_SYMBOL[0][0], ESS_SYMBOL, (en_pv_to_ess-en_pv_wasted)/en_from_pv*100, en_pv_wasted/en_from_pv*100);
             sprintf(resp_str + strlen(resp_str), "  %s\r\n", HOUSE_SYMBOL);
@@ -795,7 +795,7 @@ void UserIO() {
             sprintf(resp_str + strlen(resp_str), "MW AC▸DC eff.: %.1f﹪\r\nHM DC▸AC eff.: %.1f﹪\r\nAC▸DC▸AC eff.: %.1f﹪\r\n\n", en_to_batt/en_to_ess*100, en_from_ess/en_from_batt*100, en_from_ess/en_to_ess*100);
             break;
         case 'e':
-            sprintf(resp_str, "Errors since %02d/%02d/%04d %02d:%02d:\r\n", day(errors_uxt), month(errors_uxt), year(errors_uxt), hour(errors_uxt), minute(errors_uxt));
+            sprintf(resp_str, "Errors since %02d/%02d/%04d %02d:%02d\r\n", day(errors_uxt), month(errors_uxt), year(errors_uxt), hour(errors_uxt), minute(errors_uxt));
             for (int i=0; i<ERROR_TYPES; i++) {
                 sprintf(resp_str + strlen(resp_str), "%-4s: %3d", ERROR_TYPE[i], error_counter[i]);
                 if (error_counter[i]) sprintf(resp_str + strlen(resp_str), " (last: %02d/%02d/%04d %02d:%02d)", day(errortime[i]), month(errortime[i]), year(errortime[i]), hour(errortime[i]), minute(errortime[i]));
@@ -803,11 +803,11 @@ void UserIO() {
             }
             strcat(resp_str, "\n");
             if (error_str[0] != '\0') sprintf(resp_str + strlen(resp_str), "%s%s\r\n\n", ERROR_SYMBOL, error_str);  // error has just occured: show ERROR_SYMBOL
-            else if (last_error_str[0] != '\0') sprintf(resp_str + strlen(resp_str), "Last: %s\r\n\n", last_error_str);
+            else if (last_error_str[0] != '\0') sprintf(resp_str + strlen(resp_str), "Last:\r\n%s\r\n\n", last_error_str);
             error_flag = false;
             break;
         case 's':
-            sprintf(resp_str, "Shelly relay ops since %02d/%02d/%04d %02d:%02d:\r\n", day(start_uxt), month(start_uxt), year(start_uxt), hour(start_uxt), minute(start_uxt));
+            sprintf(resp_str, "Shelly relay ops since %02d/%02d/%04d %02d:%02d\r\n", day(start_uxt), month(start_uxt), year(start_uxt), hour(start_uxt), minute(start_uxt));
             sprintf(resp_str + strlen(resp_str), "Meanwell: %d (%d/day)\r\nHoymiles: %d (%d/day)\r\n\n", mw_counter, mw_counter/((unixtime-start_uxt)/86400+1), hm_counter, hm_counter/((unixtime-start_uxt)/86400+1));
             break;
         case 'z':
