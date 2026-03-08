@@ -210,7 +210,7 @@ bool ShellyCommand(const IPAddress ip_addr, const char command[]) {
     http.stop();
     if (ip_addr == EM_ADDR) strcpy(error_str, "3EM");
     if (ip_addr == PM1_ADDR) strcpy(error_str, "1PM");
-    if (ip_addr == PM1_ADDR) strcpy(error_str, "2PM");
+    if (ip_addr == PM2_ADDR) strcpy(error_str, "2PM");
     sprintf(error_str + strlen(error_str), " cmd failed:\r\n%s%s", ip_addr.toString().c_str(), command);
     return false;
 }
