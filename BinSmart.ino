@@ -1,4 +1,4 @@
-const char SW_VERSION[] = "v2.97";
+const char SW_VERSION[] = "v2.99";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <WebServer.h>  // standard Arduino/ESP32
@@ -217,8 +217,6 @@ bool ShellyCommand(const IPAddress ip_addr, const char command[]) {
 
 bool BMSCommand(const byte command[]) {
 
-    if ((command[RS485_DATA_ID_POS] == RS485_VCELLS_ID) && (vcell_min <= vcell_uvp-UVP_OFFSET) && !power_new)
-        return true;  // stop reading cell voltages when vcell_min drops to BMS UVP voltage (before BMS powers off)
     if ((command[RS485_DATA_ID_POS] == RS485_CURRENT_ID) && !power_new) {
         cbat = pbat = 0;  // batt current and power is zero if ESS is turned off
         return true;
@@ -281,10 +279,18 @@ bool BMSCommand(const byte command[]) {
              if ((bms_resp[len-2]<<8|bms_resp[len-1]) == checksum-bms_resp[len-2]-bms_resp[len-1]) {  // response checksum
 
                 if (command[RS485_COMMAND_POS] == RS485_READ_ALL) {  // process response to "read all" command
-                    vcell_ovp = (bms_resp[RS485_OVP_POS]<<8|bms_resp[RS485_OVP_POS+1]) - OVP_OFFSET;  // cell OVP voltage
-                    vcell_ovpr = (bms_resp[RS485_OVPR_POS]<<8|bms_resp[RS485_OVPR_POS+1]) - OVPR_OFFSET;  // cell OVPR voltage
-                    vcell_uvp = (bms_resp[RS485_UVP_POS]<<8|bms_resp[RS485_UVP_POS+1]) + UVP_OFFSET;  // cell UVP voltage
-                    vcell_uvpr = (bms_resp[RS485_UVPR_POS]<<8|bms_resp[RS485_UVPR_POS+1]) + UVPR_OFFSET;  // cell UVP voltage
+                    if ((bms_resp[RS485_OVP_POS]<<8|bms_resp[RS485_OVP_POS+1])-(bms_resp[RS485_OVPR_POS]<<8|bms_resp[RS485_OVPR_POS+1]) < VCELL_PROT_OFFSET)
+                        sprintf(error_str, "BMS Cell OVPR less than %d mV below BMS Cell OVP", VCELL_PROT_OFFSET);
+                    if ((bms_resp[RS485_OVPR_POS]<<8|bms_resp[RS485_OVPR_POS+1])-VCELL_OVP < VCELL_PROT_OFFSET)
+                        sprintf(error_str, "ESS OVP voltage less than %d mV below BMS Cell OVPR", VCELL_PROT_OFFSET);
+                    if (VCELL_OVP-VCELL_OVPR < VCELL_PROT_OFFSET)
+                        sprintf(error_str, "ESS OVPR voltage less than %d mV below ESS OVP voltage", VCELL_PROT_OFFSET);
+                    if (VCELL_UVPR-VCELL_UVP < VCELL_PROT_OFFSET)
+                        sprintf(error_str, "ESS UVPR voltage less than %d mV above ESS UVP voltage", VCELL_PROT_OFFSET);
+                    if (VCELL_UVP-(bms_resp[RS485_UVPR_POS]<<8|bms_resp[RS485_UVPR_POS+1]) < VCELL_PROT_OFFSET)
+                        sprintf(error_str, "ESS UVP voltage less than %d mV above BMS Cell UVPR", VCELL_PROT_OFFSET);
+                    if ((bms_resp[RS485_UVPR_POS]<<8|bms_resp[RS485_UVPR_POS+1])-(bms_resp[RS485_UVP_POS]<<8|bms_resp[RS485_UVP_POS+1]) < VCELL_PROT_OFFSET)
+                        sprintf(error_str, "BMS Cell UVPR less than %d mV above BMS Cell UVP", VCELL_PROT_OFFSET);
                     bms_balancer_start = bms_resp[RS485_BAL_ST_POS]<<8|bms_resp[RS485_BAL_ST_POS+1];  // balancer start voltage
                     bms_balancer_trigger = bms_resp[RS485_BAL_TR_POS]<<8|bms_resp[RS485_BAL_TR_POS+1];  // balancer trigger voltage
                     bms_bal_on = bms_resp[RS485_BAL_SW_POS];  // state of balancer
@@ -297,7 +303,6 @@ bool BMSCommand(const byte command[]) {
                         ts_HM = millis();  // gives Hoymiles RF24 interface time to boot before (re-)starting RF24 keep alive messages
                         return true;
                     case RS485_VCELLS_ID:  // process response to "read cell voltages"
-                        voltages_uxt = unixtime;
                         vbat = vcell_max = 0; vcell_min = 4000;
                         for (int i=RS485_DATA_ID_POS+3; i<=RS485_DATA_ID_POS+bms_resp[RS485_DATA_ID_POS+1]; i+=3) {
                             int vcell = bms_resp[i]<<8|bms_resp[i+1];
@@ -376,62 +381,48 @@ void SetNewPower() {
     hm_limit_old = hm_limit;
 
     // Re-calculate power limits (depending on vcell_max/vcell_min)
-    if ((vcell_max <= vcell_ovpr) || (mw_limit >= MW_MAX_POWER)) mw_limit = round(MW_MAX_POWER_FORMULA);  // exit OVP mode (update MW power limit)
-    if (vcell_max >= vcell_ovp) {  // OVP cell voltage reached
+    if ((vcell_max <= VCELL_OVPR) || (mw_limit >= MW_MAX_POWER)) mw_limit = round(MW_MAX_POWER_FORMULA);  // exit OVP mode (update MW power limit)
+    if (vcell_max >= VCELL_OVP) {  // OVP cell voltage reached
         if ((mw_limit <= MW_MIN_POWER) || !power_old) mw_limit = 0;  // enter (or remain in) OVP mode
         else mw_limit = max(int(round(power_old*POWER_LIMIT_RAMPDOWN)), MW_MIN_POWER);  // decrease charging power limit softly
     }
-    if (vcell_min >= vcell_uvpr) hm_limit = HM_MAX_POWER;  // exit UVP mode (reset HM power limit)
-    if (vcell_min <= vcell_uvp) {  // UVP cell voltage reached
+    if (vcell_min >= VCELL_UVPR) hm_limit = HM_MAX_POWER;  // exit UVP mode (reset HM power limit)
+    if (vcell_min <= VCELL_UVP) {  // UVP cell voltage reached
         if ((hm_limit >= HM_MIN_POWER) || !power_old) hm_limit = 0;  // enter (or remain in) UVP mode
         else hm_limit = min(int(round(power_old*POWER_LIMIT_RAMPDOWN)), HM_MIN_POWER);  // decrease discharging power limit softly
     }
     if (!bms_disch_on) hm_limit = 0;  // prevent discharging if BMS discharging switch is off
 
-    // Save power setting from previous cycle, as baseline for calculations and for UserIO()
-    power_old = power_new;
-    // Calculate new power setting
-    int target_deviation = round(power_grid - power_grid_target);
-    int positive_tolerance = POWER_TARGET_TOLERANCE;
-    if ((power_old < 0) && (power_old > HM_LOW_POWER_THRESHOLD)) positive_tolerance = HM_LOW_POWER_TOLERANCE;  // HM operating with low power: higher positive tolerance
-    if ((target_deviation < -POWER_TARGET_TOLERANCE) || (target_deviation > positive_tolerance)) power_new = power_old - target_deviation;
-
-    // Filter out power spikes and ramp down ESS power (reduces power loss to grid when consumer is quickly switched on and off)
-    if (max(power_new, hm_limit) - power_old < POWER_RAMPDOWN_RATE) {
-        if (power_old > 0) filter_cycles = 0;  // charging: start rampdown immediately
-        else filter_cycles = max(filter_cycles-1, 0);  // countdown filter cycles
-        if (filter_cycles) power_new = power_old;  // filter out power spikes
+    // auto recharging overrides manual power setting and calculation
+    if (auto_recharge) power_new = MW_MAX_POWER/2;  // medium charging power, maximum AC/DC efficiency
+    else {
+        if (manual_mode) power_new = power_manual;  // manual power setting overrides calculation
         else {
-            power_new = power_old + POWER_RAMPDOWN_RATE;  // ramp down ESS power after filtering out power spikes
-            if ((power_old > MW_MIN_POWER) && (power_new < MW_MIN_POWER)) power_new = MW_MIN_POWER;  // don't skip MW_MIN_POWER during power rampdown
-            if (power_old == MW_MIN_POWER) {
-                power_new = 0;  // don't skip zero during power rampdown
-                filter_cycles = POWER_FILTER_CYCLES;  // reset filter cycle countdown before discharging
-            }
+            // Calculate new power setting
+            int target_deviation = round(power_grid - power_grid_target);
+            int positive_tolerance = ((power_old >= 0) || (power_old <= HM_LOW_POWER_THRESHOLD)) ? POWER_TARGET_TOLERANCE : HM_LOW_POWER_TOLERANCE;
+            if ((target_deviation < -POWER_TARGET_TOLERANCE) || (target_deviation > positive_tolerance)) power_new = power_old - target_deviation;
         }
     }
-    else filter_cycles = POWER_FILTER_CYCLES;  // reset filter cycle countdown
-
-    if (manual_mode) {
-        power_new = power_manual;  // Manual power setting overrides calculation
-        filter_cycles = POWER_FILTER_CYCLES;
-    }
-    
-    // check/set automatic battery recharge power (prevents battery damage)
-    if (auto_recharge) {
-        manual_mode = false;
-        filter_cycles = POWER_FILTER_CYCLES;
-        if (vcell_min >= vcell_uvp) {  // stop recharging when vcell_uvp is reached
-            power_new = 0;
-            auto_recharge = false;
-        }
-        else power_new = MW_MAX_POWER/2;  // Meanwell at maximum efficiency
-    }
-    if (unixtime - voltages_uxt > BATT_RECHARGE_TIMEOUT*3600) auto_recharge = true;  //  too many hours without charging since vcell_min dropped to BMS UVP: activate auto recharge
 
     // Make sure charging/discharging power limits are not exceeded
     if (power_new > mw_limit) power_new = mw_limit;
     if (power_new < hm_limit) power_new = hm_limit;
+
+    // filter out power spikes and rampdown ESS power (reduces power loss to grid when consumer is turned on and quickly turned off again)
+    if ((power_new - power_old < POWER_RAMPDOWN_RATE) || ((power_old >= MW_MIN_POWER) && (power_new < MW_MIN_POWER))) {
+        if (power_old > MW_MIN_POWER) filter_cycles = 0;  // charging power above MW_MIN_POWER: start rampdown immediately
+        else filter_cycles = max(filter_cycles-1, 0);  // countdown filter cycles
+        if (filter_cycles) power_new = power_old;  // filter out power spikes
+        else {
+            if (power_new - power_old < POWER_RAMPDOWN_RATE) power_new = power_old + POWER_RAMPDOWN_RATE;  // ramp down ESS power after filtering out power spikes
+            if ((power_old > MW_MIN_POWER) && (power_new < MW_MIN_POWER)) {
+                power_new = MW_MIN_POWER;  // don't skip MW_MIN_POWER during charging power rampdown
+                filter_cycles = POWER_FILTER_CYCLES;  // start filter cycle countdown before turning off MW (reduces MW relay ops)
+            }
+        }
+    }
+    else filter_cycles = POWER_FILTER_CYCLES;  // reset filter cycle countdown
 
     // Turn ESS off if power is between MW and HM operating ranges
     if ((power_new > HM_MIN_POWER) && (power_new < MW_MIN_POWER)) power_new = 0;
@@ -452,6 +443,7 @@ void SetNewPower() {
         if (power_old < 0) {
             if (!HoymilesCommand(HM_TURNOFF)) power_new = power_old;
             else {
+                delay(200);
                 SetMWPower(power_new);
                 if (!ShellyCommand(PM2_ADDR, PM_CH0_ON)) power_new = 0;
             }
@@ -469,6 +461,7 @@ void SetNewPower() {
         if (power_old > 0)
             if (!ShellyCommand(PM2_ADDR, PM_CH0_OFF)) power_new = MW_MIN_POWER;
             else {
+                delay(200);
                 if (!HoymilesCommand(HM_POWERLIMIT)) power_new = 0;
                 else if (!HoymilesCommand(HM_TURNON)) power_new = 0;
             }
@@ -513,6 +506,10 @@ void FinishCycle() {
     en_from_batt += hrs_cycle * (pbat < 0) * -pbat;
     en_to_batt += hrs_cycle * (pbat > 0) * pbat;
 
+    // Check/set automatic battery recharging (prevents battery damage)
+    if (vcell_min <= VCELL_UVP-VCELL_PROT_OFFSET) auto_recharge = true;
+    if (vcell_min >= VCELL_UVP) auto_recharge = false;
+
     if (!sunrise || min_of_day == 210) {  // calculate sunrise/sunset times at 03:30 local time (after a possible SDT/DST change, before sunrise)
         sunrise = ess_location.sunrise(year(unixtime), month(unixtime), day(unixtime), (utc_offset != TIMEZONE));
         sunset = ess_location.sunset(year(unixtime), month(unixtime), day(unixtime), (utc_offset != TIMEZONE));
@@ -544,12 +541,12 @@ void FinishCycle() {
     if (!power_new && !power_pv && !bms_disch_on && !pm2_eco_mode) pm2_eco_mode = ShellyCommand(PM2_ADDR, PM_ECO_MODE_ON);
 
     // Turn on/off BMS balancer (disable/enable bottom balancing), depending on lowest cell voltage
-    if ((vcell_min <= vcell_uvp) && !bms_bal_on) bms_bal_on = BMSCommand(BLE_BAL_ON);  // turn on balancer when vcell_uvp is reached while discharging
-    if ((vcell_min >= vcell_uvp + 20) && bms_bal_on) bms_bal_on = !BMSCommand(BLE_BAL_OFF);  // offset of 20 mV prevents balancer oscillation when open circuit voltage rises above vcell_uvp 
+    if ((vcell_min <= VCELL_UVP) && !bms_bal_on) bms_bal_on = BMSCommand(BLE_BAL_ON);  // turn on balancer when VCELL_UVP is reached while discharging
+    if ((vcell_min >= VCELL_UVP + 20) && bms_bal_on) bms_bal_on = !BMSCommand(BLE_BAL_OFF);  // offset of 20 mV makes sure that balancer will only be turned off by charging
 
     // Turn on/off BMS discharge switch (wake HM or make it fall asleep), depending on lowest cell voltage and hm_limit
-    if ((vcell_min >= vcell_uvpr - 10) && !bms_disch_on) bms_disch_on = BMSCommand(RS485_DISCH_ON);  // wake HM 10 mV below vcell_uvpr gives HM time to boot and sync AC
-    if ((vcell_min <= vcell_uvp) && !hm_limit && bms_disch_on) bms_disch_on = !BMSCommand(RS485_DISCH_OFF);  // make HM fall asleep after hm_limit reaches zero
+    if ((vcell_min >= VCELL_UVPR-10) && !bms_disch_on) bms_disch_on = BMSCommand(RS485_DISCH_ON);  // wake up HM 10 mV below VCELL_UVPR, give HM time to boot and sync AC
+    if ((vcell_min <= VCELL_UVP) && !hm_limit && bms_disch_on) bms_disch_on = !BMSCommand(RS485_DISCH_OFF);  // make HM fall asleep after hm_limit reaches zero
 
     // Clear Shelly 3EM energy data at 23:00 UTC (prevents HTTP timeouts at 00:00 UTC due to internal data reorgs)
     if ((min_of_day/60 == (23+utc_offset)%24) && !em_data_cleared) em_data_cleared = ShellyCommand(EM_ADDR, EM_RESET);
@@ -679,12 +676,12 @@ void UserIO() {
     if (power_old < 0)
         strcat(cycle_str, HM_FLOW_SYMBOL[(power_old == hm_limit_old) + (power_old == HM_MAX_POWER)]);
     int vbat_oc = vbat-round(cbat/15.0);  // voltage at cbat=0 (needed for accurate battery charge level)
-    strcat(cycle_str, BAT_LEVEL_SYMBOL[(vbat_oc > vcell_uvp*8) ? min(((vbat_oc/8-vcell_uvp)*(BAT_LEVELS-2))/(vcell_ovp-vcell_uvp)+1, BAT_LEVELS-1) : 0]);
+    strcat(cycle_str, BAT_LEVEL_SYMBOL[(vbat_oc > VCELL_UVP*8) ? min(((vbat_oc/8-VCELL_UVP)*(BAT_LEVELS-2))/(VCELL_OVP-VCELL_UVP)+1, BAT_LEVELS-1) : 0]);
     sprintf(cycle_str + strlen(cycle_str), "%d", int(round(power_ess)));
     if (power_new != power_old) strcat(cycle_str, DIFF_SYMBOL[(power_new < power_old) + !filter_cycles]);
     else if (filter_cycles && (filter_cycles < POWER_FILTER_CYCLES)) strcat(cycle_str, POWERFILTER_SYMBOL);
-    if (manual_mode) strcat(cycle_str, MANUAL_MODE_SYMBOL);
     if (auto_recharge) strcat(cycle_str, AUTO_RECHARGE_SYMBOL);
+    else if (manual_mode) strcat(cycle_str, MANUAL_MODE_SYMBOL);
     strcat(cycle_str, "\r\n");
 
     // House symbol
@@ -753,8 +750,7 @@ void UserIO() {
             // Batt voltage infos
             sprintf(resp_str, "Cell voltages: %d - %d mV\r\nMax cell diff: %d mV%s\r\n", vcell_min, vcell_max, vcell_max-vcell_min, (bms_bal_on && (vcell_max-vcell_min >= bms_balancer_trigger) && (vcell_max >= bms_balancer_start)) ? BALANCER_SYMBOL : "");
             sprintf(resp_str + strlen(resp_str), "Batt voltage : %.3f V", vbat/1000.0);
-            if (voltages_uxt != unixtime) sprintf(resp_str + strlen(resp_str), "%s\r\nLast read    : %02d/%02d/%04d %02d:%02d\r\n\n", CLOCK_SYMBOL, day(voltages_uxt), month(voltages_uxt), year(voltages_uxt), hour(voltages_uxt), minute(voltages_uxt));
-            else sprintf(resp_str + strlen(resp_str), "\r\nBatt current : %.2f A\r\n\n", cbat/100.0);
+            sprintf(resp_str + strlen(resp_str), "\r\nBatt current : %.2f A\r\n\n", cbat/100.0);
             // BMS switch status
             sprintf(resp_str + strlen(resp_str), "Balancer switch : %s\r\nDischarge switch: %s\r\n\n", (bms_bal_on) ? "on" : "off", (bms_disch_on) ? "on" : "off");
             break;

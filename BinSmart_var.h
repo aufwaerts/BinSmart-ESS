@@ -32,7 +32,7 @@ int min_of_day;  // local time (minutes after midnight)
 int utc_offset;  // UTC offset (timezone + dst) of local time
 int sunrise, sunset;  // current day's sunrise and sunset (minutes after midnight)
 unsigned long unixtime; // epoch time of local time (will be read from Shelly 3EM)
-unsigned long start_uxt, minpower_uxt, errors_uxt, energy_uxt, voltages_uxt;  // unixtime of various events
+unsigned long start_uxt, minpower_uxt, errors_uxt, energy_uxt;  // unixtime of various events
 unsigned long pubip_uxt, ddns_uxt;  // unixtime of last public IP address check and last DDNS update
 unsigned long ts_cycle, ts_MW, ts_HM, ts_BMS, ts_user, ts_pubip;  // various millis() timestamps
 unsigned long msecs_cycle;  // duration of one polling cycle in msecs
