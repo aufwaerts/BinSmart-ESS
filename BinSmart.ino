@@ -32,7 +32,7 @@ void setup() {
     digitalWrite(LED_PIN, LOW);
 
     // Start OTA software update service
-    ElegantOTA.begin(&OTA_server);
+    ElegantOTA.begin(&OTA_server, OTA_UID, OTA_PWD);
     OTA_server.begin();
 
     // Start telnet server and wait for terminal to connect
