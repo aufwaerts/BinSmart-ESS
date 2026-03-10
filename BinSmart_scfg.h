@@ -3,6 +3,8 @@
 // Networking
 const char WIFI_SSID[] = "***";
 const char WIFI_PWD = "***";
+const char OTA_UID[] = "***";
+const char OTA_PWD = "***";
 const char JKBMS_MAC_ADDR[] = "**:**:**:**:**:**";  // MAC (= BLE) address of JKBMS
 IPAddress ESP32_ADDR(***,***,***,***);  // Local IP address of ESS
 IPAddress ROUTER_ADDR(***,***,***,***);   // Local WiFi router
