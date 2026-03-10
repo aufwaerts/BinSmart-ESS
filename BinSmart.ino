@@ -1,4 +1,4 @@
-const char SW_VERSION[] = "v2.99";
+const char SW_VERSION[] = "v3.00";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <WebServer.h>  // standard Arduino/ESP32
@@ -139,10 +139,6 @@ bool ShellyCommand(const IPAddress ip_addr, const char command[]) {
         if (!strncmp(command, PM_CH0_STATUS, 10)) {  // command is "read ESS power from Shelly 2PM"
             power_ess = power_new;  // assumption: power reading equals power setting
             if (!power_new) return true;  // no need to read ESS power from Shelly 2PM if ESS is turned off
-        }
-        if (!strcmp(command, PM_CH0_OFF)) { // command is "turn Shelly 2PM Meanwell relay off"
-            SetMWPower(MW_MIN_POWER);  // minimizing MW power before turning MW off extends Shelly relay lifetime
-            delay(20);
         }
     }
 
@@ -417,7 +413,7 @@ void SetNewPower() {
         else {
             if (power_new - power_old < POWER_RAMPDOWN_RATE) power_new = power_old + POWER_RAMPDOWN_RATE;  // ramp down ESS power after filtering out power spikes
             if ((power_old > MW_MIN_POWER) && (power_new < MW_MIN_POWER)) {
-                power_new = MW_MIN_POWER;  // don't skip MW_MIN_POWER during charging power rampdown
+                power_new = MW_MIN_POWER;  // don't skip MW_MIN_POWER during power rampdown
                 filter_cycles = POWER_FILTER_CYCLES;  // start filter cycle countdown before turning off MW (reduces MW relay ops)
             }
         }
@@ -516,7 +512,7 @@ void FinishCycle() {
     }
 
     // No ESS power output and no PV production: check for new power_grid_min (i.e. min household consumption)
-    if (!power_ess && !hm_limit_old && !power_pv && (power_grid < power_grid_min)) {
+    if (!power_old && !hm_limit_old && !power_pv && (power_grid < power_grid_min)) {
         power_grid_min = power_grid;
         minpower_uxt = unixtime;
     }
@@ -602,6 +598,7 @@ void CheckErrors() {
 
     // Error is persistent or error during setup(): Halt the system
     if (!HoymilesCommand(HM_TURNOFF)) ShellyCommand(PM2_ADDR, PM_CH1_OFF);
+    SetMWPower(MW_MIN_POWER); delay(20);
     ShellyCommand(PM2_ADDR, PM_CH0_OFF);
     
     // System halted: prepare continuous error message

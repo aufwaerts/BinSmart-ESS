@@ -12,7 +12,6 @@ NimBLEClient* pClient;  // pointer to BLE client object
 
 // BMS
 int vcell_min = 4000, vcell_max;  // batt cell min/max voltages [mV]
-int vcell_uvp, vcell_uvpr, vcell_ovp, vcell_ovpr;  // cell protection voltages
 int cbat, vbat;  // batt DC current [cA], total batt voltage [mV]
 int bms_balancer_start;  // BMS balancer cell voltage threshold [mV] (read from BMS)
 int bms_balancer_trigger;  // BMS balancer cell diff threshold [mV] (read from BMS)
@@ -59,7 +58,7 @@ char error_str[200], last_error_str[200];  // if error occured during polling cy
 bool error_flag;  // errors occured and not yet read by user?
 
 // Other global variables
-int filter_cycles = POWER_FILTER_CYCLES;  // number of cycles where power spikes are filtered out
+int filter_cycles = POWER_FILTER_CYCLES;  // number of cycles during which power spikes are filtered out
 bool pm1_eco_mode, pm2_eco_mode;  // eco mode of Shellies
 bool manual_mode, auto_recharge;  // special ESS operating modes
 bool em_data_cleared;  // indicates if Shelly 3EM energy data has been cleared
