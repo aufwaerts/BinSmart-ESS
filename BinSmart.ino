@@ -1,4 +1,4 @@
-const char SW_VERSION[] = "v3.00";
+const char SW_VERSION[] = "v3.01";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <WebServer.h>  // standard Arduino/ESP32
@@ -246,8 +246,6 @@ bool BMSCommand(const byte command[]) {
     // Send BMS command via RS485
     Serial2.write(command, command[RS485_LEN_POS]+2);
     Serial2.flush(false);  // wait until all tx bytes are sent, clear rx buffer
-
-    if (command[RS485_COMMAND_POS] == RS485_ACTIVATE) return true;  // no response after activation command
 
     memset(bms_resp, 0x00, sizeof(bms_resp));  // will result in failed validity check if no response
     bms_resp[3] = RS485_LEN_POS;  // make sure "response incomplete" check doesn't terminate too early
