@@ -40,7 +40,7 @@ const int UART_TX_PIN = 17;
 const int PV_MAX_POWER = 359;  // PV module/inverter max AC output
 const int POWER_TARGET_DEFAULT = 5;  // System is aiming for this amount of watts to be drawn from grid
 const int POWER_TARGET_TOLERANCE = 5;  // Max tolerated deviation (+/-) from target power
-const int POWER_RAMPDOWN_RATE = -60; // Max power decrease per cycle
+const int POWER_RAMPDOWN_RATE = -40; // Max power decrease per cycle
 const int POWER_FILTER_CYCLES = 12;  // Number of cycles during which power spikes are filtered out
 const float POWER_LIMIT_RAMPDOWN = 0.67;  // Power rampdown rate when vcell_ovp or vcell_uvp is reached
 const float PM2_MW_POWER_CORR = 1.006;  // Power correction factor for MW power readings with PM2
@@ -93,7 +93,7 @@ const int HM_LOW_POWER_TOLERANCE = 15;  // Max tolerated positive deviation from
 const int VCELL_PROT_OFFSET = 50;
 const int VCELL_OVP = 3450;  // ESS OVP voltage (at least VCELL_PROT_OFFSET below BMS Cell OVPR)
 const int VCELL_OVPR = 3350;  // ESS OVPR voltage (at least VCELL_PROT_OFFSET below VCELL_OVP)
-const int VCELL_UVPR = 3250;  // ESS UVPR voltage (at least VCELL_PROT_OFFSET above VCELL_UVP)
+const int VCELL_UVPR = 3200;  // ESS UVPR voltage (at least VCELL_PROT_OFFSET above VCELL_UVP)
 const int VCELL_UVP = 3150;  // ESS UVP voltage (at least VCELL_PROT_OFFSET above BMS Cell UVPR)
 
 // BMS definitions and commands
