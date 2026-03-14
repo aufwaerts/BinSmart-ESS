@@ -33,8 +33,8 @@ int sunrise, sunset;  // current day's sunrise and sunset (minutes after midnigh
 unsigned long unixtime; // epoch time of local time (will be read from Shelly 3EM)
 unsigned long start_uxt, minpower_uxt, errors_uxt, energy_uxt;  // unixtime of various events
 unsigned long pubip_uxt, ddns_uxt;  // unixtime of last public IP address check and last DDNS update
-unsigned long ts_cycle, ts_MW, ts_HM, ts_BMS, ts_user, ts_pubip;  // various millis() timestamps
-unsigned long msecs_cycle;  // duration of one polling cycle in msecs
+unsigned long ts_cycle, ts_MW, ts_HM, ts_BMS, ts_user;  // various millis() timestamps
+unsigned long msecs_cycle;  // duration of one polling cycle in milliseconds
 
 // Power and energy variables ([W] and [Wh])
 int power_grid_target = POWER_TARGET_DEFAULT;  // Systems aims for this grid power target

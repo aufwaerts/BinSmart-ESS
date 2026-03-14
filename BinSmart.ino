@@ -1,4 +1,4 @@
-const char SW_VERSION[] = "v3.01";
+const char SW_VERSION[] = "v3.02";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <WebServer.h>  // standard Arduino/ESP32
@@ -314,7 +314,7 @@ bool BMSCommand(const byte command[]) {
             }
         } 
     }
-    sprintf(error_str, "BMS RS485 command 0x%02X 0x%02X failed", command[RS485_COMMAND_POS], command[RS485_DATA_ID_POS]);
+    sprintf(error_str, "BMS RS485 command 0x%02X 0x%02X 0x%02X failed", command[RS485_COMMAND_POS], command[RS485_DATA_ID_POS], command[RS485_DATA_ID_POS+1]);
     return false;
 }
 
@@ -607,16 +607,16 @@ void CheckErrors() {
     strcat(cycle_str, last_error_str);
     strcat(cycle_str, "\r\n\nPress any key to restart: ");
 
+    ts_cycle = millis();
     while (true) {  // wait for user to confirm restart
-        ts_cycle = millis();
-        OTA_server.handleClient();  // Check for OTA software update
-        if (millis()-ts_pubip >= DDNS_UPDATE_INTERVAL*1000) UpdateDDNS();  // keep updating DDNS in order to be reachable via Internet
-        if (!telnet) telnet = telnet_server.available();
-        if (telnet) telnet.print(cycle_str);
-        for (int i=0; i<10; i++) {
+        for (int i=0; i<5; i++) {
             digitalWrite(LED_PIN, HIGH);  delay(20); digitalWrite(LED_PIN, LOW); delay(40); // indicates halted system
         }
-        while (millis()-ts_cycle < PROCESSING_DELAY*2);  // wait for two PROCESSING_DELAYS
+        OTA_server.handleClient();  // check for OTA software update
+        if (!telnet) telnet = telnet_server.available();  // check for terminal connection
+        if (telnet) telnet.print(cycle_str);
+        while ((millis()-ts_cycle) % PROCESSING_DELAY);  // standard cycle delay
+        if (!((millis()-ts_cycle) % (DDNS_UPDATE_INTERVAL*1000))) UpdateDDNS();  // keep updating DDNS in order to be reachable via Internet
         if (telnet.available()) {
             telnet.print("\r\nRestarting in 3 seconds, re-open terminal ...\r\n");
             delay(2000);
@@ -891,7 +891,6 @@ bool UpdateDDNS() {
             http.setTimeout(HTTP_TIMEOUT);  // http timeout back to normal
             pubip_addr.fromString(http_resp);
             pubip_uxt = unixtime;
-            ts_pubip = millis();
             if (ddns_addr == pubip_addr) return true;  // public IP unchanged
 
             // connect to DDNS server and update public IP address
