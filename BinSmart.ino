@@ -747,7 +747,7 @@ void UserIO() {
             sprintf(resp_str + strlen(resp_str), "Batt voltage : %.3f V", vbat/1000.0);
             sprintf(resp_str + strlen(resp_str), "\r\nBatt current : %.2f A\r\n\n", cbat/100.0);
             // BMS switch status
-            sprintf(resp_str + strlen(resp_str), "Balancer switch : %s\r\nDischarge switch: %s\r\n\n", (bms_bal_on) ? "on" : "off", (bms_disch_on) ? "on" : "off");
+            sprintf(resp_str + strlen(resp_str), "Balancing switch: %d\r\nDischarge switch: %d\r\n\n", bms_bal_on, bms_disch_on);
             break;
         case 'd':
             sprintf(resp_str, "ESS public IP address: %s\r\nLast address check   : %02d/%02d/%04d %02d:%02d\r\n", pubip_addr.toString().c_str(), day(pubip_uxt), month(pubip_uxt), year(pubip_uxt), hour(pubip_uxt), minute(pubip_uxt));
