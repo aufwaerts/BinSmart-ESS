@@ -23,7 +23,7 @@ I must however give credit to Thomas Basler (and everybody who supported him) fo
 
 My solution has been up and running for several years, it over-achieves my initial goal and over-fulfils all of my criteria. I called it "BinSmart ESS" (my surname is Binder). BinSmart ESS looks like [this](https://github.com/aufwaerts/BinSmart-ESS/blob/main/BinSmart_Overview.pdf).
 
-The ESP32 code was written with Arduino IDE. I have restrained from developing a frontend app for Windows, iOS or Android. The frontend functionality is very simple, popular telnet clients like [Termius](https://www.termius.com/free-ssh-client-for-android) are sufficient to visualize BinSmart's status and handle user commands. If the font "Cascadia Code" is chosen, all special characters are displayed correctly - see [screenshot](https://github.com/aufwaerts/BinSmart-ESS/blob/main/BinSmart_Termius.jpg).
+The ESP32 code was written with Arduino IDE. There was no need to develop an app for Windows, iOS or Android. The frontend functionality is very simple, popular telnet clients like [Termius](https://www.termius.com/free-ssh-client-for-android) are sufficient to visualize BinSmart's status and handle user commands. If the font "Cascadia Code" is chosen, all special characters are displayed correctly - see [screenshot](https://github.com/aufwaerts/BinSmart-ESS/blob/main/BinSmart_Termius.jpg).
 
 Some parameters can be modified on the fly, via telnet client. The software config (e.g. IP addresses) needs to be changed in configuration files, requiring re-compilation and OTA upload after every change.
 
