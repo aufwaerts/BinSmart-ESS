@@ -12,7 +12,7 @@ Having used a small 435 Wp "Balkonkraftwerk" for a year, it showed that only a t
 - self-consumption of the entire system (including energy meter): < 5 W
 - total efficiency (AC-to-AC): > 80%
 
-Available AC-coupled solutions were either too expensive, inefficient, noisy or consumed a lot of energy themselves. I concluded that I had to build an ESS solution myself.
+Available AC-coupled solutions were either too expensive, inefficient, noisy or consumed a lot of energy themselves. I concluded that I had to build an ESS myself.
 
 There were some "home-made" solutions around, but they had their drawbacks, too:
 - [OpenDTU-OnBattery](https://github.com/hoylabs/OpenDTU-OnBattery), a zero export solution based on [OpenDTU](https://github.com/tbnobody/OpenDTU), didn't support Meanwell chargers, and buying a Victron would have violated my cost criteria.
