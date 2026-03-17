@@ -1,4 +1,4 @@
-const char SW_VERSION[] = "v3.02";
+const char SW_VERSION[] = "v3.03";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <WebServer.h>  // standard Arduino/ESP32
@@ -57,14 +57,11 @@ void setup() {
     if (BMSCommand(RS485_READ_SETTINGS)) telnet.println("RS485 communication with JKBMS OK");
     CheckErrors();
 
-    // Init BLE communication with BMS
-    NimBLEDevice::init("");
-    pClient = NimBLEDevice::createClient(serverAddress);
-    if (!pClient) strcpy(error_str, "BLE init failed");
+    // Test BLE communication with BMS
+    if (bms_bal_on) BMSCommand(BLE_BAL_ON);
+    else BMSCommand(BLE_BAL_OFF);
     CheckErrors();
-    pClient->setConnectionParams(12, 12, 0, 12);
-    pClient->setConnectTimeout(BLE_TIMEOUT);
-    telnet.println("BLE communication with JKBMS initialized");
+    telnet.println("BLE communication with JKBMS OK");
 
     // Init RF24 radio communication with Hoymiles
     if (!radio.begin()) strcpy(error_str, "RF24 radio init failed");
@@ -218,27 +215,39 @@ bool BMSCommand(const byte command[]) {
         return true;
     }
 
-    while (millis()-ts_BMS < BMS_WAIT);  // minimum delay after previous BMS response
+    while (millis()-ts_BMS < BMS_WAIT);  // minimum delay after previous BMS communication
 
     if (command[0] == BLE_ID1) {
         // Send BMS command via BLE
-        if (pClient->connect()) {
-            NimBLERemoteService* pService = pClient->getService("FFE0");
-            NimBLERemoteCharacteristic* pChar = pService->getCharacteristic("FFE1");
-            if (pChar->writeValue(BLE_GET_INFO, BLE_COMMAND_LEN, false)) {
-                delay(500);
-                if (pChar->writeValue(BLE_GET_DATA, BLE_COMMAND_LEN, false)) {
+        NimBLEDevice::init("");
+        pClient = NimBLEDevice::createClient(serverAddress);
+        if (pClient) {
+            pClient->setConnectionParams(12, 12, 0, 12);
+            pClient->setConnectTimeout(BLE_TIMEOUT);
+            if (pClient->connect()) {
+                NimBLERemoteService* pService = pClient->getService("FFE0");
+                NimBLERemoteCharacteristic* pChar = pService->getCharacteristic("FFE1");
+                if (pChar->writeValue(BLE_GET_INFO, BLE_COMMAND_LEN, false)) {
                     delay(500);
-                    if (pChar->writeValue(command, BLE_COMMAND_LEN, false)) {
-                        pClient->disconnect();
-                        ts_BMS = millis();  // set "end of BMS response" timestamp
-                        return true;
+                    if (pChar->writeValue(BLE_GET_DATA, BLE_COMMAND_LEN, false)) {
+                        delay(500);
+                        if (pChar->writeValue(command, BLE_COMMAND_LEN, false)) {
+                            pClient->disconnect();
+                            delay(100);
+                            NimBLEDevice::deleteClient(pClient);
+                            NimBLEDevice::deinit(true);
+                            ts_BMS = millis();  // set "end of BMS communication" timestamp
+                            return true;
+                        }
                     }
                 }
+                pClient->disconnect();
+                delay(100);
             }
-            pClient->disconnect();
+            NimBLEDevice::deleteClient(pClient);
         }
-        ts_BMS = millis();  // set "end of BMS response" timestamp
+        NimBLEDevice::deinit(true);
+        ts_BMS = millis();  // set "end of BMS communication" timestamp
         sprintf(error_str, "BMS BLE command 0x%02X 0x%02X failed", command[BLE_COMMAND_POS], command[BLE_SETTING_POS]);
         return false;
     }
@@ -265,7 +274,7 @@ bool BMSCommand(const byte command[]) {
             while ((millis()-ts_BMS < BMS_TIMEOUT2) && !Serial2.available());  // wait for next response byte to arrive
         }
     }
-    ts_BMS = millis();  // set "end of BMS response" timestamp
+    ts_BMS = millis();  // set "end of BMS communication" timestamp
 
     // check validity of BMS response
     if ((bms_resp[0] == RS485_ID1) && (bms_resp[1] == RS485_ID2)) {  // start of response frame
