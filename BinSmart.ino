@@ -24,10 +24,10 @@ void setup() {
 
     // Init WiFi
     WiFi.config(ESP32_ADDR, ROUTER_ADDR, SUBNET, DNS_SERVER1, DNS_SERVER2);
-    WiFi.setTxPower(WIFI_POWER_5dBm);
-    WiFi.setAutoReconnect(true);
-    WiFi.setSleep(true);
     WiFi.begin(WIFI_SSID, WIFI_PWD);
+    WiFi.setAutoReconnect(true);
+    WiFi.setTxPower(WIFI_POWER_5dBm);
+    WiFi.setSleep(WIFI_PS_MAX_MODEM);
     while (WiFi.status() != WL_CONNECTED);   // if WiFi unavailable or wrong SSID/PWD, system stops here and LED remains on
     digitalWrite(LED_PIN, LOW);
 
