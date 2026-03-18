@@ -93,8 +93,8 @@ const int HM_LOW_POWER_TOLERANCE = 15;  // Max tolerated positive deviation from
 const int VCELL_PROT_OFFSET = 50;
 const int VCELL_OVP = 3450;  // ESS OVP voltage (at least VCELL_PROT_OFFSET below BMS Cell OVPR)
 const int VCELL_OVPR = 3350;  // ESS OVPR voltage (at least VCELL_PROT_OFFSET below VCELL_OVP)
-const int VCELL_UVPR = 3200;  // ESS UVPR voltage (at least VCELL_PROT_OFFSET above VCELL_UVP)
-const int VCELL_UVP = 3150;  // ESS UVP voltage (at least VCELL_PROT_OFFSET above BMS Cell UVPR)
+const int VCELL_UVPR = 3150;  // ESS UVPR voltage (at least VCELL_PROT_OFFSET above VCELL_UVP)
+const int VCELL_UVP = 3100;  // ESS UVP voltage (at least VCELL_PROT_OFFSET above BMS Cell UVPR)
 
 // BMS definitions and commands
 const byte RS485_ID1 = 0x4E;
