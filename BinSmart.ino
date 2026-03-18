@@ -1,4 +1,4 @@
-const char SW_VERSION[] = "v3.03";
+const char SW_VERSION[] = "v3.04";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <WebServer.h>  // standard Arduino/ESP32
@@ -508,15 +508,6 @@ void FinishCycle() {
     en_from_batt += hrs_cycle * (pbat < 0) * -pbat;
     en_to_batt += hrs_cycle * (pbat > 0) * pbat;
 
-    // Check/set automatic battery recharging (prevents battery damage)
-    if (vcell_min <= VCELL_UVP-VCELL_PROT_OFFSET) auto_recharge = true;
-    if (vcell_min >= VCELL_UVP) auto_recharge = false;
-
-    if (!sunrise || min_of_day == 210) {  // calculate sunrise/sunset times at 03:30 local time (after a possible SDT/DST change, before sunrise)
-        sunrise = ess_location.sunrise(year(unixtime), month(unixtime), day(unixtime), (utc_offset != TIMEZONE));
-        sunset = ess_location.sunset(year(unixtime), month(unixtime), day(unixtime), (utc_offset != TIMEZONE));
-    }
-
     // No ESS power output and no PV production: check for new power_grid_min (i.e. min household consumption)
     if (!power_old && !hm_limit_old && !power_pv && (power_grid < power_grid_min)) {
         power_grid_min = power_grid;
@@ -528,27 +519,37 @@ void FinishCycle() {
         if (power_new < 0) HoymilesCommand(HM_TURNON);
         else HoymilesCommand(HM_TURNOFF);
     
-    // Make sure Hoymiles relay state matches BMS discharging switch (i.e. Hoymiles AC on/off state matches DC on/off state)
-    if (hm_on != bms_disch_on) ShellyCommand(PM2_ADDR, (bms_disch_on) ? PM_CH1_ON : PM_CH1_OFF);
-
     // Keep alive Meanwell relay (if Meanwell is turned on)
     if (mw_on && (millis()-ts_MW >= MW_KEEPALIVE*1000)) ShellyCommand(PM2_ADDR, PM_CH0_ON);
+
+    // Check/set automatic battery recharging (prevents BMS turnoff)
+    if (vcell_min <= VCELL_UVP - VCELL_PROT_OFFSET) auto_recharge = true;
+    if (vcell_min >= VCELL_UVP) auto_recharge = false;
+
+    // Turn on/off BMS balancer (disable/enable bottom balancing)
+    if ((vcell_min <= VCELL_UVP) && !bms_bal_on) bms_bal_on = BMSCommand(BLE_BAL_ON);  // turn on balancer when VCELL_UVP is reached while discharging
+    if ((vcell_min >= VCELL_UVP + 20) && bms_bal_on) bms_bal_on = !BMSCommand(BLE_BAL_OFF);  // offset of 20 mV makes sure that balancer will only be turned off by charging
+
+    // Turn on/off BMS discharge switch (keep Hoymiles awake, or make it fall asleep)
+    if ((vcell_min <= VCELL_UVP) && !hm_limit && bms_disch_on) bms_disch_on = !BMSCommand(RS485_DISCH_OFF);  // make HM fall asleep after hm_limit reaches zero
+    if ((vcell_min >= VCELL_UVPR-10) && !bms_disch_on) bms_disch_on = BMSCommand(RS485_DISCH_ON);  // wake up HM 10 mV below VCELL_UVPR, give HM time to boot and sync AC
+    
+    // Make sure Hoymiles relay state matches BMS discharge switch (i.e. Hoymiles AC on/off state matches DC on/off state)
+    if (hm_on != bms_disch_on) ShellyCommand(PM2_ADDR, (bms_disch_on) ? PM_CH1_ON : PM_CH1_OFF);
 
     // Set Shelly 1PM eco mode (turn off just before sunrise, turn on at sunset)
     if ((min_of_day >= sunrise-1) && (min_of_day < sunset) && pm1_eco_mode) pm1_eco_mode = !ShellyCommand(PM1_ADDR, PM_ECO_MODE_OFF);
     if (((min_of_day < sunrise-1) || (min_of_day >= sunset)) && !pm1_eco_mode) pm1_eco_mode = ShellyCommand(PM1_ADDR, PM_ECO_MODE_ON);
 
     // Set Shelly 2PM eco mode (turn off when charging/discharging, turn on when charging/discharging inactive and impossible)
-    if ((power_new || (power_pv >= MW_MIN_POWER-power_grid_target)) && pm2_eco_mode) pm2_eco_mode = !ShellyCommand(PM2_ADDR, PM_ECO_MODE_OFF);
+    if ((power_new || auto_recharge || (power_pv >= MW_MIN_POWER-power_grid_target)) && pm2_eco_mode) pm2_eco_mode = !ShellyCommand(PM2_ADDR, PM_ECO_MODE_OFF);
     if (!power_new && !power_pv && !bms_disch_on && !pm2_eco_mode) pm2_eco_mode = ShellyCommand(PM2_ADDR, PM_ECO_MODE_ON);
 
-    // Turn on/off BMS balancer (disable/enable bottom balancing), depending on lowest cell voltage
-    if ((vcell_min <= VCELL_UVP) && !bms_bal_on) bms_bal_on = BMSCommand(BLE_BAL_ON);  // turn on balancer when VCELL_UVP is reached while discharging
-    if ((vcell_min >= VCELL_UVP + 20) && bms_bal_on) bms_bal_on = !BMSCommand(BLE_BAL_OFF);  // offset of 20 mV makes sure that balancer will only be turned off by charging
-
-    // Turn on/off BMS discharge switch (wake HM or make it fall asleep), depending on lowest cell voltage and hm_limit
-    if ((vcell_min >= VCELL_UVPR-10) && !bms_disch_on) bms_disch_on = BMSCommand(RS485_DISCH_ON);  // wake up HM 10 mV below VCELL_UVPR, give HM time to boot and sync AC
-    if ((vcell_min <= VCELL_UVP) && !hm_limit && bms_disch_on) bms_disch_on = !BMSCommand(RS485_DISCH_OFF);  // make HM fall asleep after hm_limit reaches zero
+    // Calculate sunrise/sunset times at 03:30 local time (after a possible SDT/DST change, before sunrise)
+    if (!sunrise || min_of_day == 210) {
+        sunrise = ess_location.sunrise(year(unixtime), month(unixtime), day(unixtime), (utc_offset != TIMEZONE));
+        sunset = ess_location.sunset(year(unixtime), month(unixtime), day(unixtime), (utc_offset != TIMEZONE));
+    }
 
     // Clear Shelly 3EM energy data at 23:00 UTC (prevents HTTP timeouts at 00:00 UTC due to internal data reorgs)
     if ((min_of_day/60 == (23+utc_offset)%24) && !em_data_cleared) em_data_cleared = ShellyCommand(EM_ADDR, EM_RESET);
