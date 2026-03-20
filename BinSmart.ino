@@ -509,11 +509,11 @@ void FinishCycle() {
     en_to_batt += hrs_cycle * (pbat > 0) * pbat;
 
     // No ESS power output and no PV production: check for new power_grid_min (i.e. min household consumption)
-    if (!power_old && !hm_limit_old && !power_pv && (power_grid < power_grid_min)) {
+    if (pm1_eco_mode && pm2_eco_mode && (power_grid < power_grid_min)) {
         power_grid_min = power_grid;
         minpower_uxt = unixtime;
     }
-
+    
     // Keep alive Hoymiles RF24 interface (if Hoymiles is awake)
     if ((millis()-ts_HM >= RF24_KEEPALIVE*1000) && bms_disch_on)
         if (power_new < 0) HoymilesCommand(HM_TURNON);
