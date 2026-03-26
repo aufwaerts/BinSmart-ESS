@@ -1,4 +1,4 @@
-const char SW_VERSION[] = "v3.04";
+const char SW_VERSION[] = "v3.05";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <WebServer.h>  // standard Arduino/ESP32
@@ -125,8 +125,7 @@ void loop() {
     ShellyCommand(PM2_ADDR, (power_new > 0) ? PM_CH0_STATUS : PM_CH1_STATUS); // read ESS AC power from Shelly 2PM
     BMSCommand(RS485_READ_CURRENT);  // read charging/discharging current and DC power from BMS
     SetNewPower();  // calculate charging/discharging power limits and setting, apply new power setting
-    FinishCycle();  // update energy stats, do maintenance tasks, print status info, handle user command, read PV power, flash LED
-    CheckErrors();  // check for comms errors, halt system if an error is persistent
+    FinishCycle();  // update energy stats, do maintenance tasks, print status info, handle user command, read PV power, check errors, flash LED
 }
 
 bool ShellyCommand(const IPAddress ip_addr, const char command[]) {
@@ -566,16 +565,16 @@ void FinishCycle() {
     if (telnet) UserIO();  // if telnet session exists, print cycle info and handle user command
     else command = resp_str[0] = '\0';  // no telnet session: clear user command response
 
-    // flash LED to indicate end of cycle
-    digitalWrite(LED_PIN, HIGH);  delay(20); digitalWrite(LED_PIN, LOW);
-
     // wait until power change has almost stabilized (allow time for PV power reading)
     int cycle_delay = PROCESSING_DELAY*(1+(pm1_eco_mode && pm2_eco_mode))-(millis()-ts_cycle)-100;
     if (cycle_delay > 0) delay(cycle_delay);
 
-    // daytime: read PV power from Shelly 1PM (should take less than 100 ms, including LED flash)
+    // daytime: read PV power from Shelly 1PM (should take less than 100 ms)
     if ((min_of_day >= sunrise) && (min_of_day < sunset)) ShellyCommand(PM1_ADDR, PM_CH0_STATUS);
     else power_pv = 0;
+
+    // check for any errors during last cycle, flash LED to indicate end of cycle and error status
+    CheckErrors();
 
     // wait until power change has stabilized
     cycle_delay = PROCESSING_DELAY*(1+(pm1_eco_mode && pm2_eco_mode))-(millis()-ts_cycle);
@@ -586,11 +585,12 @@ void CheckErrors() {
 
     if (error_str[0] == '\0') {  // no errors this cycle
         errors_consecutive = 0;  // reset counter for consecutive errors
+        digitalWrite(LED_PIN, HIGH);  delay(20);  // flash LED to indicate end of cycle
+        digitalWrite(LED_PIN, LOW);
         return;
     }
 
     error_flag = true;  // new unread error
-    digitalWrite(LED_PIN, HIGH);  // LED turned on for one cycle
     strcpy(last_error_str, error_str);
     int error_index;
     for (error_index=0; error_index<ERROR_TYPES; error_index++)
@@ -601,9 +601,16 @@ void CheckErrors() {
         }
     error_str[0] = '\0';  // assumption: no errors during next cycle
     if (error_index >= UNCRITICAL_ERROR_TYPES) errors_consecutive++;  // if error was WIFI related: allow unlimited erroneous cycles
-    if ((errors_consecutive < ERROR_LIMIT) && start_uxt) return;  // continue with next cycle if below ERROR_LIMIT and no error during setup()
+    if ((errors_consecutive < ERROR_LIMIT) && start_uxt) {
+        // consecutive errors below ERROR_LIMIT: flash LED to indicate error, continue cycle loop
+        for (int i=0; i<3; i++) {
+            digitalWrite(LED_PIN, HIGH);  delay(20);
+            digitalWrite(LED_PIN, LOW); if (i<2) delay(40);
+        }
+        return;
+    }
 
-    // Error is persistent or error during setup(): Halt the system
+    // Error is persistent or error occured during setup(): Halt the system
     if (!HoymilesCommand(HM_TURNOFF)) ShellyCommand(PM2_ADDR, PM_CH1_OFF);
     SetMWPower(MW_MIN_POWER); delay(20);
     ShellyCommand(PM2_ADDR, PM_CH0_OFF);
@@ -618,8 +625,9 @@ void CheckErrors() {
 
     ts_cycle = millis();
     while (true) {  // wait for user to confirm restart
-        for (int i=0; i<5; i++) {
-            digitalWrite(LED_PIN, HIGH);  delay(20); digitalWrite(LED_PIN, LOW); delay(40); // indicates halted system
+        for (int i=0; i<5; i++) {  // flash LED to indicate halted system
+            digitalWrite(LED_PIN, HIGH);  delay(20);
+            digitalWrite(LED_PIN, LOW); delay(40);
         }
         OTA_server.handleClient();  // check for OTA software update
         if (!telnet) telnet = telnet_server.available();  // check for terminal connection
