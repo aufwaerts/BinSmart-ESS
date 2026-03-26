@@ -46,19 +46,19 @@ const float POWER_LIMIT_RAMPDOWN = 0.67;  // Power rampdown rate when vcell_ovp 
 const float PM2_MW_POWER_CORR = 1.006;  // Power correction factor for MW power readings with PM2
 
 // Time/timer settings
-const int PROCESSING_DELAY = 2000;  // minimum delay (in msecs) for power changes to take effect
-const int HTTP_TIMEOUT = 4000;  // max waiting time (in msecs) during http requests
-const int DDNS_UPDATE_INTERVAL = 60;  // DDNS IP address check interval (in secs)
-const int MW_KEEPALIVE = 40;  // number of secs after which Shelly 2PM receives "keep alive" message (must be less than corresponding Shelly timer)
-const int RF24_KEEPALIVE = 43;  // number of secs after which Hoymiles RF24 interface receives "keep alive" message (must be less than one minute)
-const int RF24_WAIT = 50;  // min Hoymiles RF24 waiting time (in msecs) after previous response
-const int RF24_TIMEOUT = 1000;  // max waiting time (in msecs) for RF24 ACKs after writeFast()
-const int BMS_WAIT = 50;  // min BMS waiting time (in msecs) after previous response
-const int BMS_TIMEOUT1 = 20;  // max waiting time (in msecs) for BMS response
-const int BMS_TIMEOUT2 = 3;  // max additional waiting time (in msecs) if response is incomplete
-const int BLE_TIMEOUT = 2;  // max waiting time (in secs) for JKBMS BLE server connection
-const int USER_TIMEOUT = 4000;  // max waiting time (in msecs) for terminal input
-const int BATT_RECHARGE_TIMEOUT = 96;  // number of hours in BMS UVP mode without charging, before auto recharge is activated
+const unsigned long PROCESSING_DELAY = 2000;  // minimum delay (in msecs) for power changes to take effect
+const unsigned long HTTP_TIMEOUT = 4000;  // max waiting time (in msecs) during http requests
+const unsigned long SHELLY_HTTP_TIME = 100;  // normal max execution time (in msecs) of Shelly HTTP command
+const unsigned long DDNS_UPDATE_INTERVAL = 60;  // DDNS IP address check interval (in secs)
+const unsigned long MW_KEEPALIVE = 40;  // number of secs after which Shelly 2PM receives "keep Meanwell alive" message (must be less than corresponding Shelly webhook timer value)
+const unsigned long RF24_KEEPALIVE = 43;  // number of secs after which Hoymiles RF24 interface receives "keep alive" message (must be less than one minute)
+const unsigned long RF24_WAIT = 50;  // min Hoymiles RF24 waiting time (in msecs) after previous response
+const unsigned long RF24_TIMEOUT = 1000;  // max waiting time (in msecs) for RF24 ACKs after writeFast()
+const unsigned long BMS_WAIT = 50;  // min BMS waiting time (in msecs) after previous response
+const unsigned long BMS_TIMEOUT1 = 20;  // max waiting time (in msecs) for BMS response
+const unsigned long BMS_TIMEOUT2 = 3;  // max additional waiting time (in msecs) if response is incomplete
+const unsigned long BLE_TIMEOUT = 2;  // max waiting time (in secs) for JKBMS BLE server connection
+const unsigned long USER_TIMEOUT = 4000;  // max waiting time (in msecs) for terminal input
 
 // PWM params for Meanwell power control
 const int PWM_CHANNEL = 0;

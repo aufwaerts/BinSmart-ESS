@@ -1,4 +1,4 @@
-const char SW_VERSION[] = "v3.05";
+const char SW_VERSION[] = "v3.06";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <WebServer.h>  // standard Arduino/ESP32
@@ -44,7 +44,7 @@ void setup() {
 
     // Print startup message
     telnet.printf("%sBinSmart ESS %s   CPU freq: %d MHz\r\n\nWiFi connected to %s   RSSI: %d\r\n", CLEAR_SCREEN, SW_VERSION, getCpuFrequencyMhz(), WIFI_SSID, WiFi.RSSI());
-    delay(2000);
+    delay(PROCESSING_DELAY);
 
     // Init PWM generator (for adjusting Meanwell power)
     if (ledcAttachChannel(PWM_OUTPUT_PIN, PWM_FREQ, PWM_RESOLUTION, PWM_CHANNEL) && ledcWrite(PWM_OUTPUT_PIN, DUTY_CYCLE_MAX)) telnet.println("PWM generator initialized");
@@ -213,7 +213,7 @@ bool BMSCommand(const byte command[]) {
         return true;
     }
 
-    while (millis()-ts_BMS < BMS_WAIT);  // minimum delay after previous BMS communication
+    if (millis()-ts_BMS < BMS_WAIT) delay(BMS_WAIT-(millis()-ts_BMS));  // minimum delay after previous BMS communication
 
     if (command[0] == BLE_ID1) {
         // Send BMS command via BLE
@@ -329,7 +329,7 @@ bool HoymilesCommand(const byte command) {
 
     unsigned int crc;  // result of CRC-16/MODBUS calculations
 
-    while (millis()-ts_HM < RF24_WAIT);  // minimum delay between two consecutive Hoymiles RF24 commands
+    if (millis()-ts_HM < RF24_WAIT) delay(RF24_WAIT-(millis()-ts_HM));  // minimum delay between two consecutive Hoymiles RF24 commands
 
     switch (command) {
         case HM_TURNON:
@@ -469,7 +469,7 @@ void SetNewPower() {
     }
     
     // Calculate cycle duration and reset cycle timestamp
-    msecs_cycle = millis()-ts_cycle;
+    msecs_cycle = millis() - ts_cycle;
     ts_cycle = millis();
 }
 
@@ -565,11 +565,14 @@ void FinishCycle() {
     if (telnet) UserIO();  // if telnet session exists, print cycle info and handle user command
     else command = resp_str[0] = '\0';  // no telnet session: clear user command response
 
-    // wait until power change has almost stabilized (allow time for PV power reading)
-    int cycle_delay = PROCESSING_DELAY*(1+(pm1_eco_mode && pm2_eco_mode))-(millis()-ts_cycle)-100;
-    if (cycle_delay > 0) delay(cycle_delay);
+    // determine delay at end of cycle (double PROCESSING_DELAY if ESS is asleep)
+    unsigned long cycle_delay = PROCESSING_DELAY;
+    if (pm1_eco_mode && pm2_eco_mode) cycle_delay += PROCESSING_DELAY;
+    
+    // wait until power change has almost stabilized (allow time to read PV power from Shelly)
+    if (millis()-ts_cycle < cycle_delay-SHELLY_HTTP_TIME) delay(cycle_delay-SHELLY_HTTP_TIME-(millis()-ts_cycle));
 
-    // daytime: read PV power from Shelly 1PM (should take less than 100 ms)
+    // daytime: read PV power from Shelly 1PM (should take less than SHELLY_HTTP_TIME)
     if ((min_of_day >= sunrise) && (min_of_day < sunset)) ShellyCommand(PM1_ADDR, PM_CH0_STATUS);
     else power_pv = 0;
 
@@ -577,15 +580,14 @@ void FinishCycle() {
     CheckErrors();
 
     // wait until power change has stabilized
-    cycle_delay = PROCESSING_DELAY*(1+(pm1_eco_mode && pm2_eco_mode))-(millis()-ts_cycle);
-    if (cycle_delay > 0) delay(cycle_delay);
+    if (millis()-ts_cycle < cycle_delay) delay(cycle_delay-(millis()-ts_cycle));
 }
 
 void CheckErrors() {
 
     if (error_str[0] == '\0') {  // no errors this cycle
         errors_consecutive = 0;  // reset counter for consecutive errors
-        digitalWrite(LED_PIN, HIGH);  delay(20);  // flash LED to indicate end of cycle
+        digitalWrite(LED_PIN, HIGH); delay(20);  // flash LED to indicate end of cycle
         digitalWrite(LED_PIN, LOW);
         return;
     }
@@ -603,16 +605,18 @@ void CheckErrors() {
     if (error_index >= UNCRITICAL_ERROR_TYPES) errors_consecutive++;  // if error was WIFI related: allow unlimited erroneous cycles
     if ((errors_consecutive < ERROR_LIMIT) && start_uxt) {
         // consecutive errors below ERROR_LIMIT: flash LED to indicate error, continue cycle loop
-        for (int i=0; i<3; i++) {
-            digitalWrite(LED_PIN, HIGH);  delay(20);
-            digitalWrite(LED_PIN, LOW); if (i<2) delay(40);
-        }
+        digitalWrite(LED_PIN, HIGH); delay(20);
+        digitalWrite(LED_PIN, LOW); delay(40);
+        digitalWrite(LED_PIN, HIGH); delay(20);
+        digitalWrite(LED_PIN, LOW); delay(40);
+        digitalWrite(LED_PIN, HIGH); delay(20);
+        digitalWrite(LED_PIN, LOW);
         return;
     }
 
     // Error is persistent or error occured during setup(): Halt the system
     if (!HoymilesCommand(HM_TURNOFF)) ShellyCommand(PM2_ADDR, PM_CH1_OFF);
-    SetMWPower(MW_MIN_POWER); delay(20);
+    SetMWPower(MW_MIN_POWER); delay(100);
     ShellyCommand(PM2_ADDR, PM_CH0_OFF);
     
     // System halted: prepare continuous error message
@@ -624,23 +628,28 @@ void CheckErrors() {
     strcat(cycle_str, "\r\n\nPress any key to restart: ");
 
     ts_cycle = millis();
-    while (true) {  // wait for user to confirm restart
+    unsigned long ts_ddns = millis();
+    while (true) {  // repeat until telnet command confirms restart
         for (int i=0; i<5; i++) {  // flash LED to indicate halted system
             digitalWrite(LED_PIN, HIGH);  delay(20);
             digitalWrite(LED_PIN, LOW); delay(40);
         }
         OTA_server.handleClient();  // check for OTA software update
+        if (millis()-ts_ddns >= DDNS_UPDATE_INTERVAL*1000)
+            if (UpdateDDNS()) ts_ddns = millis();  // keep updating DDNS in order to be reachable via Internet
         if (!telnet) telnet = telnet_server.available();  // check for terminal connection
-        if (telnet) telnet.print(cycle_str);
-        while ((millis()-ts_cycle) % PROCESSING_DELAY);  // standard cycle delay
-        if (!((millis()-ts_cycle) % (DDNS_UPDATE_INTERVAL*1000))) UpdateDDNS();  // keep updating DDNS in order to be reachable via Internet
-        if (telnet.available()) {
-            telnet.print("\r\nRestarting in 3 seconds, re-open terminal ...\r\n");
-            delay(2000);
-            telnet.stop();
-            delay(1000);
-            ESP.restart();
+        if (telnet) {
+            telnet.print(cycle_str);  // print halted system info
+            if (telnet.available()) {
+                telnet.print("\r\nRestarting in 3 seconds, re-open terminal ...\r\n");
+                delay(2000);
+                telnet.stop();
+                delay(1000);
+                ESP.restart();
+            }
         }
+        if (millis()-ts_cycle < PROCESSING_DELAY) delay (PROCESSING_DELAY-(millis()-ts_cycle));
+        ts_cycle = millis();
     }
 }
 
