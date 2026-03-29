@@ -1,4 +1,4 @@
-const char SW_VERSION[] = "v3.06";
+const char SW_VERSION[] = "v3.07";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <WebServer.h>  // standard Arduino/ESP32
@@ -784,7 +784,7 @@ void UserIO() {
             break;
         case 't':
             sprintf(resp_str, "Local time   : %02d/%02d/%04d %02d:%02d:%02d", day(unixtime), month(unixtime), year(unixtime), hour(unixtime), minute(unixtime), second(unixtime));
-            sprintf(resp_str + strlen(resp_str), "\r\nTimezone     : UTC%+d\r\nSDT/DST      : %s", TIMEZONE, (utc_offset == TIMEZONE) ? "SDT" : "DST");
+            sprintf(resp_str + strlen(resp_str), "\r\nUTC offset   : %+d (%s)", utc_offset, (utc_offset == TIMEZONE) ? "SDT" : "DST");
             sprintf(resp_str + strlen(resp_str), "\r\nESS started  : %02d/%02d/%04d %02d:%02d:%02d", day(start_uxt), month(start_uxt), year(start_uxt), hour(start_uxt), minute(start_uxt), second(start_uxt));
             sprintf(resp_str + strlen(resp_str), "\r\nESS uptime   : %03dd %02dh %02dm %02ds", (unixtime-start_uxt)/86400, ((unixtime-start_uxt)%86400)/3600, ((unixtime-start_uxt)/60)%60, (unixtime-start_uxt)%60);
             sprintf(resp_str + strlen(resp_str), "\r\nSunrise today: %02d:%02d\r\nSunset today : %02d:%02d\r\n\n", sunrise/60, sunrise%60, sunset/60, sunset%60); 
