@@ -47,7 +47,7 @@ const float PM2_MW_POWER_CORR = 1.006;  // Power correction factor for MW power 
 
 // Time/timer settings
 const unsigned long PROCESSING_DELAY = 2000;  // minimum delay (in msecs) for power changes to take effect
-const unsigned long HTTP_TIMEOUT = 4000;  // max waiting time (in msecs) during http requests
+const unsigned long HTTP_TIMEOUT = 5000;  // max waiting time (in msecs) during http requests
 const unsigned long SHELLY_HTTP_TIME = 100;  // normal max execution time (in msecs) of Shelly HTTP command
 const unsigned long DDNS_UPDATE_INTERVAL = 60;  // DDNS IP address check interval (in secs)
 const unsigned long MW_KEEPALIVE = 40;  // number of secs after which Shelly 2PM receives "keep Meanwell alive" message (must be less than corresponding Shelly webhook timer value)
