@@ -1,4 +1,4 @@
-const char SW_VERSION[] = "v3.07";
+const char SW_VERSION[] = "v3.09";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <WebServer.h>  // standard Arduino/ESP32
@@ -199,6 +199,11 @@ bool ShellyCommand(const IPAddress ip_addr, const char command[]) {
     }
     // Shelly command failed
     http.stop();
+    if (!strcmp(command, PM_ECO_MODE_OFF)) return false;  // turning eco mode off frequently fails, just retry next cycle
+    if (!strncmp(command, PM_CH0_STATUS, 10) && (ip_addr == PM1_ADDR)) {  // reading power from Shelly 1PM might have failed due to unplugged module
+        power_pv = 0;
+        return false;
+    }
     if (ip_addr == EM_ADDR) strcpy(error_str, "3EM");
     if (ip_addr == PM1_ADDR) strcpy(error_str, "1PM");
     if (ip_addr == PM2_ADDR) strcpy(error_str, "2PM");
@@ -541,7 +546,7 @@ void FinishCycle() {
     if (((min_of_day < sunrise-1) || (min_of_day >= sunset)) && !pm1_eco_mode) pm1_eco_mode = ShellyCommand(PM1_ADDR, PM_ECO_MODE_ON);
 
     // Set Shelly 2PM eco mode (turn off when charging/discharging, turn on when charging/discharging inactive and impossible)
-    if ((power_new || auto_recharge || (power_pv >= MW_MIN_POWER-power_grid_target)) && pm2_eco_mode) pm2_eco_mode = !ShellyCommand(PM2_ADDR, PM_ECO_MODE_OFF);
+    if ((power_new || (power_pv >= MW_MIN_POWER-power_grid_target)) && pm2_eco_mode) pm2_eco_mode = !ShellyCommand(PM2_ADDR, PM_ECO_MODE_OFF);
     if (!power_new && !power_pv && !bms_disch_on && !pm2_eco_mode) pm2_eco_mode = ShellyCommand(PM2_ADDR, PM_ECO_MODE_ON);
 
     // Calculate sunrise/sunset times at 03:30 local time (after a possible SDT/DST change, before sunrise)
@@ -728,7 +733,7 @@ void UserIO() {
     if (telnet.available()) command = telnet.read();
 
     // Append user command response to telnet message
-    switch (command) {
+    switch (tolower(command)) {
         case 'm':
             command = '\0';  // react to command only once
             telnet.printf("%s%s", cycle_str, "Enter ESS power: ");
@@ -768,6 +773,7 @@ void UserIO() {
             sprintf(resp_str + strlen(resp_str), "MW power limit: %d W\r\nHM power limit: %d W\r\n\n", mw_limit, hm_limit);
             break;
         case 'b':
+        case 'v':
             // Batt voltage infos
             sprintf(resp_str, "Cell voltages: %d - %d mV\r\nMax cell diff: %d mV%s\r\n", vcell_min, vcell_max, vcell_max-vcell_min, (bms_bal_on && (vcell_max-vcell_min >= bms_balancer_trigger) && (vcell_max >= bms_balancer_start)) ? BALANCER_SYMBOL : "");
             sprintf(resp_str + strlen(resp_str), "Batt voltage : %.3f V", vbat/1000.0);
@@ -864,7 +870,7 @@ void UserIO() {
             ts_user = millis();
             while (!telnet.available() && (millis()-ts_user < USER_TIMEOUT));
             if (telnet.available()) {
-                if (telnet.read() == 'y') {
+                if (tolower(telnet.read()) == 'y') {
                     telnet.print("\r\nRestarting in 3 seconds, re-open terminal ...\r\n");
                     delay(2000);
                     telnet.stop();
