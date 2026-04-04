@@ -1,4 +1,4 @@
-const char SW_VERSION[] = "v3.09";
+const char SW_VERSION[] = "v3.10";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <WebServer.h>  // standard Arduino/ESP32
@@ -113,7 +113,7 @@ void setup() {
     CheckErrors();
 
     telnet.print("\nNo errors during setup, start polling cycle ...");
-    start_uxt = errors_uxt = energy_uxt = unixtime;  // called by setup(): init timestamps
+    start_uxt = errors_uxt = energy_uxt = shelly_uxt = unixtime;  // init statistics timestamps
     ts_cycle = millis();
     delay(PROCESSING_DELAY);
 }
@@ -730,10 +730,10 @@ void UserIO() {
     sprintf(cycle_str + strlen(cycle_str), " %.0f\r\n\n", power_cons);
 
     // Read user command
-    if (telnet.available()) command = telnet.read();
+    if (telnet.available()) command = tolower(telnet.read());
 
     // Append user command response to telnet message
-    switch (tolower(command)) {
+    switch (command) {
         case 'm':
             command = '\0';  // react to command only once
             telnet.printf("%s%s", cycle_str, "Enter ESS power: ");
@@ -830,16 +830,16 @@ void UserIO() {
             error_flag = false;
             break;
         case 's':
-            sprintf(resp_str, "Shelly relay ops since %02d/%02d/%04d %02d:%02d\r\n", day(start_uxt), month(start_uxt), year(start_uxt), hour(start_uxt), minute(start_uxt));
-            sprintf(resp_str + strlen(resp_str), "Meanwell: %d (%d/day)\r\nHoymiles: %d (%d/day)\r\n\n", mw_counter, mw_counter/((unixtime-start_uxt)/86400+1), hm_counter, hm_counter/((unixtime-start_uxt)/86400+1));
+            sprintf(resp_str, "Shelly relay ops since %02d/%02d/%04d %02d:%02d\r\n", day(shelly_uxt), month(shelly_uxt), year(shelly_uxt), hour(shelly_uxt), minute(shelly_uxt));
+            sprintf(resp_str + strlen(resp_str), "Meanwell: %d (%d/day)\r\nHoymiles: %d (%d/day)\r\n\n", mw_counter, mw_counter/((unixtime-shelly_uxt)/86400+1), hm_counter, hm_counter/((unixtime-shelly_uxt)/86400+1));
             break;
         case 'z':
             command = '\0';  // react to command only once
-            telnet.printf("%s%s", cycle_str, "Reset [e]rror or e[n]ergy stats: ");
+            telnet.printf("%s%s", cycle_str, "Reset [e]rror, e[n]ergy or [s]helly stats: ");
             ts_user = millis();
             while (!telnet.available() && (millis()-ts_user < USER_TIMEOUT));
             if (telnet.available()) {
-                char input = telnet.read();
+                char input = tolower(telnet.read());
                 if (input == 'n') {
                     en_from_pv = en_pv_to_cons = en_pv_to_ess = en_pv_to_grid = en_pv_wasted = 0;  // Reset PV energy counters
                     en_from_grid = en_grid_to_cons = en_grid_to_ess = 0;  // Reset grid energy counters
@@ -856,6 +856,12 @@ void UserIO() {
                     error_flag = false;
                     errors_uxt = unixtime;
                     strcpy(resp_str, "Error stats reset to zero\r\n\n");
+                    break;
+                }
+                if (input == 's') {
+                    mw_counter = hm_counter = 0;
+                    shelly_uxt = unixtime;
+                    strcpy(resp_str, "Shelly relay stats reset to zero\r\n\n");
                     break;
                 }
             }
@@ -894,7 +900,7 @@ void UserIO() {
             strcat(resp_str, "[l] - Lowest power consumption\r\n");
             strcat(resp_str, "[n] - Energy stats\r\n");
             strcat(resp_str, "[e] - Error stats\r\n");
-            strcat(resp_str, "[s] - Shelly relay counter\r\n");
+            strcat(resp_str, "[s] - Shelly relay stats\r\n");
             strcat(resp_str, "[z] - Reset stats to zero\r\n");
             strcat(resp_str, "[c] - Clear command response\r\n");
             strcat(resp_str, "[r] - Reboot system\r\n\n");
