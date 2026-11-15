@@ -37,7 +37,7 @@ const int UART_RX_PIN = 16;
 const int UART_TX_PIN = 17;
 
 // Power settings
-const int PV_MAX_POWER = 359;  // PV module/inverter max AC output
+const int PV_MAX_POWER = 358;  // PV module/inverter max AC output
 const int POWER_TARGET_DEFAULT = 5;  // System is aiming for this amount of watts to be drawn from grid
 const int POWER_TARGET_TOLERANCE = 5;  // Max tolerated deviation (+/-) from target power
 const int POWER_RAMPDOWN_RATE = -40; // Max power decrease per cycle
