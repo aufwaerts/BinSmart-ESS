@@ -41,9 +41,10 @@ int power_grid_target = POWER_TARGET_DEFAULT;  // Systems aims for this grid pow
 int power_new, power_old, power_manual;  // ESS power settings
 int mw_limit = MW_MAX_POWER, mw_limit_old;  // Meanwell power limit settings
 int hm_limit = HM_MAX_POWER, hm_limit_old;  // Hoymiles power limit settings
-float power_grid, power_grid_min = 10000, power_pv, power_ess;  // actual AC power measured by Shellies
+float power_grid, power_pv, power_ess;  // actual AC power measured by Shellies
 float pbat;  // actual DC power measured by BMS
 float power_from_grid, power_from_ess, power_to_ess, power_cons;  // main power flows
+float power_cons_min = 10000;  // min household power consumption since last reset
 float power_pv_to_ess, power_pv_to_cons, power_pv_to_grid, power_ess_to_cons, power_ess_to_grid, power_grid_to_ess, power_grid_to_cons; // detailed power flows
 float en_from_pv, en_pv_to_cons, en_pv_to_ess, en_pv_to_grid, en_pv_wasted;  // PV energy counters
 float en_from_grid, en_grid_to_cons, en_grid_to_ess;  // Grid energy counters

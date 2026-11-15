@@ -1,4 +1,4 @@
-const char SW_VERSION[] = "v3.10";
+const char SW_VERSION[] = "v3.11";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <WebServer.h>  // standard Arduino/ESP32
@@ -36,9 +36,9 @@ void setup() {
 
     // Start telnet server and wait for terminal to connect
     telnet_server.begin();
-    while (!telnet) {
+    while (!telnet.connected()) {
         OTA_server.handleClient();  // check for OTA software update
-        telnet = telnet_server.available();
+        telnet = telnet_server.accept();
         delay(100);
     }
 
@@ -512,9 +512,9 @@ void FinishCycle() {
     en_from_batt += hrs_cycle * (pbat < 0) * -pbat;
     en_to_batt += hrs_cycle * (pbat > 0) * pbat;
 
-    // No ESS power output and no PV production: check for new power_grid_min (i.e. min household consumption)
-    if (pm1_eco_mode && pm2_eco_mode && (power_grid < power_grid_min)) {
-        power_grid_min = power_grid;
+    // Check for new min household power consumption
+    if (power_cons < power_cons_min) {
+        power_cons_min = power_cons;
         minpower_uxt = unixtime;
     }
     
@@ -566,8 +566,8 @@ void FinishCycle() {
     OTA_server.handleClient();
 
     // check for telnet session
-    if (!telnet) telnet = telnet_server.available();
-    if (telnet) UserIO();  // if telnet session exists, print cycle info and handle user command
+    if (!telnet.connected()) telnet = telnet_server.accept();
+    if (telnet.connected()) UserIO();  // if telnet session exists, print cycle info and handle user command
     else command = resp_str[0] = '\0';  // no telnet session: clear user command response
 
     // determine delay at end of cycle (double PROCESSING_DELAY if ESS is asleep)
@@ -642,8 +642,8 @@ void CheckErrors() {
         OTA_server.handleClient();  // check for OTA software update
         if (millis()-ts_ddns >= DDNS_UPDATE_INTERVAL*1000)
             if (UpdateDDNS()) ts_ddns = millis();  // keep updating DDNS in order to be reachable via Internet
-        if (!telnet) telnet = telnet_server.available();  // check for terminal connection
-        if (telnet) {
+        if (!telnet.connected()) telnet = telnet_server.accept();  // check for terminal connection
+        if (telnet.connected()) {
             telnet.print(cycle_str);  // print halted system info
             if (telnet.available()) {
                 telnet.print("\r\nRestarting in 3 seconds, re-open terminal ...\r\n");
@@ -673,6 +673,9 @@ void SetMWPower(const int mw_power) {
 }
 
 void UserIO() {
+
+    // Reduce telnet client timeout for write commands
+    telnet.setTimeout(100);
 
     // Prepare telnet status message
     strcpy(cycle_str, CLEAR_SCREEN);
@@ -798,7 +801,7 @@ void UserIO() {
         case 'l':
             sprintf(resp_str, "Lowest cons. since %02d/%02d/%04d %02d:%02d\r\n", day(start_uxt), month(start_uxt), year(start_uxt), hour(start_uxt), minute(start_uxt));
             if (!minpower_uxt) strcat(resp_str, "Not yet measured\r\n\n");
-            else sprintf(resp_str + strlen(resp_str), "%.1f W (measured %02d/%02d/%04d %02d:%02d)\r\n\n", power_grid_min, day(minpower_uxt), month(minpower_uxt), year(minpower_uxt), hour(minpower_uxt), minute(minpower_uxt));
+            else sprintf(resp_str + strlen(resp_str), "%.1f W (measured %02d/%02d/%04d %02d:%02d)\r\n\n", power_cons_min, day(minpower_uxt), month(minpower_uxt), year(minpower_uxt), hour(minpower_uxt), minute(minpower_uxt));
             break;
         case 'n':
             sprintf(resp_str, "Energy [kWh] since %02d/%02d/%04d %02d:%02d\r\n\n", day(energy_uxt), month(energy_uxt), year(energy_uxt), hour(energy_uxt), minute(energy_uxt));
@@ -845,6 +848,7 @@ void UserIO() {
                     en_from_grid = en_grid_to_cons = en_grid_to_ess = 0;  // Reset grid energy counters
                     en_from_ess = en_to_ess = en_ess_to_cons = en_ess_to_grid = 0;  // Reset ESS energy counters
                     en_from_batt = en_to_batt = 0;  // Reset ESS DC energy counters
+                    power_cons_min = 10000;  // Reset min household power consumption
                     energy_uxt = unixtime;
                     strcpy(resp_str, "Energy stats reset to zero\r\n\n");
                     break;
