@@ -71,8 +71,8 @@ const int DUTY_CYCLE_MAX = pow(2,PWM_RESOLUTION)-1;
 const int MW_MIN_POWER = 15;  // Meanwell turned off below min_power (power output would be unstable and inefficient)
 const int MW_MAX_POWER = 300;  // theoretical max AC power at vbat < 24000
 const int MW_LOW_POWER_THRESHOLD = 31;  // power output below MW_LOW_POWER_THRESHOLD is non-linear
-#define MW_MAX_POWER_FORMULA vbat/77.8*(0.9814-float(DUTY_CYCLE_MIN)/DUTY_CYCLE_MAX)  // actual max AC power is between 300 and 360W, depending on vbat
-#define MW_POWER_FORMULA DUTY_CYCLE_MAX*(0.9814-77.8*mw_power/vbat)  // converts current to PWM duty cycle (result of Meanwell HLG-320 tests)
+#define MW_MAX_POWER_FORMULA vbat/77.3*(0.9814-float(DUTY_CYCLE_MIN)/DUTY_CYCLE_MAX)  // actual max AC power is between 300 and 360W, depending on vbat
+#define MW_POWER_FORMULA DUTY_CYCLE_MAX*(0.9814-77.3*mw_power/vbat)  // converts current to PWM duty cycle (result of Meanwell HLG-320 tests)
 #define MW_LOW_POWER_FORMULA DUTY_CYCLE_MAX*(94523.28*mw_power/vbat*mw_power/vbat-266.51*mw_power/vbat+1.07)  // non-linear formula for low power
 
 // Hoymiles/RF24 comms parameters
