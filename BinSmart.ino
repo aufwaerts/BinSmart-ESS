@@ -1,4 +1,4 @@
-const char SW_VERSION[] = "v3.11";
+const char SW_VERSION[] = "v3.12";
 
 #include <WiFi.h>  // standard Arduino/ESP32
 #include <WebServer.h>  // standard Arduino/ESP32
@@ -36,7 +36,7 @@ void setup() {
 
     // Start telnet server and wait for terminal to connect
     telnet_server.begin();
-    while (!telnet.connected()) {
+    while (!telnet) {
         OTA_server.handleClient();  // check for OTA software update
         telnet = telnet_server.accept();
         delay(100);
@@ -566,8 +566,9 @@ void FinishCycle() {
     OTA_server.handleClient();
 
     // check for telnet session
-    if (!telnet.connected()) telnet = telnet_server.accept();
-    if (telnet.connected()) UserIO();  // if telnet session exists, print cycle info and handle user command
+    if (!telnet) telnet = telnet_server.accept();
+
+    if (telnet) UserIO();  // if telnet session exists, print cycle info and handle user command
     else command = resp_str[0] = '\0';  // no telnet session: clear user command response
 
     // determine delay at end of cycle (double PROCESSING_DELAY if ESS is asleep)
@@ -642,9 +643,9 @@ void CheckErrors() {
         OTA_server.handleClient();  // check for OTA software update
         if (millis()-ts_ddns >= DDNS_UPDATE_INTERVAL*1000)
             if (UpdateDDNS()) ts_ddns = millis();  // keep updating DDNS in order to be reachable via Internet
-        if (!telnet.connected()) telnet = telnet_server.accept();  // check for terminal connection
-        if (telnet.connected()) {
-            telnet.print(cycle_str);  // print halted system info
+        if (!telnet) telnet = telnet_server.accept();  // check for terminal connection
+        if (telnet) {
+            if (!telnet.print(cycle_str)) telnet.stop();  // print halted system info
             if (telnet.available()) {
                 telnet.print("\r\nRestarting in 3 seconds, re-open terminal ...\r\n");
                 delay(2000);
@@ -673,9 +674,6 @@ void SetMWPower(const int mw_power) {
 }
 
 void UserIO() {
-
-    // Reduce telnet client timeout for write commands
-    telnet.setTimeout(100);
 
     // Prepare telnet status message
     strcpy(cycle_str, CLEAR_SCREEN);
@@ -910,7 +908,11 @@ void UserIO() {
             strcat(resp_str, "[r] - Reboot system\r\n\n");
             break;
     }
-    telnet.printf("%s%s%s", cycle_str, resp_str, CMD_PROMPT);  // print output message, user command response and command prompt
+
+    // print output message, user command response and command prompt
+    if (!telnet.printf("%s%s%s", cycle_str, resp_str, CMD_PROMPT))
+        // send buffer full, due to undetected loss of connection: close telnet session
+        telnet.stop();
 }
 
 bool UpdateDDNS() {
@@ -954,3 +956,4 @@ bool UpdateDDNS() {
     http.stop();
     return false;
 }
+
